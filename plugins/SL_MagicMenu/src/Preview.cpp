@@ -2560,7 +2560,7 @@ float4 PSMain(float4 position : SV_Position) : SV_Target
             using namespace REX::W32;
             auto* window = RE::BSGraphics::Renderer::GetCurrentRenderWindow();
             if (!window || !window->swapChain) return "no current render window or swap chain - not checked";
-            ComPtr<IUnknown> buffer;
+            ComPtr<REX::W32::IUnknown> buffer;
             if (const auto result = window->swapChain->GetBuffer(0, REX::W32::IID_IUnknown, reinterpret_cast<void**>(buffer.GetAddressOf()));
                 !SUCCESS(result) || !buffer.Get()) {
                 return std::format("IDXGISwapChain::GetBuffer(0) failed, HRESULT 0x{:08X} - not checked", static_cast<std::uint32_t>(result));
@@ -2570,7 +2570,7 @@ float4 PSMain(float4 position : SV_Position) : SV_Target
             if (!view.Get()) return "no render target bound - not checked";
             ComPtr<ID3D11Resource> resource;
             view->GetResource(resource.GetAddressOf());
-            ComPtr<IUnknown> identity;
+            ComPtr<REX::W32::IUnknown> identity;
             if (!resource.Get() || !SUCCESS(resource->QueryInterface(REX::W32::IID_IUnknown, reinterpret_cast<void**>(identity.GetAddressOf()))) || !identity.Get()) {
                 return "the bound RTV's resource gave no IUnknown - not checked";
             }
