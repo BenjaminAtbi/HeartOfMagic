@@ -1,7 +1,9 @@
 param(
     [string]$preset = "Release-2022",
     [int]$threads = 32,
-    [switch]$fresh
+    [switch]$fresh,
+    # After a successful build, run DeployDev.ps1 into $devModPath (Build_Config_Local.ps1)
+    [switch]$deploy
 )
 $vsDevShellPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 # Load in template default variables
@@ -50,3 +52,12 @@ if ($LASTEXITCODE -ne 0) { exit 1 }
 
 & cmake --build --preset=$preset --parallel $threads
 if ($LASTEXITCODE -ne 0) { exit 1 }
+
+if ($deploy) {
+    if (-not $devModPath) {
+        Write-Error "-deploy needs `$devModPath set in Build_Config_Local.ps1"
+        exit 1
+    }
+    & (Join-Path $PSScriptRoot 'DeployDev.ps1') -ModPath $devModPath
+    if (-not $?) { exit 1 }
+}

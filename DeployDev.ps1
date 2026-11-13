@@ -41,6 +41,15 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# No -ModPath given: the $devModPath of Build_Config_Local.ps1 (or the template), when set
+if (-not $PSBoundParameters.ContainsKey('ModPath')) {
+    foreach ($config in @('Build_Config_Template.ps1', 'Build_Config_Local.ps1')) {
+        $file = Join-Path $PSScriptRoot $config
+        if (Test-Path $file) { . $file }
+    }
+    if ($devModPath) { $ModPath = $devModPath }
+}
+
 if (Get-Process SkyrimSE -ErrorAction SilentlyContinue) {
     throw 'SkyrimSE is running. Close the game first: the panel files are open and a copy would leave the mod half written.'
 }

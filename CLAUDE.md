@@ -157,7 +157,11 @@ row in `fomod_magicmenu/THIRD-PARTY-NOTICES.md.in` and `plugins/SL_MagicMenu_Spe
 .\DeployDev.ps1 -NoScripts     # plugin + panel, the install's Papyrus scripts left as they are
 .\DeployDev.ps1 -WithSelfTest  # also selftest.json: the in-game 1.6 self-test runs (any deploy without it removes it)
 .\DeployDev.ps1 -NoAddons      # the base mod alone (Skald only): the add-ons' files taken out of the install
+.\BuildRelease.ps1 -preset Release-2026 -deploy   # build, then DeployDev.ps1 (defaults) once the build succeeds
 ```
+
+The mod folder is `$devModPath` from `Build_Config_Local.ps1` (template default empty: DeployDev's own
+`-ModPath` default); an explicit `-ModPath` overrides it.
 
 **ALWAYS use `DeployDev.ps1`**—never copy the panel by hand. It refuses to run while SkyrimSE is
 open (PrismaUI holds the panel files, so a copy would leave the mod half written), it keeps the

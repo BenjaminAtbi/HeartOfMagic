@@ -7,3 +7,7 @@ $vsDevShellPath = "C:/Program Files/Microsoft Visual Studio/2022/Community/Commo
 # Papyrus compiler, when this checkout has no plugins/external/papyrus-compiler (a git worktree):
 # point it at another checkout's copy. Empty: the checkout's own (DownloadExternalDeps.ps1).
 $papyrusCompilerPath = ""
+
+# Development mod folder (an MO2 mod) that DeployDev.ps1 copies the build into, also used by
+# BuildRelease.ps1 -deploy. Empty: DeployDev's -ModPath default.
+$devModPath = ""
