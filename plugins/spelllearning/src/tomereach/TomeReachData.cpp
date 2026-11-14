@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iterator>
 #include <sstream>
+#include <unordered_set>
 
 namespace TomeReach
 {
@@ -45,35 +46,77 @@ namespace TomeReach
         return text.str();
     }
 
-    DataFiles::DataFiles(const std::vector<std::filesystem::path>& dataDirs)
+    std::vector<std::string> SplitArchiveList(std::string_view list)
     {
-        for (const auto& dir : dataDirs) Scan(dir);
+        std::vector<std::string> out;
+        while (!list.empty()) {
+            const std::size_t comma = list.find(',');
+            std::string_view name = list.substr(0, comma);
+            while (!name.empty() && (name.front() == ' ' || name.front() == '\t')) name.remove_prefix(1);
+            while (!name.empty() && (name.back() == ' ' || name.back() == '\t' || name.back() == '\r')) name.remove_suffix(1);
+            if (!name.empty()) out.emplace_back(name);
+            if (comma == std::string_view::npos) break;
+            list.remove_prefix(comma + 1);
+        }
+        return out;
     }
 
-    void DataFiles::Scan(const std::filesystem::path& dir)
+    std::vector<std::string> ArchiveOrder(const std::vector<std::string>& iniArchives, const std::vector<std::string>& plugins)
     {
-        std::error_code ec;
-        std::vector<std::filesystem::path> archives;
-        for (std::filesystem::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec)) {
-            if (!it->is_regular_file(ec)) continue;
-            const std::string name = Lower(it->path().filename());
-            if (name.ends_with(kSpidSuffix)) m_loose[name] = it->path();
-            else if (name.ends_with(kArchiveSuffix)) archives.push_back(it->path());
+        std::vector<std::string> out;
+        std::unordered_set<std::string> seen;
+        const auto add = [&](std::string name) {
+            name = AsciiText::ToLower(name);
+            if (seen.insert(name).second) out.push_back(std::move(name));
+        };
+        for (const auto& name : iniArchives) add(name);
+        for (const auto& plugin : plugins) {
+            const std::size_t dot = plugin.rfind('.');
+            const std::string stem = dot == std::string::npos ? plugin : plugin.substr(0, dot);
+            add(stem + ".bsa");
+            add(stem + " - Textures.bsa");
         }
-        AddFolder(dir, kScripts, false);
-        AddFolder(dir, kStrings, false);
-        AddFolder(dir, kSkyPatcherFolder, true);
+        return out;
+    }
 
-        // Archives: the later one wins, so a folder's own are taken in name order
-        std::sort(archives.begin(), archives.end(), [](const auto& a, const auto& b) { return Lower(a) < Lower(b); });
-        for (const auto& path : archives) {
+    DataFiles::DataFiles(const std::vector<std::filesystem::path>& dataDirs, const std::vector<std::string>& archives)
+    {
+        std::unordered_map<std::string, std::filesystem::path> found;   // archive name -> the last folder's copy
+        for (const auto& dir : dataDirs) Scan(dir, found);
+        // In the game's order: a later archive's member replaces an earlier one's
+        for (const auto& name : archives) {
+            const auto file = found.find(name);
+            if (file == found.end()) continue;
             Archive archive;
-            const bool ok = archive.Open(path, [](std::string_view folder) { return folder == kScripts || folder == kStrings; });
+            const bool ok = archive.Open(file->second, [](std::string_view folder) { return folder == kScripts || folder == kStrings; });
             if (!ok || archive.Members().empty()) continue;
             const std::size_t index = m_archives.size();
             for (const auto& [member, entry] : archive.Members()) m_packed[member] = Packed{ index, entry };
             m_archives.push_back(std::move(archive));
         }
+    }
+
+    void DataFiles::Scan(const std::filesystem::path& dir, std::unordered_map<std::string, std::filesystem::path>& archives)
+    {
+        std::error_code ec;
+        for (std::filesystem::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec)) {
+            if (!it->is_regular_file(ec)) continue;
+            const std::string name = Lower(it->path().filename());
+            if (name.ends_with(kSpidSuffix)) m_loose[name] = it->path();
+            else if (name.ends_with(kArchiveSuffix)) archives[name] = it->path();
+        }
+        AddFolder(dir, kScripts, false);
+        AddFolder(dir, kStrings, false);
+        AddFolder(dir, kSkyPatcherFolder, true);
+    }
+
+    std::vector<std::pair<std::string, std::size_t>> DataFiles::PackedMembers() const
+    {
+        std::vector<std::pair<std::string, std::size_t>> out;
+        out.reserve(m_packed.size());
+        for (const auto& [member, packed] : m_packed) out.emplace_back(member, packed.archive);
+        std::sort(out.begin(), out.end());
+        return out;
     }
 
     void DataFiles::AddFolder(const std::filesystem::path& dir, std::string_view folder, bool recursive)

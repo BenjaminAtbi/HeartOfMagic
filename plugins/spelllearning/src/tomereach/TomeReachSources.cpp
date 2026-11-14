@@ -26,12 +26,12 @@ namespace TomeReach
         return out;
     }
 
-    bool ClassifyForGame(const std::vector<PluginFile>& loadOrder, NameTable& names,
+    bool ClassifyForGame(const std::vector<PluginFile>& loadOrder, NameTable& names, const std::vector<std::string>& iniArchives,
         const std::unordered_map<Key, Key>& tomeSpells, const std::unordered_map<RE::FormID, Key>& spellKeys,
         std::unordered_map<RE::FormID, SpellSourceInfo>& out)
     {
         try {
-            Model model(loadOrder, names, { std::filesystem::path(kDataDir) }, &tomeSpells);
+            Model model(loadOrder, names, { std::filesystem::path(kDataDir) }, iniArchives, &tomeSpells);
             if (!model.Store().unreadable.empty()) {
                 logger::warn("TomeReach: the distribution model could not read {} plugins (first: {}) - the reach pass "
                              "answers", model.Store().unreadable.size(), model.Store().unreadable.front());

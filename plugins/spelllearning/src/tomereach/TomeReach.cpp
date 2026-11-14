@@ -3,6 +3,7 @@
 #include "ThreadUtils.h"
 #include "tomereach/TomeReach.h"
 #include "tomereach/TomeReachConfig.h"
+#include "tomereach/TomeReachData.h"
 #include "tomereach/TomeReachPass.h"
 #include "tomereach/TomeReachSources.h"
 #include "ScanRecordRules.h"
@@ -33,6 +34,7 @@ namespace TomeReach
             std::unordered_map<RE::FormID, std::vector<Key>> tomesOf;  // spell -> its tomes
             std::unordered_map<Key, Key> tomeSpells;                     // tome -> its spell's key (the model)
             std::unordered_map<RE::FormID, Key> spellKeys;               // spell -> its key
+            std::vector<std::string> iniArchives;   // [Archive] sResourceArchiveList, then ...List2 (the model's archive order)
             bool logQuestOnly = false;   // the dev self-test is on (selftest.json): the quest-only list is logged
             std::unordered_map<RE::FormID, std::string> spellLabels;   // spell -> "'name' formId persistentId" (only then)
         };
@@ -209,7 +211,7 @@ namespace TomeReach
         bool AnswerByModel(Job& job, Answer& answer)
         {
             const auto started = std::chrono::steady_clock::now();
-            if (!ClassifyForGame(job.loadOrder, job.names, job.tomeSpells, job.spellKeys, answer.sources)) return false;
+            if (!ClassifyForGame(job.loadOrder, job.names, job.iniArchives, job.tomeSpells, job.spellKeys, answer.sources)) return false;
             std::size_t unclassified = 0;
             for (const auto& [spell, tomes] : job.tomesOf) {
                 const auto source = answer.sources.find(spell);
@@ -274,6 +276,16 @@ namespace TomeReach
             job->names.SetLight(job->names.Id(file->GetFilename()), file->IsLight());
         }
 
+        // The INI archive lists as the game read them: registered before the plugins' archives
+        if (auto* ini = RE::INISettingCollection::GetSingleton()) {
+            for (const char* key : { "sResourceArchiveList:Archive", "sResourceArchiveList2:Archive" }) {
+                const RE::Setting* setting = ini->GetSetting(key);
+                const char* list = setting && setting->GetType() == RE::Setting::Type::kString ? setting->GetString() : nullptr;
+                if (!list) continue;
+                for (auto& name : SplitArchiveList(list)) job->iniArchives.push_back(std::move(name));
+            }
+        }
+
         // Every tome, a book that teaches nothing but has a Spell Research pair too
         SpellTomes::ForEachTome([&](RE::TESObjectBOOK* book, RE::SpellItem* spell) {
             Key key = 0;
@@ -295,9 +307,9 @@ namespace TomeReach
                     SpellScanner::GetPersistentFormId(spellId)));
             }
         });
-        logger::info("TomeReach: reading {} plugins for {} tomes on a worker thread (first: '{}', tome pairs generation {})",
-            job->loadOrder.size(), job->tomes.size(),
-            job->loadOrder.empty() ? std::string() : job->loadOrder.front().path.string(), generation);
+        logger::info("TomeReach: reading {} plugins for {} tomes on a worker thread (first: '{}', {} INI archives, "
+                     "tome pairs generation {})", job->loadOrder.size(), job->tomes.size(),
+            job->loadOrder.empty() ? std::string() : job->loadOrder.front().path.string(), job->iniArchives.size(), generation);
 
         auto& shared = Shared();
         {

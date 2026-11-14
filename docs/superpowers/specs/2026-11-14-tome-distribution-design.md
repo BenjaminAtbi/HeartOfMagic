@@ -129,8 +129,10 @@ spells at once, differences fixed or written down as deliberate.
    unreachable spells). Author's order: 220 config files (15 SPID lines, 325 SkyPatcher adds), 293 archives with
    scripts or strings, 568 scripts read; configs 1.1 s, graph with scripts 0.6 s. Deliberate differences: SPID
    configs are read from the data folder's root only, as SPID itself does; an archive member loses to a loose
-   file, and among archives the folder's priority decides, then the archive name (in game, the order of the
-   plugins that load them is not consulted: name order within the Data folder, settled in stage 5).
+   file. Among archives, until later the same day (after stage 5), the folder's priority decided, then the
+   archive name; since then the game's order (`ArchiveOrder`: the INI lists, then each loaded plugin's archives
+   in load order; an archive no plugin loads is not read), the same rule as the author's `bsaorder.py`: 290
+   archives and 44,500 member winners equal, the graph and sources byte-identical to stage 5.
 4. **Classes, specialty mod vendors, segments** (done 2026-11-14): `Classifier` (TomeReachClasses.cpp: the
    routes of each tome, memoised per root set, with the entries each vendor chest holds) and `ClassifySpells`
    (TomeReachSegments.cpp: specialty mod vendors, a segment per spell, `SegmentSwitches` with the defaults of
@@ -159,7 +161,8 @@ spells at once, differences fixed or written down as deliberate.
    and route detail as the reason. `SpellScannerDuplicates.cpp` and `ScanRecordRules.h` read the unreachable
    set, which keeps its meaning: unchanged.
    Choices made here: the review segment stays on the tree (the gate's review band does too) and Gate Review
-   lists it to look over; archives in game are read in the Data folder in name order; the game's tome pairs
+   lists it to look over; archives in game are read in the game's order (stage 3, corrected the same day from
+   name order within the Data folder); the game's tome pairs
    (SpellTomes) are the model's tomes, each teaching its pair's spell whatever its DATA says (a non-teaching
    book Spell Research's Synthesizer pairs; since later the same day also a book a DLL rebinds, and a book
    with no pair is no tome); spells of a

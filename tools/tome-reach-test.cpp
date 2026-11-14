@@ -9,15 +9,20 @@
 //                                    spells, with the configs and scripts of the data folders (tome-reach-graph.cpp)
 //     [--sources sources.tsv]          and every tome's routes, spell's class and segment, specialty mod vendors
 //                                    (tome-reach-sources.cpp)
+//   tome-reach-test -i inputs.json --archives out.tsv   the archives the model reads, in the game's order, and
+//                                    the one each Scripts/Strings member is read from (TomeReachData.h)
 //
 // inputs.json: { "plugins": [ { "name": "...", "path": "..." } ... ] in load order,
-//                "dataDirs": [ "..." ] }  (lab/tome-reach/make_inputs.py writes it
+//                "dataDirs": [ "..." ], "iniArchives": [ "Skyrim - Misc.bsa", ... ] (the
+//                INI's sResourceArchiveList, then sResourceArchiveList2; optional) }
+//                (lab/tome-reach/make_inputs.py writes it
 //                from an MO2 profile). Runs the plugin's own TomeReach pass, so its
 //                answer is the plugin's; lab/tome-reach/expected-*.txt holds what
 //                the Python measurement found on the same load order.
 
 #include "FormIdText.h"
 #include "tomereach/TomeReachConfig.h"
+#include "tomereach/TomeReachData.h"
 #include "tomereach/TomeReachPass.h"
 
 #include <nlohmann/json.hpp>
@@ -34,7 +39,7 @@ using json = nlohmann::json;
 int RunSelfTest();
 int DumpStore(const std::vector<TomeReach::PluginFile>& loadOrder, const std::string& out);   // tome-reach-store.cpp
 int DumpGraph(const std::vector<TomeReach::PluginFile>& loadOrder, const std::vector<std::filesystem::path>& dataDirs,
-    const std::string& out, const std::string& sourcesOut);   // tome-reach-graph.cpp
+    const std::vector<std::string>& iniArchives, const std::string& out, const std::string& sourcesOut);   // tome-reach-graph.cpp
 
 namespace
 {
@@ -49,13 +54,38 @@ namespace
     {
         return std::filesystem::path(std::u8string(text.begin(), text.end()));
     }
+
+    std::string Utf8(const std::filesystem::path& path)
+    {
+        const auto u8 = path.generic_u8string();
+        return std::string(u8.begin(), u8.end());
+    }
+
+    // "archive<TAB>index<TAB>file" per archive read, lowest first, then "member<TAB>path<TAB>index"
+    int DumpArchives(const std::vector<TomeReach::PluginFile>& loadOrder, const std::vector<std::filesystem::path>& dataDirs,
+        const std::vector<std::string>& iniArchives, const std::string& out)
+    {
+        std::vector<std::string> plugins;
+        for (const auto& p : loadOrder) plugins.push_back(p.name);
+        const TomeReach::DataFiles data(dataDirs, TomeReach::ArchiveOrder(iniArchives, plugins));
+        std::ofstream f(out, std::ios::binary);
+        if (!f) {
+            std::fprintf(stderr, "cannot write %s\n", out.c_str());
+            return 1;
+        }
+        for (std::size_t i = 0; i < data.ArchiveCount(); ++i) f << "archive\t" << i << "\t" << Utf8(data.ArchiveFile(i)) << "\n";
+        const auto members = data.PackedMembers();
+        for (const auto& [member, index] : members) f << "member\t" << member << "\t" << index << "\n";
+        std::printf("%zu archives read, %zu packed members -> %s\n", data.ArchiveCount(), members.size(), out.c_str());
+        return 0;
+    }
 }
 
 int main(int argc, char** argv)
 {
     if (argc == 2 && std::string(argv[1]) == "--self-test") return RunSelfTest();
 
-    std::string inputs, scan, storeOut, graphOut, sourcesOut;
+    std::string inputs, scan, storeOut, graphOut, sourcesOut, archivesOut;
     bool verbose = false;
     bool recordsOnly = false;
     for (int i = 1; i < argc; ++i) {
@@ -67,11 +97,13 @@ int main(int argc, char** argv)
         else if (flag == "--store" && i + 1 < argc) storeOut = argv[++i];
         else if (flag == "--graph" && i + 1 < argc) graphOut = argv[++i];
         else if (flag == "--sources" && i + 1 < argc) sourcesOut = argv[++i];
+        else if (flag == "--archives" && i + 1 < argc) archivesOut = argv[++i];
     }
-    if (inputs.empty() || (scan.empty() && storeOut.empty() && graphOut.empty())) {
+    if (inputs.empty() || (scan.empty() && storeOut.empty() && graphOut.empty() && archivesOut.empty())) {
         std::fprintf(stderr, "usage: tome-reach-test -i inputs.json -s spell_scan_output.json\n"
                              "       tome-reach-test -i inputs.json --store out.tsv\n"
-                             "       tome-reach-test -i inputs.json --graph out.tsv [--records-only] [--sources sources.tsv]\n");
+                             "       tome-reach-test -i inputs.json --graph out.tsv [--records-only] [--sources sources.tsv]\n"
+                             "       tome-reach-test -i inputs.json --archives out.tsv\n");
         return 1;
     }
 
@@ -81,12 +113,21 @@ int main(int argc, char** argv)
         for (const auto& p : in["plugins"]) {
             loadOrder.push_back({ p["name"].get<std::string>(), Utf8Path(p["path"].get<std::string>()) });
         }
+        std::vector<std::string> iniArchives;
+        if (in.contains("iniArchives")) {
+            for (const auto& a : in["iniArchives"]) iniArchives.push_back(a.get<std::string>());
+        }
+        if (!archivesOut.empty()) {
+            std::vector<std::filesystem::path> dataDirs;
+            for (const auto& d : in["dataDirs"]) dataDirs.push_back(Utf8Path(d.get<std::string>()));
+            return DumpArchives(loadOrder, dataDirs, iniArchives, archivesOut);
+        }
         if (!graphOut.empty()) {
             std::vector<std::filesystem::path> dataDirs;
             if (!recordsOnly) {
                 for (const auto& d : in["dataDirs"]) dataDirs.push_back(Utf8Path(d.get<std::string>()));
             }
-            return DumpGraph(loadOrder, dataDirs, graphOut, sourcesOut);
+            return DumpGraph(loadOrder, dataDirs, iniArchives, graphOut, sourcesOut);
         }
         if (!storeOut.empty()) {
             const auto started = std::chrono::steady_clock::now();

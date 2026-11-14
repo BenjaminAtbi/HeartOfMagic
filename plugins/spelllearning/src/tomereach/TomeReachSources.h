@@ -16,9 +16,10 @@
 
 namespace TomeReach
 {
-    // `tomeSpells`: tome key -> its spell's key (SpellTomes' pairs); `spellKeys`: spell form id -> its key.
+    // `iniArchives`: the game's INI archive lists (Model). `tomeSpells`: tome key -> its spell's key
+    // (SpellTomes' pairs); `spellKeys`: spell form id -> its key.
     // False (logged) when the model could not run: a plugin it could not read, or it threw.
-    bool ClassifyForGame(const std::vector<PluginFile>& loadOrder, NameTable& names,
+    bool ClassifyForGame(const std::vector<PluginFile>& loadOrder, NameTable& names, const std::vector<std::string>& iniArchives,
         const std::unordered_map<Key, Key>& tomeSpells, const std::unordered_map<RE::FormID, Key>& spellKeys,
         std::unordered_map<RE::FormID, SpellSourceInfo>& out);
 }

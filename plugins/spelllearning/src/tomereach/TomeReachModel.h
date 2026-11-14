@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -29,9 +30,11 @@ namespace TomeReach
     class Model
     {
     public:
-        // `dataDirs` empty: records only, no configs or scripts. `tomeSpells`: see ReadSpellStore.
+        // `dataDirs` empty: records only, no configs or scripts. `iniArchives`: the game's INI archive
+        // lists (sResourceArchiveList, then sResourceArchiveList2), registered before the plugins'
+        // archives (ArchiveOrder). `tomeSpells`: see ReadSpellStore.
         Model(const std::vector<PluginFile>& loadOrder, NameTable& names, const std::vector<std::filesystem::path>& dataDirs,
-            const std::unordered_map<Key, Key>* tomeSpells = nullptr);
+            const std::vector<std::string>& iniArchives, const std::unordered_map<Key, Key>* tomeSpells = nullptr);
         Model(const Model&) = delete;
         Model& operator=(const Model&) = delete;
 

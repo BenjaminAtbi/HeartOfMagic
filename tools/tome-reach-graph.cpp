@@ -46,10 +46,10 @@ namespace
 int DumpSources(Model& model, const NameTable& names, const std::string& out);   // tome-reach-sources.cpp
 
 int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::filesystem::path>& dataDirs,
-    const std::string& out, const std::string& sourcesOut)
+    const std::vector<std::string>& iniArchives, const std::string& out, const std::string& sourcesOut)
 {
     NameTable names;
-    Model model(loadOrder, names, dataDirs);
+    Model model(loadOrder, names, dataDirs, iniArchives);
     const auto built = std::chrono::steady_clock::now();
     const SpellStore& store = model.Store();
     const ReachGraph& graph = model.Graph();

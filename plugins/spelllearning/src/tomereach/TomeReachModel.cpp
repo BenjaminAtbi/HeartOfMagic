@@ -13,13 +13,16 @@ namespace TomeReach
     }
 
     Model::Model(const std::vector<PluginFile>& loadOrder, NameTable& names, const std::vector<std::filesystem::path>& dataDirs,
-        const std::unordered_map<Key, Key>* tomeSpells) :
+        const std::vector<std::string>& iniArchives, const std::unordered_map<Key, Key>* tomeSpells) :
         m_names(names)
     {
         const auto started = std::chrono::steady_clock::now();
         ConfigWants wants;
         if (!dataDirs.empty()) {
-            m_data.emplace(dataDirs);
+            std::vector<std::string> plugins;
+            plugins.reserve(loadOrder.size());
+            for (const auto& plugin : loadOrder) plugins.push_back(plugin.name);
+            m_data.emplace(dataDirs, ArchiveOrder(iniArchives, plugins));
             m_configs = ReadDistributionConfigs(*m_data, names);
             wants = m_configs.Wants();
         }

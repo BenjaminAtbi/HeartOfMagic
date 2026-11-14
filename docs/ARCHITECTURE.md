@@ -288,8 +288,12 @@ game the placed references of cells that are not loaded are not in memory:
   specific loot, quest rewards and crafted only off; review always on). The scan writes each spell's
   `source` object (`SourceJson`: `segment` as `SegmentKey`, `class`, `subtype`, `detail`, `shop` for a
   specialty mod vendor's spell). When a plugin is unreadable or the model throws, the pass answers as before,
-  with no `source` objects. Archives in game are read in the Data folder in name order (the plugins that load
-  them are not consulted). The game's tome pairs (SpellTomes) are the model's tomes: a book teaches its pair's
+  with no `source` objects. Archives are read in the game's order (`ArchiveOrder`, TomeReachData.h): the INI
+  lists (`sResourceArchiveList`, then `sResourceArchiveList2`, read from the game's settings on the game thread),
+  then each loaded plugin's `<stem>.bsa` and `<stem> - Textures.bsa` in load order, a later one winning; an
+  archive no plugin loads is not read, and a loose file beats them all. In game the Data folder is MO2's virtual
+  one, so the winning copy of each archive file is MO2's. The harness takes the same lists from inputs.json
+  (`iniArchives`, lab/tome-reach/make_inputs.py) and `--archives` dumps what it reads. The game's tome pairs (SpellTomes) are the model's tomes: a book teaches its pair's
   spell whatever its DATA says (a non-teaching book Spell Research's Synthesizer pairs, a book a DLL rebinds),
   and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, Settings > Spell Tomes >
   Where Tomes Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:

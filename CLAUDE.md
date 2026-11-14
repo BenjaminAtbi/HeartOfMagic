@@ -353,7 +353,8 @@ This project does not have a C++ test framework. Validation is done through:
   `--graph out.tsv [--records-only]` its roots (SPID lines included), sites and unreachable spells, reading the
   configs and scripts of the input's `dataDirs` unless `--records-only`, `tools/tome-reach-graph.cpp`; with
   `--sources src.tsv` also every tome's routes, spell's class and segment and the specialty mod vendors,
-  `tools/tome-reach-sources.cpp`) and `declutter-test`
+  `tools/tome-reach-sources.cpp`; `--archives out.tsv` the archives the model reads in the game's order, from the
+  input's `iniArchives` and plugins, and the archive each Scripts/Strings member is read from) and `declutter-test`
   (the native tree declutter pass: `declutter-test -i tree.json -o reply.json [-r runs]`; its positions
   must match `LayoutDeclutter.apply` in `modules/layoutDeclutter.js` on the same tree - see
   docs/TREE_BUILDING_SYSTEM.md, "Decluttering before save"; `declutter-test --self-test`, no files: `fixed` spells
