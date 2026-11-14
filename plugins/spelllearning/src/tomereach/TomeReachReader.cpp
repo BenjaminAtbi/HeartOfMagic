@@ -68,6 +68,7 @@ namespace TomeReach
         {
             std::unordered_set<Key> placeable;   // every record of kPlaceableTypes read so far
             const ConfigWants* wants = nullptr;
+            const std::unordered_map<Key, Key>* tomeSpells = nullptr;   // books the game pairs with a spell
             std::unordered_map<Key, std::string> named;   // records whose editor id a config names (lower case)
         };
 
@@ -188,6 +189,10 @@ namespace TomeReach
                         else if (Is(s.type, T("DATA")) && s.size >= kBookSpellOffset + kFormSize && (s.data[0] & kTeachesSpell))
                             spell = Form(s, kBookSpellOffset);
                     });
+                    // A book that teaches nothing itself (Spell Research Synthesizer's): its pair's spell
+                    if (!spell && m_state.tomeSpells) {
+                        if (const auto pair = m_state.tomeSpells->find(m_key); pair != m_state.tomeSpells->end()) spell = pair->second;
+                    }
                     if (spell) {
                         kind = Kind::kBook;
                         m_store.bookSpells[m_key] = spell;
@@ -369,11 +374,13 @@ namespace TomeReach
         };
     }
 
-    SpellStore ReadSpellStore(const std::vector<PluginFile>& loadOrder, NameTable& names, const ConfigWants* wants)
+    SpellStore ReadSpellStore(const std::vector<PluginFile>& loadOrder, NameTable& names, const ConfigWants* wants,
+        const std::unordered_map<Key, Key>* tomeSpells)
     {
         SpellStore store;
         ReadState state;
         state.wants = wants;
+        state.tomeSpells = tomeSpells;
         for (const auto& plugin : loadOrder) {
             const auto scan = WalkPlugin(plugin, names, Wanted, [&](const RecordView& record, const Resolver& resolve) {
                 return Reader(store, state, record, resolve).Read();

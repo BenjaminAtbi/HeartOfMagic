@@ -55,27 +55,6 @@ namespace TomeReach
         }
     }
 
-    std::string_view SegmentName(Segment segment)
-    {
-        constexpr std::array<std::string_view, 9> kNames{ "unreachable", "general sale", "specialty mod vendor",
-            "wide drops", "specific loot", "quest reward", "crafted only", "uncommon vendor", "review" };
-        return kNames[static_cast<std::size_t>(segment)];
-    }
-
-    bool SegmentSwitches::OnTree(Segment segment) const
-    {
-        switch (segment) {
-        case Segment::kGeneralSale: return generalSale;
-        case Segment::kSpecialtyModVendor: return specialtyModVendors;
-        case Segment::kWideDrops: return wideDrops;
-        case Segment::kSpecificLoot: return specificLoot;
-        case Segment::kQuestReward: return questRewards;
-        case Segment::kCraftedOnly: return craftedOnly;
-        case Segment::kUncommonVendor: return uncommonVendors;
-        default: return false;
-        }
-    }
-
     SpellSources ClassifySpells(const SpellStore& store, const NameTable& names, Classifier& classifier)
     {
         SpellSources out;

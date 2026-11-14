@@ -112,6 +112,7 @@ add_executable(tome-reach-test
     ${SL_SRC_DIR}/tomereach/TomeReachScripts.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachClasses.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachSegments.cpp
+    ${SL_SRC_DIR}/tomereach/TomeReachModel.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachConfig.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachPass.cpp
 )

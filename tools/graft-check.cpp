@@ -106,7 +106,7 @@ namespace
         const Json gateReview = with("gate", { { "band", "review" } });
         const Json questOnly = with("questOnly", true);
         const Json unreachable = with("tomeUnreachable", true);
-        check.Check(!TreeGraft::IsBuildCandidate(gateOut, none), "rules: gate out is left out");
+        check.Check(TreeGraft::IsBuildCandidate(gateOut, none), "gate out only flags: stays in");
         check.Check(TreeGraft::IsBuildCandidate(gateReview, none), "gate review stays in");
         check.Check(!TreeGraft::IsBuildCandidate(questOnly, none), "rules: questOnly is left out");
         check.Check(!TreeGraft::IsBuildCandidate(unreachable, none), "rules: tomeUnreachable is left out");
@@ -114,16 +114,33 @@ namespace
         check.Check(!TreeGraft::IsBuildCandidate(with("voiceSlot", true), none), "voice slot: left out");
         check.Check(!TreeGraft::IsBuildCandidate(with("duplicateOf", "0x01000001"), none), "another plugin's copy: left out");
         check.Check(TreeGraft::IsBuildCandidate(with("duplicateOf", ""), none), "an empty duplicateOf is no copy");
-        check.Check(!TreeGraft::IsBuildCandidate(with("freeSpell", true), none), "a scan without gate: freeSpell left out");
+        check.Check(TreeGraft::IsBuildCandidate(with("freeSpell", true), none), "freeSpell does not count");
         Json reviewedFree = gateReview;
         reviewedFree["freeSpell"] = true;
         check.Check(TreeGraft::IsBuildCandidate(reviewedFree, none), "with a gate, freeSpell does not count");
 
         PlayerRules kept;
         kept.gateKept = { "mymod.esp:001234" };   // GateReview.key: spell.plugin folded A-Z, local id
-        check.Check(TreeGraft::IsBuildCandidate(gateOut, kept), "gateKept brings gate-out back");
         check.Check(TreeGraft::IsBuildCandidate(questOnly, kept), "gateKept brings questOnly back");
-        check.Check(!TreeGraft::IsBuildCandidate(unreachable, kept), "gateKept does not bring tomeUnreachable back");
+        check.Check(TreeGraft::IsBuildCandidate(unreachable, kept), "gateKept brings tomeUnreachable back");
+
+        // The source object decides over questOnly; the switches come from config.json tomeSources
+        auto sourced = [&with](const char* segment) { return with("source", { { "segment", segment } }); };
+        check.Check(TreeGraft::IsBuildCandidate(sourced("generalSale"), none), "source: general sale is on by default");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("specificLoot"), none), "source: specific loot is off by default");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("review"), none), "source: review stays on the tree");
+        Json sourcedQuestOnly = sourced("wideDrops");
+        sourcedQuestOnly["questOnly"] = true;
+        check.Check(TreeGraft::IsBuildCandidate(sourcedQuestOnly, none), "source: the segment decides, not questOnly");
+        Json config = Json::object();
+        config["tomeSources"]["specificLoot"] = true;
+        config["tomeSources"]["generalSale"] = false;
+        config["tomeSources"]["review"] = false;
+        const PlayerRules switched = TreeGraft::PlayerRulesOf(config);
+        check.Check(TreeGraft::IsBuildCandidate(sourced("specificLoot"), switched), "switches: specific loot on");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("generalSale"), switched), "switches: general sale off");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("review"), switched), "switches: review has no switch");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("craftedOnly"), kept), "gateKept brings a switched-off segment back");
 
         PlayerRules blacklist;
         blacklist.blacklistKeys = { "mymod.esp:001234" };

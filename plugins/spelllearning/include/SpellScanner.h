@@ -258,8 +258,8 @@ namespace SpellScanner
     // The spells the player put back in from the panel (config.json gateReviewed), as
     // "plugin|local id" keys; read once per tree load or Spell Research pass
     std::unordered_set<std::string> ReadGateKept();
-    // JudgeSpell says "out" and the player did not include the spell again
-    bool GateLeavesOut(RE::SpellItem* spell, const std::unordered_set<std::string>& kept);
+    // The player included the spell again (Gate Review's Keep or Include; `kept` from ReadGateKept)
+    bool GateKept(RE::SpellItem* spell, const std::unordered_set<std::string>& kept);
     // The scan's marks: freeSpell, and "gate": {band, reasons} unless the band is "in"
     void MarkGate(json& spellJson, RE::SpellItem* spell);
     // FNV-1a 64 of gate/rules.json's bytes for the scan record's fingerprint

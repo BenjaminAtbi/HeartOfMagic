@@ -18,10 +18,7 @@
 // so a script can compare it with the Python model on the same load order. --sources also writes the
 // classes and segments (tome-reach-sources.cpp).
 
-#include "tomereach/TomeReachGraph.h"
-#include "tomereach/TomeReachSites.h"
-
-#include <optional>
+#include "tomereach/TomeReachModel.h"
 
 #include <chrono>
 #include <cstdio>
@@ -46,30 +43,18 @@ namespace
     };
 }
 
-int DumpSources(const SpellStore& store, const NameTable& names, const ReachGraph& graph, Sites& sites,
-    const Distribution* distribution, const std::string& out);   // tome-reach-sources.cpp
+int DumpSources(Model& model, const NameTable& names, const std::string& out);   // tome-reach-sources.cpp
 
 int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::filesystem::path>& dataDirs,
     const std::string& out, const std::string& sourcesOut)
 {
     NameTable names;
-    const auto started = std::chrono::steady_clock::now();
-    std::optional<DataFiles> data;
-    DistributionConfigs configs;
-    ConfigWants wants;
-    if (!dataDirs.empty()) {
-        data.emplace(dataDirs);
-        configs = ReadDistributionConfigs(*data, names);
-        wants = configs.Wants();
-    }
-    const auto configsRead = std::chrono::steady_clock::now();
-    const auto store = ReadSpellStore(loadOrder, names, data ? &wants : nullptr);
-    const auto read = std::chrono::steady_clock::now();
-    Distribution distribution;
-    if (data) distribution = ResolveDistribution(configs, store, *data, names);
-    const ReachGraph graph(store, data ? &distribution : nullptr, data ? &*data : nullptr);
+    Model model(loadOrder, names, dataDirs);
     const auto built = std::chrono::steady_clock::now();
-    Sites sites(store, names, graph);
+    const SpellStore& store = model.Store();
+    const ReachGraph& graph = model.Graph();
+    Sites& sites = model.Places();
+    const Distribution* distribution = model.Configs();
     std::FILE* f = std::fopen(out.c_str(), "wb");
     if (!f) {
         std::fprintf(stderr, "cannot write %s\n", out.c_str());
@@ -87,7 +72,7 @@ int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::f
         need.insert(tome);
         for (const Root& root : r.roots) {
             if (root.kind == RootKind::kSpid) {
-                const SpidLine& line = distribution.spid[root.form];
+                const SpidLine& line = distribution->spid[root.form];
                 const SpidClass c = ClassOf(line);
                 std::fprintf(f, "R\t%s\tSPID\t%s|%s|%s|%.*s|%.*s\n", text(tome).c_str(), line.source.c_str(),
                     line.deathItem ? "deathitem" : "item", line.chance.c_str(), static_cast<int>(c.cls.size()), c.cls.data(),
@@ -153,12 +138,13 @@ int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::f
     };
     std::printf("configs: %zu files, %zu SPID lines, %zu SkyPatcher adds, %zu archives with scripts or strings; "
                 "%zu script holders, %zu scripts read, %zu not found\n",
-        configs.files, distribution.spid.size(), distribution.listAdds.size(), data ? data->ArchiveCount() : 0,
+        model.ConfigFiles().files, distribution ? distribution->spid.size() : 0,
+        distribution ? distribution->listAdds.size() : 0, model.Data() ? model.Data()->ArchiveCount() : 0,
         store.holders.size(), graph.ScriptsRead(), graph.ScriptsMissing());
     std::printf("graph: %zu tomes, %zu spells, %zu unreachable, %zu bases placed; data files and configs %lld ms, "
                 "store %lld ms, graph (scripts included) %lld ms, sites and dump %lld ms -> %s\n",
-        store.bookSpells.size(), spellReached.size(), unreachable, need.size(), ms(started, configsRead),
-        ms(configsRead, read), ms(read, built), ms(built, std::chrono::steady_clock::now()), out.c_str());
-    if (!sourcesOut.empty()) return DumpSources(store, names, graph, sites, data ? &distribution : nullptr, sourcesOut);
+        store.bookSpells.size(), spellReached.size(), unreachable, need.size(), model.Times().configs,
+        model.Times().store, model.Times().graph, ms(built, std::chrono::steady_clock::now()), out.c_str());
+    if (!sourcesOut.empty()) return DumpSources(model, names, sourcesOut);
     return 0;
 }

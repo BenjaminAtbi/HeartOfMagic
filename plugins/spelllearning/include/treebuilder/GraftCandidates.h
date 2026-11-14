@@ -2,6 +2,7 @@
 
 #include "AsciiText.h"
 #include "FormIdText.h"
+#include "tomereach/TomeReachSwitches.h"
 
 #include <cstddef>
 #include <string>
@@ -22,10 +23,9 @@
 //
 // IsBuildCandidate: the panel's rule for the spells a build takes, ported line by
 // line so a graft takes what a rebuild would - proceduralTreeBuilder.js
-// isTaughtByTome (which runs isTreeCandidate and isTomeCandidate, then the gate),
-// filterBlacklistedSpells and filterWhitelistedSpells. Not the JS isTreeCandidate,
-// which is only the tome and quest-only part of it (hence the name). Change one,
-// change the other.
+// isTreeCandidate (isTomeCandidate, then the source: TomeSourceSetting.offTree),
+// filterBlacklistedSpells and filterWhitelistedSpells. The spell gate only flags
+// (its "out" band takes nothing off since 2026-11-14). Change one, change the other.
 namespace TreeGraft
 {
     /**
@@ -41,10 +41,12 @@ namespace TreeGraft
      * - pluginsOff: foldPluginName(plugin) of each settings.pluginWhitelist entry with
      *   enabled false.
      * foldPluginName lowers A-Z only (AsciiText::ToLower); every other byte stays.
+     * tomeSources: the segment switches (config.json tomeSources, the defaults for what is missing).
      */
     struct PlayerRules
     {
         std::unordered_set<std::string> blacklistKeys, gateKept, pluginsOff;
+        TomeReach::SegmentSwitches tomeSources;
     };
 
     namespace Detail
@@ -106,8 +108,18 @@ namespace TreeGraft
         /// proceduralTreeBuilder.js isTomeCandidate
         [[nodiscard]] inline bool IsTomeCandidate(const nlohmann::json& spell)
         {
-            return !Is(spell, "taughtByTome", false) && !Is(spell, "tomeUnreachable", true) &&
-                   !Is(spell, "voiceSlot", true) && !Truthy(spell, "duplicateOf");
+            return !Is(spell, "taughtByTome", false) && !Is(spell, "voiceSlot", true) && !Truthy(spell, "duplicateOf");
+        }
+
+        /// tomeSourceSetting.js offTree: nothing hands its tomes out (tomeUnreachable), or its source
+        /// segment is switched off; a scan without source objects (the reach pass answered) has questOnly
+        [[nodiscard]] inline bool OffTreeBySource(const nlohmann::json& spell, const TomeReach::SegmentSwitches& switches)
+        {
+            if (Is(spell, "tomeUnreachable", true)) return true;
+            if (const auto source = spell.find("source"); source != spell.end() && source->is_object()) {
+                if (const auto segment = TomeReach::SegmentOfKey(Text(*source, "segment"))) return !switches.OnTree(*segment);
+            }
+            return Is(spell, "questOnly", true);
         }
 
         /// filterBlacklistedSpells: by folded plugin and local id, else by the formId text
@@ -293,22 +305,18 @@ namespace TreeGraft
             }
         }
         rules.pluginsOff = PluginsOffOf(config);
+        rules.tomeSources = TomeReach::SegmentSwitchesOf(config);
         return rules;
     }
 
-    /// The panel's rule for what a build takes: isTaughtByTome, the blacklist and the plugin
-    /// whitelist together (more than the JS isTreeCandidate, the tome part of isTaughtByTome).
-    /// gateKept brings back a spell the gate ("out") or the quest-only rule leaves out,
-    /// nothing else. A scan from before the gate has only freeSpell.
+    /// The panel's rule for what a build takes: isTreeCandidate, the blacklist and the plugin
+    /// whitelist together. gateKept (Gate Review's Include) brings back a spell its source
+    /// leaves out, unreachable ones too; nothing else. The gate's bands and freeSpell do not count.
     [[nodiscard]] inline bool IsBuildCandidate(const nlohmann::json& spell, const PlayerRules& rules)
     {
         if (!spell.is_object()) return false;
         if (!Detail::IsTomeCandidate(spell)) return false;
-        const bool kept = rules.gateKept.contains(Detail::GateKey(spell));
-        if (Detail::Is(spell, "questOnly", true) && !kept) return false;
-        const auto gate = spell.find("gate");
-        const bool hasGate = Detail::Truthy(spell, "gate");
-        if (hasGate ? (gate->is_object() && Detail::Text(*gate, "band") == "out" && !kept) : Detail::Is(spell, "freeSpell", true)) {
+        if (Detail::OffTreeBySource(spell, rules.tomeSources) && !rules.gateKept.contains(Detail::GateKey(spell))) {
             return false;
         }
         return !Detail::Blacklisted(spell, rules) && !PluginIsOff(Detail::SpellPluginName(spell), rules.pluginsOff);

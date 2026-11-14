@@ -1786,6 +1786,87 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Where tomes come from: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
+                    <div class="settings-block" id="tomeSourcesBlock">
+                        <div class="settings-block-header">
+                            <span class="hom-icon settings-block-icon" data-icon="tome" aria-hidden="true"></span>
+                            <span class="settings-block-title" data-i18n="settings.tomeSources.title">Where Tomes Come From</span>
+                        </div>
+                        <div class="settings-block-content">
+                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">A spell goes on the tree when its tomes come from a source switched on here. Spells whose tomes nothing hands out never do. Gate Review (the blacklist window) lists the rest and can include any one. Counts at the next build.</p>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.generalSale">General sale</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.generalSaleDesc">Sold by five or more vendors, or loot in containers of three or more regions</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceGeneralSaleToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.wideDrops">Wide drops</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.wideDropsDesc">Carried by NPCs of a faction found at 20+ sites, of many regions, or of a race (SPID)</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceWideDropsToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.uncommonVendor">Uncommon vendors</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.uncommonVendorDesc">Sold by one to four vendors</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceUncommonVendorToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.specialtyModVendor">Specialty mod vendors</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.specialtyModVendorDesc">One or two vendors that sell most of one mod's tomes</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceSpecialtyModVendorToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.specificLoot">Specific loot</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.specificLootDesc">Hand-placed, a boss's or one site's loot, or a mod's local faction</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceSpecificLootToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.questReward">Quest rewards</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.questRewardDesc">A quest hands it out</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceQuestRewardToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.craftedOnly">Crafted only</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.craftedOnlyDesc">Only a crafting recipe makes it</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceCraftedOnlyToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- ===== Advanced: developer and debug options, never mixed with learning ===== -->
@@ -1991,22 +2072,15 @@
                     <span data-i18n="modals.gateReview.header">Spells to look over</span>
                     <span id="gate-review-count" class="blacklist-count">0</span>
                 </div>
-                <div class="blacklist-empty" data-i18n="modals.gateReview.description">These may not be spells for the player. Leave one out, or keep it.</div>
+                <div class="blacklist-empty" data-i18n="modals.gateReview.description">These may not be spells for the player. They stay in the tree: leave one out, or keep it.</div>
                 <div id="gate-review-entries" class="blacklist-entries"></div>
                 <div class="blacklist-divider"></div>
                 <div class="blacklist-list-header">
-                    <span data-i18n="modals.gateReview.outHeader">Left out by itself</span>
-                    <span id="gate-out-count" class="blacklist-count">0</span>
+                    <span data-i18n="modals.gateReview.sourceHeader">Specialty sources</span>
+                    <span id="tome-source-count" class="blacklist-count">0</span>
                 </div>
-                <div class="blacklist-empty" data-i18n="modals.gateReview.outDescription">Taken for spells that are not the player's. If one is a real spell, include it: it comes into the tree the next time it is built.</div>
-                <div id="gate-out-entries" class="blacklist-entries"></div>
-                <div class="blacklist-divider"></div>
-                <div class="blacklist-list-header">
-                    <span data-i18n="modals.gateReview.questHeader">Quest only</span>
-                    <span id="quest-only-count" class="blacklist-count">0</span>
-                </div>
-                <div class="blacklist-empty" data-i18n="modals.gateReview.questDescription">Spells whose tomes only a quest hands out. Include one to let it into the tree.</div>
-                <div id="quest-only-entries" class="blacklist-entries"></div>
+                <div class="blacklist-empty" data-i18n="modals.gateReview.sourceDescription">Spells whose tomes only come from a source switched off in Settings > Spell Tomes, or that nothing hands out. Include one to let it into the tree.</div>
+                <div id="tome-source-entries" class="blacklist-entries"></div>
             </div>
             <div class="modal-footer">
                 <button id="blacklist-clear-all" class="btn btn-secondary" data-i18n="modals.blacklist.clearAll">Clear All</button>
@@ -2203,6 +2277,7 @@
     <script src="modules/panelOpenSetting.js"></script>
     <script src="modules/autoBuildSetting.js"></script>
     <script src="modules/spellResearchMemorySetting.js"></script>
+    <script src="modules/tomeSourceSetting.js"></script>
     <script src="modules/masterySetting.js"></script>
     <script src="modules/spellResearchStatus.js"></script>
     <script src="modules/requiredXPSync.js"></script>

@@ -14,6 +14,7 @@
 // Pure C++, shared by the plugin and tools/tome-reach-test.
 
 #include "tomereach/TomeReachClasses.h"
+#include "tomereach/TomeReachSwitches.h"
 
 #include <map>
 #include <string>
@@ -22,34 +23,7 @@
 
 namespace TomeReach
 {
-    enum class Segment : std::uint8_t
-    {
-        kUnreachable,
-        kGeneralSale,
-        kSpecialtyModVendor,
-        kWideDrops,
-        kSpecificLoot,
-        kQuestReward,
-        kCraftedOnly,
-        kUncommonVendor,
-        kReview,
-    };
-
-    [[nodiscard]] std::string_view SegmentName(Segment segment);
-
-    // Which segments go on the tree (the settings' switches; unreachable never does, review is for the player)
-    struct SegmentSwitches
-    {
-        bool generalSale = true;
-        bool wideDrops = true;
-        bool uncommonVendors = true;
-        bool specialtyModVendors = false;
-        bool specificLoot = false;
-        bool questRewards = false;
-        bool craftedOnly = false;
-
-        [[nodiscard]] bool OnTree(Segment segment) const;
-    };
+    // Segment, SegmentKey and SegmentSwitches: TomeReachSwitches.h
 
     // One or two chests that sell most of a plugin's vendor-sold tome spells
     struct SpecialtyShop

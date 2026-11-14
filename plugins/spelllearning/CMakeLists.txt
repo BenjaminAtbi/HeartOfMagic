@@ -80,6 +80,8 @@ add_commonlibsse_plugin(${PROJECT_NAME}
     src/tomereach/TomeReachScripts.cpp
     src/tomereach/TomeReachClasses.cpp
     src/tomereach/TomeReachSegments.cpp
+    src/tomereach/TomeReachModel.cpp
+    src/tomereach/TomeReachSources.cpp
     src/tomereach/TomeReachConfig.cpp
     src/tomereach/TomeReachPass.cpp
     src/tomereach/TomeReach.cpp

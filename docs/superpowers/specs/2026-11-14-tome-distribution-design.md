@@ -1,7 +1,7 @@
 # Where a spell's tomes come from: distribution segments for the tree - design
 
-Date 2026-11-14. Branch: feature/tome-distribution. Status: decisions below are the author's; stages 1-4
-done, stage 5 in progress.
+Date 2026-11-14. Branch: feature/tome-distribution. Status: decisions below are the author's; stages 1-5
+done (stage 5 not yet tried in game).
 
 ## Why
 
@@ -130,7 +130,7 @@ spells at once, differences fixed or written down as deliberate.
    scripts or strings, 568 scripts read; configs 1.1 s, graph with scripts 0.6 s. Deliberate differences: SPID
    configs are read from the data folder's root only, as SPID itself does; an archive member loses to a loose
    file, and among archives the folder's priority decides, then the archive name (in game, the order of the
-   plugins that load them is still to be settled in stage 5).
+   plugins that load them is not consulted: name order within the Data folder, settled in stage 5).
 4. **Classes, specialty mod vendors, segments** (done 2026-11-14): `Classifier` (TomeReachClasses.cpp: the
    routes of each tome, memoised per root set, with the entries each vendor chest holds) and `ClassifySpells`
    (TomeReachSegments.cpp: specialty mod vendors, a segment per spell, `SegmentSwitches` with the defaults of
@@ -141,10 +141,28 @@ spells at once, differences fixed or written down as deliberate.
    821 general sale, 274 specialty mod vendor, 13 wide drops, 408 specific loot, 23 quest reward, 101 crafted
    only, 140 uncommon vendor, 0 review). 1.8 s after the graph. Route details are written for people and are
    not compared (they differ from Python's in wording; recipe conditions are not spelled out).
-5. **Scan and UI**: a `source` object per spell in the scan (segment, class, subtype, detail); `tomeUnreachable`
-   and `questOnly` derived from it; the segment switches in the settings; the tree filters
-   (`proceduralTreeBuilder.js`, `GraftCandidates.h`); a "Specialty sources" list in Gate Review; the gate's "out"
-   band as a review reason; the other readers of the unreachable set (`LibrarianSpellResearchPatch.cpp`,
-   `SpellScannerDuplicates.cpp`, `ScanRecordRules.h`); docs.
+5. **Scan and UI** (done 2026-11-14, not yet tried in game): the worker thread runs the reach pass, then the
+   model over the plugin files and the Data folder (`ClassifyForGame`, TomeReachSources.cpp, on `Model`,
+   TomeReachModel.cpp, which the harness runs too). The model's unreachable segment sets `tomeUnreachable` (a
+   spell it has no tome of keeps the pass's mark); `questOnly` is a segment switched off (`QuestOnlySpells`
+   reads config.json `tomeSources` on each call). The scan writes a `source` object per spell (`segment`,
+   `class`, `subtype`, `detail`, `shop`). When the model cannot run, the pass answers as before and no `source`
+   objects are written. The switches (`SegmentSwitches`, header-only TomeReachSwitches.h) are read by the DLL,
+   Tree Graft (`GraftCandidates.h` `OffTreeBySource`) and the panel (`modules/tomeSourceSetting.js`, Settings >
+   Spell Tomes > Where Tomes Come From: one toggle per segment, live, so a switch counts at the next build
+   without a rescan). The tree filter (`isTreeCandidate`, `IsBuildCandidate`) is the tome candidate rule, then
+   the source, with Include bringing any one spell back (unreachable ones too, in Spell Research as well).
+   The gate only flags: its "out" band joins "Spells to look over" and no longer leaves a spell out of the
+   tree, a saved tree's load (`ValidateAndFixTree`) or Spell Research (`GateLeavesOut` became `GateKept`).
+   Gate Review's "Left out by itself" and "Quest only" lists became one "Specialty sources" list, the segment
+   and route detail as the reason. `SpellScannerDuplicates.cpp` and `ScanRecordRules.h` read the unreachable
+   set, which keeps its meaning: unchanged.
+   Choices made here: the review segment stays on the tree (the gate's review band does too) and Gate Review
+   lists it to look over; archives in game are read in the Data folder in name order; a non-teaching book that
+   SpellTomes pairs with a spell (Spell Research's Synthesizer) counts as that spell's tome; spells of a
+   switched-off segment are still registered with Spell Research (their tomes can be found). Checks: the harness
+   output is byte-identical to stage 4 (`--graph`, `--sources`), the reach pass's baseline and self-test (51/51)
+   unchanged, `graft-check --self-test` with the new rule cases, `node run-tests.js` (TomeSourceSetting,
+   GateReview, TomeFilter).
 
 The current reach pass keeps running until stage 5 replaces its answer; then it stays as the fallback (decision 6).

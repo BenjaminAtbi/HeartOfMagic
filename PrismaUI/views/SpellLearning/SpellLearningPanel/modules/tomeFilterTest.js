@@ -61,9 +61,9 @@ var TomeFilterTest = {
                 { formId: '0xFE801834', plugin: 'Addon.esp', school: 'Conjuration', editorId: 'EC_SS_ConjureHunger',
                   taughtByTome: true, duplicateOf: '0x07' }
             ];
-            this.check(this._ids(g.filterTomeSpells(spells)) === '0x01,0x03,0x07',
-                'the tree drops spells no tome teaches, whose tomes nothing hands out, voice slot spells, free ' +
-                'spells and duplicates; keeps a scan without the marks and the kept record of a duplicate');
+            this.check(this._ids(g.filterTomeSpells(spells)) === '0x01,0x03,0x0A,0x07',
+                'the tree drops spells no tome teaches, whose tomes nothing hands out, voice slot spells and ' +
+                'duplicates; keeps a scan without the marks, a free spell (the gate only flags) and the kept record of a duplicate');
             this.check(g.isTaughtByTome({ formId: '0x08', taughtByTome: true, duplicateOf: '' }) &&
                 !g.isTaughtByTome({ formId: '0x09', taughtByTome: true, duplicateOf: '0x07' }),
                 'only a set duplicateOf leaves a spell out');
@@ -72,7 +72,7 @@ var TomeFilterTest = {
 
             g.state = { lastSpellData: { spells: spells } };
             g.settings = { spellBlacklist: [], pluginWhitelist: [] };
-            this.check(this._ids(g.getPrimedSpells()) === '0x01,0x03,0x07',
+            this.check(this._ids(g.getPrimedSpells()) === '0x01,0x03,0x0A,0x07',
                 'the primed count leaves out spells no tome teaches and duplicates');
         } finally {
             g.state = oldState;

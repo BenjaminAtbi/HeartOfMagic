@@ -4,6 +4,7 @@
 #include "tomereach/TomeReach.h"
 #include "tomereach/TomeReachConfig.h"
 #include "tomereach/TomeReachPass.h"
+#include "tomereach/TomeReachSources.h"
 #include "ScanRecordRules.h"
 #include "SpellScanner.h"
 #include "environment/EnvironmentSelfTest.h"
@@ -30,6 +31,8 @@ namespace TomeReach
             NameTable names;
             std::unordered_set<Key> tomes;
             std::unordered_map<RE::FormID, std::vector<Key>> tomesOf;  // spell -> its tomes
+            std::unordered_map<Key, Key> tomeSpells;                     // tome -> its spell's key (the model)
+            std::unordered_map<RE::FormID, Key> spellKeys;               // spell -> its key
             bool logQuestOnly = false;   // the dev self-test is on (selftest.json): the quest-only list is logged
             std::unordered_map<RE::FormID, std::string> spellLabels;   // spell -> "'name' formId persistentId" (only then)
         };
@@ -47,13 +50,18 @@ namespace TomeReach
             std::string failure;  // finished without an answer: what failed, for OutcomeKey
             std::unordered_set<RE::FormID> unreachable;
             std::unordered_set<RE::FormID> questOnly;
+            bool model = false;   // the distribution model answered: `sources` holds the segments
+            std::unordered_map<RE::FormID, SpellSourceInfo> sources;
         };
 
-        // A pass's answer: the spells nothing hands a tome of, and those only a quest does
+        // A pass's answer: the spells nothing hands a tome of, the reach pass's quest-only ones,
+        // and the model's sources (when it ran)
         struct Answer
         {
             std::unordered_set<RE::FormID> unreachable;
             std::unordered_set<RE::FormID> questOnly;
+            bool model = false;
+            std::unordered_map<RE::FormID, SpellSourceInfo> sources;
         };
 
         Result& Shared()
@@ -77,6 +85,8 @@ namespace TomeReach
                 if (answer) {
                     shared.unreachable = std::move(answer->unreachable);
                     shared.questOnly = std::move(answer->questOnly);
+                    shared.model = answer->model;
+                    shared.sources = std::move(answer->sources);
                     shared.ready = true;
                 } else {
                     shared.failure = std::move(failure);
@@ -133,6 +143,26 @@ namespace TomeReach
             logger::info("TomeReach quest-only: {} spells (tome pairs generation {})", spells.size(), job.generation);
         }
 
+        // Every spell off the tree by its source with the switches now, one line each (the
+        // dev self-test's counterpart of LogQuestOnly for the model). Sorted by formId.
+        void LogOffTree(const Job& job, const Answer& answer)
+        {
+            const SegmentSwitches switches = ReadSegmentSwitches();
+            std::vector<RE::FormID> spells;
+            for (const auto& [spell, s] : answer.sources) {
+                if (s.segment != Segment::kUnreachable && !switches.OnTree(s.segment)) spells.push_back(spell);
+            }
+            std::ranges::sort(spells);
+            for (const RE::FormID spell : spells) {
+                const auto& s = answer.sources.at(spell);
+                const auto label = job.spellLabels.find(spell);
+                logger::info("TomeReach off the tree: {} - {} ({} {}): {}",
+                    label != job.spellLabels.end() ? label->second : std::format("{:08X}", spell), SegmentName(s.segment),
+                    ClassName(s.cls), s.subtype, s.detail);
+            }
+            logger::info("TomeReach off the tree: {} spells (tome pairs generation {})", spells.size(), job.generation);
+        }
+
         void Run(std::shared_ptr<Job> job)
         {
             const auto started = std::chrono::steady_clock::now();
@@ -168,7 +198,31 @@ namespace TomeReach
                     job->loadOrder.size(), job->tomes.size(), pass.byRecord, pass.byLooseOnly, pass.byConfig,
                     pass.configFiles, pass.byDamaged, pass.byDebug, answer.unreachable.size(), answer.questOnly.size(),
                     pass.questOnly.size(), ms, job->generation);
-                if (job->logQuestOnly) LogQuestOnly(*job, pass, answer.questOnly);
+                // The distribution model: its unreachable segment replaces the pass's, and its
+                // segments decide questOnly (QuestOnlySpells); the pass answers when it cannot run
+                if (ClassifyForGame(job->loadOrder, job->names, job->tomeSpells, job->spellKeys, answer.sources)) {
+                    const std::size_t passUnreachable = answer.unreachable.size();
+                    answer.unreachable.clear();
+                    std::size_t unclassified = 0;
+                    for (const auto& [spell, tomes] : job->tomesOf) {
+                        const auto source = answer.sources.find(spell);
+                        if (source == answer.sources.end()) {
+                            // No tome of it in the model's store: the pass's mark stands
+                            ++unclassified;
+                            if (NoTomeReached(tomes, pass)) answer.unreachable.insert(spell);
+                        } else if (source->second.segment == Segment::kUnreachable) {
+                            answer.unreachable.insert(spell);
+                        }
+                    }
+                    answer.model = true;
+                    logger::info("TomeReach: the model marks {} spells unreachable (the reach pass {}); {} spells "
+                                 "the model has no tome of keep the pass's mark ({} ms in all)", answer.unreachable.size(),
+                        passUnreachable, unclassified, std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                            std::chrono::steady_clock::now() - started).count());
+                    if (job->logQuestOnly) LogOffTree(*job, answer);
+                } else if (job->logQuestOnly) {
+                    LogQuestOnly(*job, pass, answer.questOnly);
+                }
                 Finish(job->generation, &answer);
             } catch (const std::exception& e) {
                 logger::warn("TomeReach: the pass failed ({}) - no spell is marked", e.what());
@@ -220,6 +274,10 @@ namespace TomeReach
             job->tomes.insert(key);
             const RE::FormID spellId = spell->GetFormID();
             job->tomesOf[spellId].push_back(key);
+            if (Key spellKey = 0; KeyOf(dh, spellId, job->names, spellKey)) {
+                job->tomeSpells[key] = spellKey;
+                job->spellKeys[spellId] = spellKey;
+            }
             if (job->logQuestOnly && !job->spellLabels.contains(spellId)) {
                 const char* name = spell->GetName();
                 job->spellLabels.emplace(spellId, std::format("'{}' {:08X} {}", name ? name : "", spellId,
@@ -242,6 +300,8 @@ namespace TomeReach
             shared.failure.clear();
             shared.unreachable.clear();
             shared.questOnly.clear();
+            shared.model = false;
+            shared.sources.clear();
         }
         try {
             std::thread(Run, std::move(job)).detach();
@@ -351,10 +411,27 @@ namespace TomeReach
 
     bool QuestOnlySpells(std::unordered_set<RE::FormID>& out)
     {
+        const SegmentSwitches switches = ReadSegmentSwitches();   // config.json, before the lock
         auto& shared = Shared();
         std::lock_guard guard(shared.lock);
         if (!shared.ready) return false;
-        out = shared.questOnly;
+        if (!shared.model) {
+            out = shared.questOnly;
+            return true;
+        }
+        out.clear();
+        for (const auto& [spell, s] : shared.sources) {
+            if (s.segment != Segment::kUnreachable && !switches.OnTree(s.segment)) out.insert(spell);
+        }
+        return true;
+    }
+
+    bool SourcesOfSpells(std::unordered_map<RE::FormID, SpellSourceInfo>& out)
+    {
+        auto& shared = Shared();
+        std::lock_guard guard(shared.lock);
+        if (!shared.ready || !shared.model) return false;
+        out = shared.sources;
         return true;
     }
 }

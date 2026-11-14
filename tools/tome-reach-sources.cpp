@@ -12,7 +12,7 @@
 //   B <spell> <rule> <segment>               the segment, with the number of the Python bucket rule it is part of
 // so a script can compare it with the Python model (distribution.py, shops.py) on the same load order.
 
-#include "tomereach/TomeReachSegments.h"
+#include "tomereach/TomeReachModel.h"
 
 #include <chrono>
 #include <cstdio>
@@ -41,12 +41,11 @@ namespace
     }
 }
 
-int DumpSources(const SpellStore& store, const NameTable& names, const ReachGraph& graph, Sites& sites,
-    const Distribution* distribution, const std::string& out)
+int DumpSources(Model& model, const NameTable& names, const std::string& out)
 {
     const auto started = std::chrono::steady_clock::now();
-    Classifier classifier(store, graph, sites, distribution);
-    const SpellSources sources = ClassifySpells(store, names, classifier);
+    const SpellStore& store = model.Store();
+    const SpellSources sources = model.Classify();
     const auto done = std::chrono::steady_clock::now();
     std::FILE* f = std::fopen(out.c_str(), "wb");
     if (!f) {
