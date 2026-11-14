@@ -4,6 +4,7 @@
 //
 //   tome-reach-test -i inputs.json -s spell_scan_output.json [-v: the tomes only a script property reaches]
 //   tome-reach-test --self-test      the reader on made-up plugins (tome-reach-selftest.cpp)
+//   tome-reach-test -i inputs.json --world out.tsv   the distribution model's record store (tome-reach-world.cpp)
 //
 // inputs.json: { "plugins": [ { "name": "...", "path": "..." } ... ] in load order,
 //                "dataDirs": [ "..." ] }  (lab/tome-reach/make_inputs.py writes it
@@ -27,6 +28,7 @@
 using json = nlohmann::json;
 
 int RunSelfTest();
+int DumpWorld(const std::vector<TomeReach::PluginFile>& loadOrder, const std::string& out);   // tome-reach-world.cpp
 
 namespace
 {
@@ -47,16 +49,18 @@ int main(int argc, char** argv)
 {
     if (argc == 2 && std::string(argv[1]) == "--self-test") return RunSelfTest();
 
-    std::string inputs, scan;
+    std::string inputs, scan, worldOut;
     bool verbose = false;
     for (int i = 1; i < argc; ++i) {
         const std::string flag = argv[i];
         if (flag == "-v") verbose = true;
         else if (flag == "-i" && i + 1 < argc) inputs = argv[++i];
         else if (flag == "-s" && i + 1 < argc) scan = argv[++i];
+        else if (flag == "--world" && i + 1 < argc) worldOut = argv[++i];
     }
-    if (inputs.empty() || scan.empty()) {
-        std::fprintf(stderr, "usage: tome-reach-test -i inputs.json -s spell_scan_output.json\n");
+    if (inputs.empty() || (scan.empty() && worldOut.empty())) {
+        std::fprintf(stderr, "usage: tome-reach-test -i inputs.json -s spell_scan_output.json\n"
+                             "       tome-reach-test -i inputs.json --world out.tsv\n");
         return 1;
     }
 
@@ -65,6 +69,13 @@ int main(int argc, char** argv)
         std::vector<TomeReach::PluginFile> loadOrder;
         for (const auto& p : in["plugins"]) {
             loadOrder.push_back({ p["name"].get<std::string>(), Utf8Path(p["path"].get<std::string>()) });
+        }
+        if (!worldOut.empty()) {
+            const auto started = std::chrono::steady_clock::now();
+            const int code = DumpWorld(loadOrder, worldOut);
+            std::printf("%lld ms\n", static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - started).count()));
+            return code;
         }
         std::vector<std::filesystem::path> configs;
         for (const auto& d : in["dataDirs"]) {

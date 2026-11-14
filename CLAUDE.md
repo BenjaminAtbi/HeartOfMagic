@@ -347,7 +347,8 @@ This project does not have a C++ test framework. Validation is done through:
   `tome-reach-test --self-test` checks the reader on made-up plugins (quest-only tomes too: a quest's script, alias,
   alias inventory, dialogue and scene fragments against a merchant list, another record's script, a config, a
   package; the plugins `questFrom` names) and RunAfterPass's outcome rule (`src/tomereach/TomeReachOutcome.h`), no game or load order needed, exit 1 on a failure;
-  it must list what `lab/tome-reach/expected-*.txt` lists on the same load order) and `declutter-test`
+  it must list what `lab/tome-reach/expected-*.txt` lists on the same load order; `tome-reach-test -i inputs.json
+  --world out.tsv` dumps the distribution model's record store, `tools/tome-reach-world.cpp`) and `declutter-test`
   (the native tree declutter pass: `declutter-test -i tree.json -o reply.json [-r runs]`; its positions
   must match `LayoutDeclutter.apply` in `modules/layoutDeclutter.js` on the same tree - see
   docs/TREE_BUILDING_SYSTEM.md, "Decluttering before save"; `declutter-test --self-test`, no files: `fixed` spells

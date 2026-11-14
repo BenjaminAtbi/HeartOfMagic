@@ -206,8 +206,9 @@ game the placed references of cells that are not loaded are not in memory:
   "Spell tomes that teach nothing" -, keyed by plugin name and local id), then hands them to a detached worker
   thread; no RE object crosses over. A new generation of tome pairs runs the pass again (`TomeReach::Restart`);
   until it is done no spell is marked, and a pass of an older generation that finishes later is dropped.
-- The worker (`FindReachedTomes`, TomeReachPass.cpp) reads every plugin (`ScanPlugin`, TomeReachRecords.cpp;
-  compressed records through zlib). A tome counts as handed out when a record refers to it: a placed
+- The worker (`FindReachedTomes`, TomeReachPass.cpp) reads every plugin (`ScanPlugin`, TomeReachRecords.cpp,
+  over the shared walker `WalkPlugin`, TomeReachPlugin.cpp: groups, master-list form ids, compressed records
+  through zlib, the cell and worldspace each record sits in). A tome counts as handed out when a record refers to it: a placed
   reference (`REFR` `NAME`), a leveled list (`LVLI` `LVLO`), a container, NPC or quest inventory (`CNTO`), a
   form list (`FLST` `LNAM`), a recipe (`COBJ` `CNAM`), a quest alias's created, forced or unique item
   (`ALCO`, `ALFR`, `ALUA`) or a script property (`VMAD`). Aliases and script properties are read loosely,
@@ -251,6 +252,13 @@ game the placed references of cells that are not loaded are not in memory:
   expected list), and `tools/tome-reach-test` runs the plugin's own pass on the same inputs.
 - The file path is the engine's own folder for the plugin (`TESFile::path`), then `Data/<name>`; the log's
   `TomeReach: reading ...` line names the first one, and `TomeReach: N plugins, N tomes ...` the result.
+- The tome distribution model (in progress, `docs/superpowers/specs/2026-11-14-tome-distribution-design.md`)
+  reads its inputs with `ReadWorld` (TomeReachWorld.cpp, over the same walker): the winning version of every
+  tome, scroll, staff, leveled list, container, NPC, outfit, faction (vendor chest), recipe and quest, the
+  winning version of each reference to a container, NPC, leveled NPC list, tome, scroll or staff, and the cells
+  (merged field by field) and locations they are in. Nothing uses it in game yet; `tome-reach-test --world`
+  dumps it (about 3.4 s on the author's 3,227 plugins), and it matched the author's Python reader on every
+  parent, placement count, cell, location and vendor chest (2026-11-14).
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no
   property, and a config that names a tome by its runtime id (`0xFE000800~Plugin.esl`, a load order
   prefix) instead of its id in the plugin. Such a spell would leave the tree wrongly; none was found on the author's load order (no script
