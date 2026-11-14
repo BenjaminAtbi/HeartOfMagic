@@ -159,8 +159,10 @@ spells at once, differences fixed or written down as deliberate.
    and route detail as the reason. `SpellScannerDuplicates.cpp` and `ScanRecordRules.h` read the unreachable
    set, which keeps its meaning: unchanged.
    Choices made here: the review segment stays on the tree (the gate's review band does too) and Gate Review
-   lists it to look over; archives in game are read in the Data folder in name order; a non-teaching book that
-   SpellTomes pairs with a spell (Spell Research's Synthesizer) counts as that spell's tome; spells of a
+   lists it to look over; archives in game are read in the Data folder in name order; the game's tome pairs
+   (SpellTomes) are the model's tomes, each teaching its pair's spell whatever its DATA says (a non-teaching
+   book Spell Research's Synthesizer pairs; since later the same day also a book a DLL rebinds, and a book
+   with no pair is no tome); spells of a
    switched-off segment are still registered with Spell Research (their tomes can be found). Checks: the harness
    output is byte-identical to stage 4 (`--graph`, `--sources`), the reach pass's baseline and self-test (51/51)
    unchanged, `graft-check --self-test` with the new rule cases, `node run-tests.js` (TomeSourceSetting,

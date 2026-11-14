@@ -144,8 +144,9 @@ namespace TomeReach
 
     // Reads every plugin of `loadOrder` (masters first) into a SpellStore; `wants`: the
     // configs' forms to resolve (none when null)
-    // `tomeSpells`, when given: books the game pairs with a spell (SpellTomes), tomes even when their DATA
-    // teaches nothing (Spell Research Synthesizer's)
+    // `tomeSpells`, when given (in game): the books the game pairs with a spell (SpellTomes) are the tomes,
+    // each teaching its pair's spell whatever its DATA says (a book that teaches nothing, Spell Research
+    // Synthesizer's, or one a DLL rebinds); a book with no pair is no tome. Null (the harness): DATA decides.
     SpellStore ReadSpellStore(const std::vector<PluginFile>& loadOrder, NameTable& names, const ConfigWants* wants = nullptr,
         const std::unordered_map<Key, Key>* tomeSpells = nullptr);
 }

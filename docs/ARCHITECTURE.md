@@ -289,8 +289,9 @@ game the placed references of cells that are not loaded are not in memory:
   `source` object (`SourceJson`: `segment` as `SegmentKey`, `class`, `subtype`, `detail`, `shop` for a
   specialty mod vendor's spell). When a plugin is unreadable or the model throws, the pass answers as before,
   with no `source` objects. Archives in game are read in the Data folder in name order (the plugins that load
-  them are not consulted); a non-teaching book that SpellTomes pairs with a spell (Spell Research's
-  Synthesizer) counts as that spell's tome. The panel (`modules/tomeSourceSetting.js`, Settings > Spell Tomes >
+  them are not consulted). The game's tome pairs (SpellTomes) are the model's tomes: a book teaches its pair's
+  spell whatever its DATA says (a non-teaching book Spell Research's Synthesizer pairs, a book a DLL rebinds),
+  and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, Settings > Spell Tomes >
   Where Tomes Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
   `offTree(spell)` is the segment switched off, `tomeUnreachable`, or `questOnly` for a scan without `source`
   objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).

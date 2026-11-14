@@ -189,9 +189,12 @@ namespace TomeReach
                         else if (Is(s.type, T("DATA")) && s.size >= kBookSpellOffset + kFormSize && (s.data[0] & kTeachesSpell))
                             spell = Form(s, kBookSpellOffset);
                     });
-                    // A book that teaches nothing itself (Spell Research Synthesizer's): its pair's spell
-                    if (!spell && m_state.tomeSpells) {
-                        if (const auto pair = m_state.tomeSpells->find(m_key); pair != m_state.tomeSpells->end()) spell = pair->second;
+                    // In game the game's pairs (SpellTomes) are the tomes: what a book teaches there wins
+                    // over the file (a DLL may rebind it, Spell Research's Synthesizer pairs a book that
+                    // teaches nothing), and a book the game does not count as a tome is none here either
+                    if (m_state.tomeSpells) {
+                        const auto pair = m_state.tomeSpells->find(m_key);
+                        spell = pair != m_state.tomeSpells->end() ? pair->second : 0;
                     }
                     if (spell) {
                         kind = Kind::kBook;
