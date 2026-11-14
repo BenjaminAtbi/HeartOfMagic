@@ -267,7 +267,13 @@ game the placed references of cells that are not loaded are not in memory:
   become roots judged by their filters, SkyPatcher `addToLLs` adds list parents) and the attached scripts
   (TomeReachScripts.cpp: VMAD properties; TomeReachPex.cpp disassembles each script, loose or from a BSA through
   TomeReachData.cpp / TomeReachArchive.cpp, and follows each property to AddItem or AddForm), and it matched the
-  Python model on every root, site count and unreachable spell (2026-11-14). Once it sets `tomeUnreachable`
+  Python model on every root, site count and unreachable spell (2026-11-14). `Classifier` (TomeReachClasses.cpp)
+  turns each tome's roots, placements, rewards and recipes into routes of a class and subtype (generic, faction,
+  vendor, encounter, placed, reward, crafted, other, none), and `ClassifySpells` (TomeReachSegments.cpp) finds the
+  specialty mod vendors and puts every spell with a tome in one segment, first match winning (unreachable, general
+  sale, specialty mod vendor, wide drops, specific loot, quest reward, crafted only, uncommon vendor, review);
+  `SegmentSwitches` says which segments go on the tree (`tome-reach-test --sources`; equal to the Python
+  classes, vendor entries, shops and buckets, 2026-11-14). Once it sets `tomeUnreachable`
   and `questOnly`, the reach pass above stays only as its fallback.
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no
   property, and a config that names a tome by its runtime id (`0xFE000800~Plugin.esl`, a load order

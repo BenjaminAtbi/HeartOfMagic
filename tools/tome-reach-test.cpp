@@ -7,6 +7,8 @@
 //   tome-reach-test -i inputs.json --store out.tsv   the distribution model's spell store (tome-reach-store.cpp)
 //   tome-reach-test -i inputs.json --graph out.tsv [--records-only]   its reach graph, sites and unreachable
 //                                    spells, with the configs and scripts of the data folders (tome-reach-graph.cpp)
+//     [--sources sources.tsv]          and every tome's routes, spell's class and segment, specialty mod vendors
+//                                    (tome-reach-sources.cpp)
 //
 // inputs.json: { "plugins": [ { "name": "...", "path": "..." } ... ] in load order,
 //                "dataDirs": [ "..." ] }  (lab/tome-reach/make_inputs.py writes it
@@ -32,7 +34,7 @@ using json = nlohmann::json;
 int RunSelfTest();
 int DumpStore(const std::vector<TomeReach::PluginFile>& loadOrder, const std::string& out);   // tome-reach-store.cpp
 int DumpGraph(const std::vector<TomeReach::PluginFile>& loadOrder, const std::vector<std::filesystem::path>& dataDirs,
-    const std::string& out);   // tome-reach-graph.cpp
+    const std::string& out, const std::string& sourcesOut);   // tome-reach-graph.cpp
 
 namespace
 {
@@ -53,7 +55,7 @@ int main(int argc, char** argv)
 {
     if (argc == 2 && std::string(argv[1]) == "--self-test") return RunSelfTest();
 
-    std::string inputs, scan, storeOut, graphOut;
+    std::string inputs, scan, storeOut, graphOut, sourcesOut;
     bool verbose = false;
     bool recordsOnly = false;
     for (int i = 1; i < argc; ++i) {
@@ -64,11 +66,12 @@ int main(int argc, char** argv)
         else if (flag == "-s" && i + 1 < argc) scan = argv[++i];
         else if (flag == "--store" && i + 1 < argc) storeOut = argv[++i];
         else if (flag == "--graph" && i + 1 < argc) graphOut = argv[++i];
+        else if (flag == "--sources" && i + 1 < argc) sourcesOut = argv[++i];
     }
     if (inputs.empty() || (scan.empty() && storeOut.empty() && graphOut.empty())) {
         std::fprintf(stderr, "usage: tome-reach-test -i inputs.json -s spell_scan_output.json\n"
                              "       tome-reach-test -i inputs.json --store out.tsv\n"
-                             "       tome-reach-test -i inputs.json --graph out.tsv [--records-only]\n");
+                             "       tome-reach-test -i inputs.json --graph out.tsv [--records-only] [--sources sources.tsv]\n");
         return 1;
     }
 
@@ -83,7 +86,7 @@ int main(int argc, char** argv)
             if (!recordsOnly) {
                 for (const auto& d : in["dataDirs"]) dataDirs.push_back(Utf8Path(d.get<std::string>()));
             }
-            return DumpGraph(loadOrder, dataDirs, graphOut);
+            return DumpGraph(loadOrder, dataDirs, graphOut, sourcesOut);
         }
         if (!storeOut.empty()) {
             const auto started = std::chrono::steady_clock::now();

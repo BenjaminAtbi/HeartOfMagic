@@ -1,7 +1,7 @@
 # Where a spell's tomes come from: distribution segments for the tree - design
 
-Date 2026-11-14. Branch: feature/tome-distribution. Status: design, decisions below are the author's; stage 1 in
-progress.
+Date 2026-11-14. Branch: feature/tome-distribution. Status: decisions below are the author's; stages 1-4
+done, stage 5 in progress.
 
 ## Why
 
@@ -131,7 +131,16 @@ spells at once, differences fixed or written down as deliberate.
    configs are read from the data folder's root only, as SPID itself does; an archive member loses to a loose
    file, and among archives the folder's priority decides, then the archive name (in game, the order of the
    plugins that load them is still to be settled in stage 5).
-4. **Classes, specialty mod vendors, segments**.
+4. **Classes, specialty mod vendors, segments** (done 2026-11-14): `Classifier` (TomeReachClasses.cpp: the
+   routes of each tome, memoised per root set, with the entries each vendor chest holds) and `ClassifySpells`
+   (TomeReachSegments.cpp: specialty mod vendors, a segment per spell, `SegmentSwitches` with the defaults of
+   decision 1). Harness: `tome-reach-test --graph <tsv> --sources <tsv>` dumps every tome's routes (class,
+   subtype), each spell's most generic route, the vendor chests above each tome with their entries, the specialty
+   mod vendors and the segments. Against `distribution.py` and `shops.py`: equal on every line (4,349 tome
+   routes, 1,877 spell classes, 96,701 vendor entries, 16 specialty mod vendors, 1,877 buckets: 97 unreachable,
+   821 general sale, 274 specialty mod vendor, 13 wide drops, 408 specific loot, 23 quest reward, 101 crafted
+   only, 140 uncommon vendor, 0 review). 1.8 s after the graph. Route details are written for people and are
+   not compared (they differ from Python's in wording; recipe conditions are not spelled out).
 5. **Scan and UI**: a `source` object per spell in the scan (segment, class, subtype, detail); `tomeUnreachable`
    and `questOnly` derived from it; the segment switches in the settings; the tree filters
    (`proceduralTreeBuilder.js`, `GraftCandidates.h`); a "Specialty sources" list in Gate Review; the gate's "out"

@@ -15,7 +15,8 @@
 // --records-only leaves them out (stage 2).
 //   S <base> <region> <site> <placements>   per (region, site), for every tome, root and NPC base
 //   U <spell>                         spells whose every tome has no route (tomeUnreachable)
-// so a script can compare it with the Python model on the same load order.
+// so a script can compare it with the Python model on the same load order. --sources also writes the
+// classes and segments (tome-reach-sources.cpp).
 
 #include "tomereach/TomeReachGraph.h"
 #include "tomereach/TomeReachSites.h"
@@ -45,8 +46,11 @@ namespace
     };
 }
 
+int DumpSources(const SpellStore& store, const NameTable& names, const ReachGraph& graph, Sites& sites,
+    const Distribution* distribution, const std::string& out);   // tome-reach-sources.cpp
+
 int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::filesystem::path>& dataDirs,
-    const std::string& out)
+    const std::string& out, const std::string& sourcesOut)
 {
     NameTable names;
     const auto started = std::chrono::steady_clock::now();
@@ -155,5 +159,6 @@ int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::f
                 "store %lld ms, graph (scripts included) %lld ms, sites and dump %lld ms -> %s\n",
         store.bookSpells.size(), spellReached.size(), unreachable, need.size(), ms(started, configsRead),
         ms(configsRead, read), ms(read, built), ms(built, std::chrono::steady_clock::now()), out.c_str());
+    if (!sourcesOut.empty()) return DumpSources(store, names, graph, sites, data ? &distribution : nullptr, sourcesOut);
     return 0;
 }

@@ -156,6 +156,17 @@ namespace TomeReach
         return out;
     }
 
+    std::vector<Key> ReachGraph::HoldersOf(Key item) const
+    {
+        std::vector<Key> out;
+        if (const auto p = m_parents.find(item); p != m_parents.end()) {
+            for (const Edge& e : p->second) {
+                if (e.kind == EdgeKind::kContainer) out.push_back(e.parent);
+            }
+        }
+        return out;
+    }
+
     std::vector<Key> ReachGraph::NpcBases(Key npc) const
     {
         std::unordered_set<Key> out{ npc };

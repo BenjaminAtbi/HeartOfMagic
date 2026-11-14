@@ -71,6 +71,8 @@ namespace TomeReach
         [[nodiscard]] Roots RootsOf(Key item) const;
         // Every base that places NPC `npc`: itself, leveled NPC lists holding it, NPCs templated on it (recursive)
         [[nodiscard]] std::vector<Key> NpcBases(Key npc) const;
+        // The containers that hold `item` in their inventory (CNTO)
+        [[nodiscard]] std::vector<Key> HoldersOf(Key item) const;
         // A merchant chest: a faction's VENC reference's base, or a container whose editor id says so
         [[nodiscard]] bool IsVendor(Key container) const;
         // The scripts and quest aliases that hand `item` out
