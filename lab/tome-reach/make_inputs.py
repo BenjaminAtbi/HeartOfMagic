@@ -27,7 +27,7 @@ def lines(path):
 def profile_lines(name):
     return lines(os.path.join(prof, name))
 
-mods = [l[1:] for l in profile_lines('modlist.txt') if l.startswith('+')]
+mods = [l[1:] for l in profile_lines('modlist.txt') if l.startswith('+') and not l.endswith('_separator')]
 data_dirs = [game_data] + [os.path.join(root, 'mods', m) for m in reversed(mods)] + [os.path.join(root, 'overwrite')]
 data_dirs = [d for d in data_dirs if os.path.isdir(d)]
 
