@@ -3,13 +3,18 @@ order with the file MO2 would serve for each, the data folders in priority
 order (game Data, then mods low to high, then overwrite), and the INI archive
 lists the game registers before the plugins' archives.
 
-    python make_inputs.py <MO2 root> <profile> > inputs.json
+    python make_inputs.py <MO2 base directory> <profile> [<game folder>] > inputs.json
+
+The base directory holds profiles/, mods/ and overwrite/; the game folder (the one with
+Data/ and Skyrim_Default.ini) defaults to <base directory>/Stock Game.
 """
 import json, os, re, sys
 
 root, profile = sys.argv[1], sys.argv[2]
 prof = os.path.join(root, 'profiles', profile)
-game = os.path.join(root, 'Stock Game')
+game = sys.argv[3] if len(sys.argv) > 3 else os.path.join(root, 'Stock Game')
+if not os.path.isdir(os.path.join(game, 'Data')):
+    sys.exit(f'no Data folder in {game}: pass the game folder as the third argument')
 game_data = os.path.join(game, 'Data')
 
 def lines(path):
@@ -33,15 +38,30 @@ for d in data_dirs:
             where[name.lower()] = (name, os.path.join(d, name))
 
 active = {l[1:].lower() for l in profile_lines('plugins.txt') if l.startswith('*')}
+# Loaded whatever plugins.txt says: the base masters and the Creation Club files Skyrim.ccc lists
 implicit = {'skyrim.esm', 'update.esm', 'dawnguard.esm', 'hearthfires.esm', 'dragonborn.esm', '_resourcepack.esl'}
+implicit |= {l.strip().lower() for l in lines(os.path.join(game, 'Skyrim.ccc')) if l.strip()}
+
+def esm_flag(path):
+    """The TES4 header's master flag (0x1)."""
+    try:
+        with open(path, 'rb') as f:
+            head = f.read(12)
+        return head[:4] == b'TES4' and bool(int.from_bytes(head[8:12], 'little') & 1)
+    except OSError:
+        return False
+
 plugins = []
 for l in profile_lines('loadorder.txt'):
     low = l.lower()
     if not l or l.startswith('#') or low not in where:
         continue
-    if low in active or low in implicit or low.startswith('cc'):
+    if low in active or low in implicit:
         name, path = where[low]
         plugins.append({'name': name, 'path': path})
+# The engine's order: masters (.esm, .esl, an .esp with the master flag) before every other plugin
+is_master = lambda p: p['name'].lower().endswith(('.esm', '.esl')) or esm_flag(p['path'])
+plugins = [p for p in plugins if is_master(p)] + [p for p in plugins if not is_master(p)]
 
 # [Archive] sResourceArchiveList and sResourceArchiveList2: Skyrim_Default.ini, then Skyrim.ini and
 # SkyrimCustom.ini (the profile's own when MO2's LocalSettings is on), a later file's list replacing one
