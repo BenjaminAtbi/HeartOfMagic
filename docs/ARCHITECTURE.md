@@ -278,9 +278,11 @@ game the placed references of cells that are not loaded are not in memory:
   `SegmentSwitches` (TomeReachSwitches.h, header-only) says which segments go on the tree (`tome-reach-test
   --sources`; equal to the Python classes, vendor entries, shops and buckets, 2026-11-14). `Model`
   (TomeReachModel.cpp) runs the whole chain for the harness and the game alike.
-- **In game** (2026-11-14): the worker thread runs the reach pass, then the model (`ClassifyForGame`,
-  TomeReachSources.cpp, over the plugin files and the game's Data folder). When the model runs, its unreachable
-  segment replaces the pass's (a spell the model has no tome of keeps the pass's mark), and a spell is
+- **In game** (2026-11-14): the worker thread runs the model (`ClassifyForGame`, TomeReachSources.cpp, over
+  the plugin files and the game's Data folder), and the reach pass only when the model cannot run (until later
+  the same day the pass ran first every time, reading the plugins and configs a second time). The model's
+  unreachable segment sets `tomeUnreachable` (a spell none of whose tomes is in the model's store is not
+  marked), and a spell is
   `questOnly` when its segment is switched off (`QuestOnlySpells` reads config.json `tomeSources` on each call;
   defaults in `SegmentSwitches`: general sale, wide drops and uncommon vendors on, specialty mod vendors,
   specific loot, quest rewards and crafted only off; review always on). The scan writes each spell's

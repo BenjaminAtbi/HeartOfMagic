@@ -11,7 +11,8 @@
 // vendor, specific loot, quest reward, crafted only. The settings switch each
 // segment on or off the tree (config.json tomeSources); a spell of a segment that
 // is off is questOnly. The older reach pass (TomeReachPass: any record or config
-// that names a tome) runs first and answers when the model cannot.
+// that names a tome) runs only when the model cannot (a plugin it could not read,
+// or it threw), and answers then.
 // See docs/ARCHITECTURE.md, "Tomes nothing hands out".
 
 #include "tomereach/TomeReachOutcome.h"

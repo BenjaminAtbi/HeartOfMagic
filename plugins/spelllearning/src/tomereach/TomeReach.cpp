@@ -163,65 +163,76 @@ namespace TomeReach
             logger::info("TomeReach off the tree: {} spells (tome pairs generation {})", spells.size(), job.generation);
         }
 
-        void Run(std::shared_ptr<Job> job)
+        // The reach pass (TomeReachPass.h), only when the distribution model could not run: a tome
+        // counts as handed out when any record or config names it. False when a plugin could not be
+        // read: Finish was called with the failure.
+        bool AnswerByPass(Job& job, Answer& answer)
         {
             const auto started = std::chrono::steady_clock::now();
+            const auto configs = FindDistributionConfigs(std::filesystem::path(kDataDir));
+            const auto pass = FindReachedTomes(job.loadOrder, job.names, job.tomes, configs);
+            if (!pass.unreadable.empty()) {
+                logger::warn("TomeReach: {} plugins could not be read (first: {}) - no spell is marked, "
+                             "every tome counts", pass.unreadable.size(), pass.unreadable.front());
+                // The same plugins fail the same way next start: their names make the outcome
+                auto names = pass.unreadable;
+                std::ranges::sort(names);
+                std::string joined;
+                for (const auto& name : names) joined += name + "\n";
+                Finish(job.generation, nullptr, "unreadable:" + ScanRecordRules::HashText(joined));
+                return false;
+            }
+            for (const auto& [spell, tomes] : job.tomesOf) {
+                if (NoTomeReached(tomes, pass)) answer.unreachable.insert(spell);
+                if (OnlyQuestsReach(tomes, pass)) answer.questOnly.insert(spell);
+            }
+            for (const auto& d : pass.damaged) {
+                logger::warn("TomeReach: '{}' is damaged (read in part) - the tomes of it and its masters count "
+                             "as handed out", d);
+            }
+            logger::info("TomeReach: reach pass: {} plugins, {} tomes, {} handed out by a record, {} only by a "
+                         "script property or alias, {} only by a distribution config ({} configs), {} kept for a "
+                         "damaged plugin, {} debug tomes left out; {} spells have no tome anything hands out, {} only "
+                         "tomes a quest hands out ({} such tomes) ({} ms, tome pairs generation {})",
+                job.loadOrder.size(), job.tomes.size(), pass.byRecord, pass.byLooseOnly, pass.byConfig,
+                pass.configFiles, pass.byDamaged, pass.byDebug, answer.unreachable.size(), answer.questOnly.size(),
+                pass.questOnly.size(), std::chrono::duration_cast<std::chrono::milliseconds>(
+                                           std::chrono::steady_clock::now() - started).count(), job.generation);
+            if (job.logQuestOnly) LogQuestOnly(job, pass, answer.questOnly);
+            return true;
+        }
+
+        // The distribution model's answer: its unreachable segment and every spell's source
+        // (questOnly follows from the sources and the switches, QuestOnlySpells). A spell none of
+        // whose tomes is in the model's store is not marked: its tomes count as handed out.
+        // False when the model could not run (ClassifyForGame logged why).
+        bool AnswerByModel(Job& job, Answer& answer)
+        {
+            const auto started = std::chrono::steady_clock::now();
+            if (!ClassifyForGame(job.loadOrder, job.names, job.tomeSpells, job.spellKeys, answer.sources)) return false;
+            std::size_t unclassified = 0;
+            for (const auto& [spell, tomes] : job.tomesOf) {
+                const auto source = answer.sources.find(spell);
+                if (source == answer.sources.end()) ++unclassified;
+                else if (source->second.segment == Segment::kUnreachable) answer.unreachable.insert(spell);
+            }
+            answer.model = true;
+            logger::info("TomeReach: the model marks {} spells unreachable; {} spells with a tome it has none of are "
+                         "not marked ({} ms, tome pairs generation {})", answer.unreachable.size(), unclassified,
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count(),
+                job.generation);
+            if (job.logQuestOnly) LogOffTree(job, answer);
+            return true;
+        }
+
+        void Run(std::shared_ptr<Job> job)
+        {
             try {
-                const auto configs = FindDistributionConfigs(std::filesystem::path(kDataDir));
-                const auto pass = FindReachedTomes(job->loadOrder, job->names, job->tomes, configs);
-                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - started).count();
-                if (!pass.unreadable.empty()) {
-                    logger::warn("TomeReach: {} plugins could not be read (first: {}) - no spell is marked, "
-                                 "every tome counts", pass.unreadable.size(), pass.unreadable.front());
-                    // The same plugins fail the same way next start: their names make the outcome
-                    auto names = pass.unreadable;
-                    std::ranges::sort(names);
-                    std::string joined;
-                    for (const auto& name : names) joined += name + "\n";
-                    Finish(job->generation, nullptr, "unreadable:" + ScanRecordRules::HashText(joined));
-                    return;
-                }
                 Answer answer;
-                for (const auto& [spell, tomes] : job->tomesOf) {
-                    if (NoTomeReached(tomes, pass)) answer.unreachable.insert(spell);
-                    if (OnlyQuestsReach(tomes, pass)) answer.questOnly.insert(spell);
-                }
-                for (const auto& d : pass.damaged) {
-                    logger::warn("TomeReach: '{}' is damaged (read in part) - the tomes of it and its masters count "
-                                 "as handed out", d);
-                }
-                logger::info("TomeReach: {} plugins, {} tomes, {} handed out by a record, {} only by a script "
-                             "property or alias, {} only by a distribution config ({} configs), {} kept for a damaged "
-                             "plugin, {} debug tomes left out; {} spells have no tome anything hands out, {} only "
-                             "tomes a quest hands out ({} such tomes) ({} ms, tome pairs generation {})",
-                    job->loadOrder.size(), job->tomes.size(), pass.byRecord, pass.byLooseOnly, pass.byConfig,
-                    pass.configFiles, pass.byDamaged, pass.byDebug, answer.unreachable.size(), answer.questOnly.size(),
-                    pass.questOnly.size(), ms, job->generation);
-                // The distribution model: its unreachable segment replaces the pass's, and its
-                // segments decide questOnly (QuestOnlySpells); the pass answers when it cannot run
-                if (ClassifyForGame(job->loadOrder, job->names, job->tomeSpells, job->spellKeys, answer.sources)) {
-                    const std::size_t passUnreachable = answer.unreachable.size();
-                    answer.unreachable.clear();
-                    std::size_t unclassified = 0;
-                    for (const auto& [spell, tomes] : job->tomesOf) {
-                        const auto source = answer.sources.find(spell);
-                        if (source == answer.sources.end()) {
-                            // No tome of it in the model's store: the pass's mark stands
-                            ++unclassified;
-                            if (NoTomeReached(tomes, pass)) answer.unreachable.insert(spell);
-                        } else if (source->second.segment == Segment::kUnreachable) {
-                            answer.unreachable.insert(spell);
-                        }
-                    }
-                    answer.model = true;
-                    logger::info("TomeReach: the model marks {} spells unreachable (the reach pass {}); {} spells "
-                                 "the model has no tome of keep the pass's mark ({} ms in all)", answer.unreachable.size(),
-                        passUnreachable, unclassified, std::chrono::duration_cast<std::chrono::milliseconds>(
-                                                            std::chrono::steady_clock::now() - started).count());
-                    if (job->logQuestOnly) LogOffTree(*job, answer);
-                } else if (job->logQuestOnly) {
-                    LogQuestOnly(*job, pass, answer.questOnly);
+                if (!AnswerByModel(*job, answer)) {
+                    logger::info("TomeReach: the reach pass answers instead of the model");
+                    answer = Answer{};
+                    if (!AnswerByPass(*job, answer)) return;
                 }
                 Finish(job->generation, &answer);
             } catch (const std::exception& e) {

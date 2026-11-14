@@ -141,10 +141,11 @@ spells at once, differences fixed or written down as deliberate.
    821 general sale, 274 specialty mod vendor, 13 wide drops, 408 specific loot, 23 quest reward, 101 crafted
    only, 140 uncommon vendor, 0 review). 1.8 s after the graph. Route details are written for people and are
    not compared (they differ from Python's in wording; recipe conditions are not spelled out).
-5. **Scan and UI** (done 2026-11-14, not yet tried in game): the worker thread runs the reach pass, then the
-   model over the plugin files and the Data folder (`ClassifyForGame`, TomeReachSources.cpp, on `Model`,
-   TomeReachModel.cpp, which the harness runs too). The model's unreachable segment sets `tomeUnreachable` (a
-   spell it has no tome of keeps the pass's mark); `questOnly` is a segment switched off (`QuestOnlySpells`
+5. **Scan and UI** (done 2026-11-14, not yet tried in game): the worker thread runs the model over the
+   plugin files and the Data folder (`ClassifyForGame`, TomeReachSources.cpp, on `Model`, TomeReachModel.cpp,
+   which the harness runs too), and the reach pass only when the model cannot run (decision 6; until later the
+   same day the pass ran first every time). The model's unreachable segment sets `tomeUnreachable` (a spell
+   none of whose tomes is in the model's store is not marked); `questOnly` is a segment switched off (`QuestOnlySpells`
    reads config.json `tomeSources` on each call). The scan writes a `source` object per spell (`segment`,
    `class`, `subtype`, `detail`, `shop`). When the model cannot run, the pass answers as before and no `source`
    objects are written. The switches (`SegmentSwitches`, header-only TomeReachSwitches.h) are read by the DLL,
