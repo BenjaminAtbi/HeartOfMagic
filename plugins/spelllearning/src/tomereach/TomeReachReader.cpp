@@ -18,7 +18,7 @@ namespace TomeReach
 
         constexpr std::array kRead = {
             T("BOOK"), T("SCRL"), T("WEAP"), T("LVLI"), T("LVLN"), T("CONT"), T("NPC_"), T("OTFT"),
-            T("FACT"), T("COBJ"), T("QUST"), T("CELL"), T("LCTN"), T("REFR"), T("ACHR"),
+            T("FACT"), T("COBJ"), T("QUST"), T("CELL"), T("LCTN"), T("WRLD"), T("REFR"), T("ACHR"),
         };
 
         bool Wanted(const unsigned char* type)
@@ -59,6 +59,7 @@ namespace TomeReach
                 if (Is(t, T("REFR")) || Is(t, T("ACHR"))) return ReadRef();
                 if (Is(t, T("CELL"))) return ReadCell();
                 if (Is(t, T("LCTN"))) return ReadLocation();
+                if (Is(t, T("WRLD"))) return ReadWorldspace();
                 return ReadBase(t);
             }
 
@@ -245,6 +246,14 @@ namespace TomeReach
                     else if (Is(s.type, T("PNAM"))) location.parent = Form(s);
                 });
                 m_store.locations[m_key] = std::move(location);
+                return whole;
+            }
+
+            bool ReadWorldspace()
+            {
+                std::string editorId;
+                const bool whole = Each([&](const Subrecord& s) { if (Is(s.type, T("EDID"))) editorId = ZString(s); });
+                m_store.worldspaces[m_key] = std::move(editorId);
                 return whole;
             }
         };

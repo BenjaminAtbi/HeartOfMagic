@@ -5,6 +5,7 @@
 //   tome-reach-test -i inputs.json -s spell_scan_output.json [-v: the tomes only a script property reaches]
 //   tome-reach-test --self-test      the reader on made-up plugins (tome-reach-selftest.cpp)
 //   tome-reach-test -i inputs.json --store out.tsv   the distribution model's spell store (tome-reach-store.cpp)
+//   tome-reach-test -i inputs.json --graph out.tsv   its reach graph, sites and unreachable spells (tome-reach-graph.cpp)
 //
 // inputs.json: { "plugins": [ { "name": "...", "path": "..." } ... ] in load order,
 //                "dataDirs": [ "..." ] }  (lab/tome-reach/make_inputs.py writes it
@@ -29,6 +30,7 @@ using json = nlohmann::json;
 
 int RunSelfTest();
 int DumpStore(const std::vector<TomeReach::PluginFile>& loadOrder, const std::string& out);   // tome-reach-store.cpp
+int DumpGraph(const std::vector<TomeReach::PluginFile>& loadOrder, const std::string& out);   // tome-reach-graph.cpp
 
 namespace
 {
@@ -49,7 +51,7 @@ int main(int argc, char** argv)
 {
     if (argc == 2 && std::string(argv[1]) == "--self-test") return RunSelfTest();
 
-    std::string inputs, scan, storeOut;
+    std::string inputs, scan, storeOut, graphOut;
     bool verbose = false;
     for (int i = 1; i < argc; ++i) {
         const std::string flag = argv[i];
@@ -57,10 +59,12 @@ int main(int argc, char** argv)
         else if (flag == "-i" && i + 1 < argc) inputs = argv[++i];
         else if (flag == "-s" && i + 1 < argc) scan = argv[++i];
         else if (flag == "--store" && i + 1 < argc) storeOut = argv[++i];
+        else if (flag == "--graph" && i + 1 < argc) graphOut = argv[++i];
     }
-    if (inputs.empty() || (scan.empty() && storeOut.empty())) {
+    if (inputs.empty() || (scan.empty() && storeOut.empty() && graphOut.empty())) {
         std::fprintf(stderr, "usage: tome-reach-test -i inputs.json -s spell_scan_output.json\n"
-                             "       tome-reach-test -i inputs.json --store out.tsv\n");
+                             "       tome-reach-test -i inputs.json --store out.tsv\n"
+                             "       tome-reach-test -i inputs.json --graph out.tsv\n");
         return 1;
     }
 
@@ -70,6 +74,7 @@ int main(int argc, char** argv)
         for (const auto& p : in["plugins"]) {
             loadOrder.push_back({ p["name"].get<std::string>(), Utf8Path(p["path"].get<std::string>()) });
         }
+        if (!graphOut.empty()) return DumpGraph(loadOrder, graphOut);
         if (!storeOut.empty()) {
             const auto started = std::chrono::steady_clock::now();
             const int code = DumpStore(loadOrder, storeOut);

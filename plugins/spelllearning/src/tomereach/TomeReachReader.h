@@ -91,6 +91,7 @@ namespace TomeReach
         std::unordered_map<Key, PlacedRef> refs;
         std::unordered_map<Key, Cell> cells;
         std::unordered_map<Key, Location> locations;
+        std::unordered_map<Key, std::string> worldspaces;   // WRLD -> its editor id
         std::vector<std::string> unreadable;
         std::vector<std::string> damaged;
     };

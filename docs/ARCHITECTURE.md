@@ -259,7 +259,11 @@ game the placed references of cells that are not loaded are not in memory:
   staff (kept by the base's record type while reading, filtered by its winning kind at the end), and the cells
   (merged field by field) and locations they are in. Nothing uses it in game yet; `tome-reach-test --store`
   dumps it (about 3.4 s and 84 MB on the author's 3,227 plugins), and it matched the author's Python reader on
-  every parent, placement count, cell, location and vendor chest (2026-11-14). Once it sets `tomeUnreachable`
+  every parent, placement count, cell, location and vendor chest (2026-11-14). On the store, `ReachGraph`
+  (TomeReachGraph.cpp) walks each tome up through leveled lists to its roots (containers, NPC inventories and
+  death items; test and debug records left out), with the bases that place an NPC, vendor chests, recipes and
+  quest alias rewards, and `Sites` (TomeReachSites.cpp) counts placements by region and site (`tome-reach-test
+  --graph`; the SPID, SkyPatcher and script edges come in stage 3). Once it sets `tomeUnreachable`
   and `questOnly`, the reach pass above stays only as its fallback.
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no
   property, and a config that names a tome by its runtime id (`0xFE000800~Plugin.esl`, a load order

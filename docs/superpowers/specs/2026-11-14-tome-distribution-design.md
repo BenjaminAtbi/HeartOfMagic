@@ -109,9 +109,15 @@ spells at once, differences fixed or written down as deliberate.
    takes 84 MB, and the peak (256 MB) is the largest plugin file read whole. Keeping every reference until the end
    took 318 MB for the same result. Harness: `tome-reach-test --store` dumps per-tome parents, per-base placement
    counts, cells, locations and vendor chests; equal to the Python reader on every line.
-2. **Graph and roots**: edges, the walk to roots, NPC bases, sites and regions. The harness reports
-   `tomeUnreachable` per spell from here on (no root), compared with Python's unreachable bucket; `questOnly` follows
-   with the segments in stage 4.
+2. **Graph and roots** (done 2026-11-14): `ReachGraph` (TomeReachGraph.cpp: leveled list, inventory and death
+   item edges, test and debug records left out, NPC bases through leveled NPC lists and templates, vendor chests,
+   recipes with the disabled-recipe condition, quest alias rewards) and `Sites` (TomeReachSites.cpp: region and
+   site per placement, mod realms, test cells dropped). Harness: `tome-reach-test --graph` dumps every tome's roots,
+   the facts the classes read (vendors, containers and NPCs placed, sites, tome placements, rewards, recipes,
+   route) and the site counts per base, and lists the unreachable spells. Against Python's Graph and Sites with
+   the stage-3 inputs switched off: equal on every line (232,122 roots, 1,895 tomes, 4,760 site counts, 598
+   unreachable spells; the full Python model, with SPID, SkyPatcher and scripts, has 97). Graph and sites take
+   1.5 s after the store. `questOnly` follows with the segments in stage 4.
 3. **Configs and scripts**: a SPID line parser with filter kinds, SkyPatcher `addToLLs`, VMAD properties, PEX
    reading (loose and BSA) and the property-to-call data flow.
 4. **Classes, specialty mod vendors, segments**.
