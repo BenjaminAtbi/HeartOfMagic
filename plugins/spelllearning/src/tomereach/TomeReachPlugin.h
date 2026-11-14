@@ -7,8 +7,8 @@
 // Reads a plugin file: its header and master list, then every record of the
 // types asked for, compressed ones inflated, with the cell and worldspace whose
 // group holds it (a placed reference's cell, a cell's worldspace). Top groups
-// of other types are skipped unread. Shared by the reach pass
-// (TomeReachRecords.cpp) and the record store (TomeReachWorld.cpp). Pure C++.
+// of other types are skipped unread. The walker under the reach pass
+// (TomeReachRecords.cpp) and the spell store (TomeReachReader.cpp). Pure C++.
 
 #include "tomereach/TomeReachRecords.h"
 
@@ -105,7 +105,7 @@ namespace TomeReach
         const unsigned char* body = nullptr;   // inflated when compressed
         std::size_t size = 0;
         std::uint32_t cell = 0;        // the cell whose children group holds it, as written; 0: none
-        std::uint32_t world = 0;       // the worldspace whose group holds it, as written; 0: none
+        std::uint32_t worldspace = 0;      // the worldspace whose group holds it, as written; 0: none
     };
 
     inline constexpr std::uint32_t kDeletedRecord = 0x00000020;

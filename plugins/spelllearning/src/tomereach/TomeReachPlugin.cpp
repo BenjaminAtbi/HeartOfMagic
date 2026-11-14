@@ -50,7 +50,7 @@ namespace TomeReach
         {
             std::size_t end;
             std::uint32_t cell;
-            std::uint32_t world;
+            std::uint32_t worldspace;
         };
     }
 
@@ -96,7 +96,7 @@ namespace TomeReach
                 Context context = groups.empty() ? Context{ 0, 0, 0 } : groups.back();
                 context.end = pos + size;
                 if (type == kWorldChildren) {
-                    context.world = U32(label);
+                    context.worldspace = U32(label);
                     context.cell = 0;
                 } else if (type == kCellChildren || type == kCellPersistent || type == kCellTemporary) {
                     context.cell = U32(label);
@@ -127,7 +127,7 @@ namespace TomeReach
             RecordView record{ header, formId, flags, body, bodySize };
             if (!groups.empty()) {
                 record.cell = groups.back().cell;
-                record.world = groups.back().world;
+                record.worldspace = groups.back().worldspace;
             }
             if (!read(record, resolve)) return damaged();
         }

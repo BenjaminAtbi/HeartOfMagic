@@ -253,12 +253,14 @@ game the placed references of cells that are not loaded are not in memory:
 - The file path is the engine's own folder for the plugin (`TESFile::path`), then `Data/<name>`; the log's
   `TomeReach: reading ...` line names the first one, and `TomeReach: N plugins, N tomes ...` the result.
 - The tome distribution model (in progress, `docs/superpowers/specs/2026-11-14-tome-distribution-design.md`)
-  reads its inputs with `ReadWorld` (TomeReachWorld.cpp, over the same walker): the winning version of every
-  tome, scroll, staff, leveled list, container, NPC, outfit, faction (vendor chest), recipe and quest, the
-  winning version of each reference to a container, NPC, leveled NPC list, tome, scroll or staff, and the cells
-  (merged field by field) and locations they are in. Nothing uses it in game yet; `tome-reach-test --world`
-  dumps it (about 3.4 s on the author's 3,227 plugins), and it matched the author's Python reader on every
-  parent, placement count, cell, location and vendor chest (2026-11-14).
+  reads its inputs into the spell store with `ReadSpellStore` (TomeReachReader.cpp, over the same walker): the
+  winning version of every tome, scroll, staff, leveled list, container, NPC, outfit, faction (vendor chest),
+  recipe and quest, the winning version of each reference to a container, NPC, leveled NPC list, tome, scroll or
+  staff (kept by the base's record type while reading, filtered by its winning kind at the end), and the cells
+  (merged field by field) and locations they are in. Nothing uses it in game yet; `tome-reach-test --store`
+  dumps it (about 3.4 s and 84 MB on the author's 3,227 plugins), and it matched the author's Python reader on
+  every parent, placement count, cell, location and vendor chest (2026-11-14). Once it sets `tomeUnreachable`
+  and `questOnly`, the reach pass above stays only as its fallback.
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no
   property, and a config that names a tome by its runtime id (`0xFE000800~Plugin.esl`, a load order
   prefix) instead of its id in the plugin. Such a spell would leave the tree wrongly; none was found on the author's load order (no script

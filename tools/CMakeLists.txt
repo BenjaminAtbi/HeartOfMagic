@@ -97,10 +97,10 @@ target_link_libraries(librarian-test PRIVATE
 add_executable(tome-reach-test
     tome-reach-test.cpp
     tome-reach-selftest.cpp
-    tome-reach-world.cpp
+    tome-reach-store.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachPlugin.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachRecords.cpp
-    ${SL_SRC_DIR}/tomereach/TomeReachWorld.cpp
+    ${SL_SRC_DIR}/tomereach/TomeReachReader.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachConfig.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachPass.cpp
 )

@@ -48,6 +48,11 @@ shared component: the plugin carries its own copy, tuned for the tree builder, w
 4. **Files, not game memory, at first.** Everything is read from the plugin files, as the reach pass does now
    (placed references of unloaded cells are not in memory anyway). If the pass is slow in game, optimise then
    with the game's loaded forms and archive loader.
+5. **The two non-tree states are the existing flags.** `tomeUnreachable`: no route (unreachable). `questOnly`: a
+   route only through segments switched off (the Python model's "unique" bucket). The tree, Tree Graft and the other
+   readers keep reading these two flags; the model only changes how they are set.
+6. **The old reach pass retires** once the model sets the flags. Its code stays as the fallback (used when the
+   model cannot run, e.g. a store that fails to read) and as a cross-check in `tome-reach-test`.
 
 ## The model
 
@@ -93,12 +98,20 @@ specific; they get their own switches here.)
 Each stage ends with the offline harness compared against the Python reference on the author's load order, all
 spells at once, differences fixed or written down as deliberate.
 
-1. **Records and placements** (`src/tomereach/`): one plugin walker shared with the reach pass (header, masters,
-   groups with their cell / world context, compressed records, subrecords), and a store of the winning versions of
-   the record types the model reads, plus references, cells and locations. Only references whose base is a
-   container, NPC, leveled NPC list or a tome-carrying item are kept (2.9M references on the author's order).
-   Harness: `tome-reach-test --world` dumps per-tome parents and per-base placement counts.
-2. **Graph and roots**: edges, the walk to roots, NPC bases, sites and regions.
+1. **Records and placements** (`src/tomereach/`, done 2026-11-14): one plugin walker under the reach pass and the
+   reader (`WalkPlugin`, TomeReachPlugin.cpp: header, masters, groups with their cell / worldspace context,
+   compressed records, subrecords), and the **spell store** (`ReadSpellStore`, TomeReachReader.cpp): the winning
+   versions of the record types the model reads, plus references, cells and locations. A reference is kept while
+   reading when its base is a BOOK, SCRL, WEAP, LVLN, CONT or NPC_ (a record's type is the same in every override,
+   and its base is always read first), then filtered by the base's winning kind once every plugin is read, so a
+   later plugin that changes whether a book teaches or a weapon is a staff is followed. Author's order (3,227
+   plugins without the generator patches): 102k records, 94k references kept of 2.9M, 157k cells; 3.4 s; the store
+   takes 84 MB, and the peak (256 MB) is the largest plugin file read whole. Keeping every reference until the end
+   took 318 MB for the same result. Harness: `tome-reach-test --store` dumps per-tome parents, per-base placement
+   counts, cells, locations and vendor chests; equal to the Python reader on every line.
+2. **Graph and roots**: edges, the walk to roots, NPC bases, sites and regions. The harness reports
+   `tomeUnreachable` per spell from here on (no root), compared with Python's unreachable bucket; `questOnly` follows
+   with the segments in stage 4.
 3. **Configs and scripts**: a SPID line parser with filter kinds, SkyPatcher `addToLLs`, VMAD properties, PEX
    reading (loose and BSA) and the property-to-call data flow.
 4. **Classes, specialty mod vendors, segments**.
@@ -108,4 +121,4 @@ spells at once, differences fixed or written down as deliberate.
    band as a review reason; the other readers of the unreachable set (`LibrarianSpellResearchPatch.cpp`,
    `SpellScannerDuplicates.cpp`, `ScanRecordRules.h`); docs.
 
-The current reach pass keeps running until stage 5 replaces its answer.
+The current reach pass keeps running until stage 5 replaces its answer; then it stays as the fallback (decision 6).

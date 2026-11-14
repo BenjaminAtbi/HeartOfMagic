@@ -1,8 +1,9 @@
-#include "tomereach/TomeReachWorld.h"
+#include "tomereach/TomeReachReader.h"
 #include "tomereach/TomeReachPlugin.h"
 
 #include <algorithm>
 #include <optional>
+#include <unordered_set>
 
 namespace TomeReach
 {
@@ -31,11 +32,25 @@ namespace TomeReach
                    kind == Kind::kScroll || kind == Kind::kStaff;
         }
 
+        // Record types whose references may be kept. A record keeps its type in every
+        // override, and a reference's base is read before it (in a master, or earlier
+        // in the same plugin), so a reference to any other type is never needed. Whether
+        // a BOOK teaches or a WEAP is a staff is known only from the winning version:
+        // ReadSpellStore checks the kind once every plugin is read.
+        constexpr std::array kPlaceableTypes = { T("BOOK"), T("SCRL"), T("WEAP"), T("LVLN"), T("CONT"), T("NPC_") };
+
+        bool PlaceableType(const unsigned char* type)
+        {
+            return std::any_of(kPlaceableTypes.begin(), kPlaceableTypes.end(), [&](const Tag& t) { return Is(type, t); });
+        }
+
         class Reader
         {
         public:
-            Reader(World& world, const RecordView& record, const Resolver& resolve) :
-                m_world(world), m_record(record), m_resolve(resolve), m_key(resolve(record.formId))
+            Reader(SpellStore& store, std::unordered_set<Key>& placeable, const RecordView& record,
+                const Resolver& resolve) :
+                m_store(store), m_placeable(placeable), m_record(record), m_resolve(resolve),
+                m_key(resolve(record.formId))
             {}
 
             bool Read()
@@ -48,7 +63,8 @@ namespace TomeReach
             }
 
         private:
-            World& m_world;
+            SpellStore& m_store;
+            std::unordered_set<Key>& m_placeable;   // every record of kPlaceableTypes read so far
             const RecordView& m_record;
             const Resolver& m_resolve;
             Key m_key;
@@ -69,19 +85,20 @@ namespace TomeReach
             // A record the model reads as a whole: the winning version replaces the earlier one
             void Forget()
             {
-                m_world.kinds.erase(m_key);
-                m_world.bookSpells.erase(m_key);
-                m_world.lists.erase(m_key);
-                m_world.inventories.erase(m_key);
-                m_world.npcs.erase(m_key);
-                m_world.vendorChests.erase(m_key);
-                m_world.recipes.erase(m_key);
-                m_world.questItems.erase(m_key);
+                m_store.kinds.erase(m_key);
+                m_store.bookSpells.erase(m_key);
+                m_store.lists.erase(m_key);
+                m_store.inventories.erase(m_key);
+                m_store.npcs.erase(m_key);
+                m_store.vendorChests.erase(m_key);
+                m_store.recipes.erase(m_key);
+                m_store.questItems.erase(m_key);
             }
 
             bool ReadBase(const unsigned char* t)
             {
                 Forget();
+                if (PlaceableType(t)) m_placeable.insert(m_key);
                 std::string editorId;
                 std::optional<Kind> kind;
                 bool whole = true;
@@ -94,7 +111,7 @@ namespace TomeReach
                     });
                     if (spell) {
                         kind = Kind::kBook;
-                        m_world.bookSpells[m_key] = spell;
+                        m_store.bookSpells[m_key] = spell;
                     }
                 } else if (Is(t, T("SCRL"))) {
                     kind = Kind::kScroll;
@@ -110,7 +127,7 @@ namespace TomeReach
                     if (staff && enchanted) kind = Kind::kStaff;
                 } else if (Is(t, T("LVLI")) || Is(t, T("LVLN"))) {
                     kind = Is(t, T("LVLI")) ? Kind::kItemList : Kind::kNpcList;
-                    auto& entries = m_world.lists[m_key];
+                    auto& entries = m_store.lists[m_key];
                     whole = Each([&](const Subrecord& s) {
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (Is(s.type, T("LVLO"))) {
@@ -120,7 +137,7 @@ namespace TomeReach
                 } else if (Is(t, T("CONT")) || Is(t, T("OTFT"))) {
                     const bool outfit = Is(t, T("OTFT"));
                     kind = outfit ? Kind::kOutfit : Kind::kContainer;
-                    auto& items = m_world.inventories[m_key];
+                    auto& items = m_store.inventories[m_key];
                     whole = Each([&](const Subrecord& s) {
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (!outfit && Is(s.type, T("CNTO"))) {
@@ -145,7 +162,7 @@ namespace TomeReach
                             if (const Key f = Form(s)) npc.factions.push_back(f);
                         } else if (Is(s.type, T("ACBS")) && s.size >= kFormSize) npc.flags = U32(s.data);
                     });
-                    m_world.npcs[m_key] = std::move(npc);
+                    m_store.npcs[m_key] = std::move(npc);
                 } else if (Is(t, T("FACT"))) {
                     kind = Kind::kFaction;
                     Key chest = 0;
@@ -153,7 +170,7 @@ namespace TomeReach
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (Is(s.type, T("VENC"))) chest = Form(s);
                     });
-                    if (chest) m_world.vendorChests[m_key] = chest;
+                    if (chest) m_store.vendorChests[m_key] = chest;
                 } else if (Is(t, T("COBJ"))) {
                     kind = Kind::kRecipe;
                     Recipe recipe;
@@ -166,10 +183,10 @@ namespace TomeReach
                             if (const Key e = Form(s)) recipe.components.push_back(e);
                         } else if (Is(s.type, T("CTDA"))) recipe.conditions.emplace_back(s.data, s.data + s.size);
                     });
-                    if (recipe.created) m_world.recipes[m_key] = std::move(recipe);
+                    if (recipe.created) m_store.recipes[m_key] = std::move(recipe);
                 } else if (Is(t, T("QUST"))) {
                     kind = Kind::kQuest;
-                    auto& items = m_world.questItems[m_key];
+                    auto& items = m_store.questItems[m_key];
                     whole = Each([&](const Subrecord& s) {
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (Is(s.type, T("ALCO")) || Is(s.type, T("CNTO"))) {   // a QUST has CNTO only in aliases
@@ -178,10 +195,10 @@ namespace TomeReach
                     });
                 }
                 if (kind) {
-                    m_world.kinds[m_key] = *kind;
-                    m_world.editorIds[m_key] = std::move(editorId);
+                    m_store.kinds[m_key] = *kind;
+                    m_store.editorIds[m_key] = std::move(editorId);
                 } else {
-                    m_world.editorIds.erase(m_key);
+                    m_store.editorIds.erase(m_key);
                 }
                 return whole;
             }
@@ -192,12 +209,12 @@ namespace TomeReach
                 const bool whole = Each([&](const Subrecord& s) {
                     if (Is(s.type, T("NAME"))) base = Form(s);
                 });
-                const auto kind = m_world.kinds.find(base);
-                if (!m_record.cell || kind == m_world.kinds.end() || !PlacedKind(kind->second)) {
-                    m_world.refs.erase(m_key);   // a later version moved it off the kept bases
+                // Kept by its base's record type; ReadSpellStore checks the winning kind
+                if (!m_record.cell || !m_placeable.contains(base)) {
+                    m_store.refs.erase(m_key);
                     return whole;
                 }
-                m_world.refs[m_key] = PlacedRef{ base, m_resolve(m_record.cell), m_record.flags };
+                m_store.refs[m_key] = PlacedRef{ base, m_resolve(m_record.cell), m_record.flags };
                 return whole;
             }
 
@@ -212,8 +229,8 @@ namespace TomeReach
                     else if (Is(s.type, T("DATA")) && s.size >= 1) interior = (s.data[0] & kInteriorCell) != 0;
                 });
                 // Field by field: a later version without a location or worldspace keeps the earlier one's
-                Cell& cell = m_world.cells[m_key];
-                if (m_record.world && !interior) cell.world = m_resolve(m_record.world);
+                Cell& cell = m_store.cells[m_key];
+                if (m_record.worldspace && !interior) cell.worldspace = m_resolve(m_record.worldspace);
                 if (location) cell.location = location;
                 if (!editorId.empty()) cell.editorId = std::move(editorId);
                 cell.interior = interior;
@@ -227,22 +244,29 @@ namespace TomeReach
                     if (Is(s.type, T("EDID"))) location.editorId = ZString(s);
                     else if (Is(s.type, T("PNAM"))) location.parent = Form(s);
                 });
-                m_world.locations[m_key] = std::move(location);
+                m_store.locations[m_key] = std::move(location);
                 return whole;
             }
         };
     }
 
-    World ReadWorld(const std::vector<PluginFile>& loadOrder, NameTable& names)
+    SpellStore ReadSpellStore(const std::vector<PluginFile>& loadOrder, NameTable& names)
     {
-        World world;
+        SpellStore store;
+        std::unordered_set<Key> placeable;
         for (const auto& plugin : loadOrder) {
             const auto scan = WalkPlugin(plugin, names, Wanted, [&](const RecordView& record, const Resolver& resolve) {
-                return Reader(world, record, resolve).Read();
+                return Reader(store, placeable, record, resolve).Read();
             });
-            if (scan.status == ScanStatus::kUnreadable) world.unreadable.push_back(plugin.name);
-            else if (scan.status == ScanStatus::kDamaged) world.damaged.push_back(plugin.name);
+            if (scan.status == ScanStatus::kUnreadable) store.unreadable.push_back(plugin.name);
+            else if (scan.status == ScanStatus::kDamaged) store.damaged.push_back(plugin.name);
         }
-        return world;
+        // Only references of the placed kinds stay, by their bases' winning versions
+        std::erase_if(store.refs, [&](const auto& ref) {
+            const auto kind = store.kinds.find(ref.second.base);
+            return kind == store.kinds.end() || !PlacedKind(kind->second);
+        });
+        store.refs.rehash(0);
+        return store;
     }
 }

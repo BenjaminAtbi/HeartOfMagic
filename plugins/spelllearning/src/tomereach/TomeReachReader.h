@@ -1,7 +1,7 @@
 #pragma once
 
 // =============================================================================
-// TOME REACH - THE LOAD ORDER'S RECORDS (distribution model)
+// TOME REACH - THE SPELL STORE (distribution model)
 // =============================================================================
 //
 // The winning version of every record the distribution model reads, and where
@@ -63,7 +63,7 @@ namespace TomeReach
 
     struct Cell
     {
-        Key world = 0;               // exterior cells: their worldspace
+        Key worldspace = 0;          // exterior cells: their worldspace
         Key location = 0;            // XLCN
         bool interior = false;
         std::string editorId;
@@ -75,7 +75,7 @@ namespace TomeReach
         std::string editorId;
     };
 
-    struct World
+    struct SpellStore
     {
         std::unordered_map<Key, Kind> kinds;               // every record below, by its kind
         std::unordered_map<Key, std::string> editorIds;     // EDID of every record below
@@ -95,6 +95,6 @@ namespace TomeReach
         std::vector<std::string> damaged;
     };
 
-    // Reads every plugin of `loadOrder` (masters first) into a World
-    World ReadWorld(const std::vector<PluginFile>& loadOrder, NameTable& names);
+    // Reads every plugin of `loadOrder` (masters first) into a SpellStore
+    SpellStore ReadSpellStore(const std::vector<PluginFile>& loadOrder, NameTable& names);
 }
