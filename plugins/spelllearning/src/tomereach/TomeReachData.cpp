@@ -125,7 +125,9 @@ namespace TomeReach
         std::error_code ec;
         const auto add = [&](const std::filesystem::directory_entry& e) {
             if (!e.is_regular_file(ec)) return;
-            m_loose[std::string(folder) + "/" + Lower(std::filesystem::relative(e.path(), root, ec))] = e.path();
+            // Lexical only: relative() canonicalises, and under MO2's virtual Data folder that resolves a mod's
+            // file to its real folder, so the key would leave Data and the file would never be found
+            m_loose[std::string(folder) + "/" + Lower(e.path().lexically_relative(root))] = e.path();
         };
         if (recursive) {
             for (std::filesystem::recursive_directory_iterator it(root, ec), end; !ec && it != end; it.increment(ec)) add(*it);
