@@ -15,6 +15,7 @@ namespace TomeReach
         constexpr std::size_t kFormIdOffset = 12;
         constexpr std::uint32_t kCompressed = 0x00040000;
         constexpr std::uint32_t kLightFile = 0x00000200;
+        constexpr std::uint32_t kLocalizedFile = 0x00000080;
         // No record inflates past this: a larger stated size means a damaged file
         constexpr uLongf kMaxInflatedRecord = 64u * 1024u * 1024u;
         constexpr std::size_t kInflatedSizeField = 4;   // a compressed record starts with its full size
@@ -66,6 +67,7 @@ namespace TomeReach
         const std::uint32_t headerFlags = U32(data.data() + kFlagsOffset);
         if (kRecordHeader + headerSize > data.size()) return result;
         names.SetLight(resolve.self, (headerFlags & kLightFile) != 0);
+        resolve.localized = (headerFlags & kLocalizedFile) != 0;
         // A header read in part leaves the master list, and so every form id, in doubt
         const bool headerWhole = ForEachSubrecord(data.data() + kRecordHeader, headerSize, [&](const Subrecord& sub) {
             if (Is(sub.type, T("MAST"))) resolve.masters.push_back(names.Id(ZString(sub)));

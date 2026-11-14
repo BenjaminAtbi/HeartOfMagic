@@ -263,7 +263,11 @@ game the placed references of cells that are not loaded are not in memory:
   (TomeReachGraph.cpp) walks each tome up through leveled lists to its roots (containers, NPC inventories and
   death items; test and debug records left out), with the bases that place an NPC, vendor chests, recipes and
   quest alias rewards, and `Sites` (TomeReachSites.cpp) counts placements by region and site (`tome-reach-test
-  --graph`; the SPID, SkyPatcher and script edges come in stage 3). Once it sets `tomeUnreachable`
+  --graph`). With the data folders it also reads SPID and SkyPatcher configs (TomeReachDistr.cpp: SPID item lines
+  become roots judged by their filters, SkyPatcher `addToLLs` adds list parents) and the attached scripts
+  (TomeReachScripts.cpp: VMAD properties; TomeReachPex.cpp disassembles each script, loose or from a BSA through
+  TomeReachData.cpp / TomeReachArchive.cpp, and follows each property to AddItem or AddForm), and it matched the
+  Python model on every root, site count and unreachable spell (2026-11-14). Once it sets `tomeUnreachable`
   and `questOnly`, the reach pass above stays only as its fallback.
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no
   property, and a config that names a tome by its runtime id (`0xFE000800~Plugin.esl`, a load order

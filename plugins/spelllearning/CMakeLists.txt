@@ -73,6 +73,11 @@ add_commonlibsse_plugin(${PROJECT_NAME}
     src/tomereach/TomeReachReader.cpp
     src/tomereach/TomeReachGraph.cpp
     src/tomereach/TomeReachSites.cpp
+    src/tomereach/TomeReachArchive.cpp
+    src/tomereach/TomeReachData.cpp
+    src/tomereach/TomeReachDistr.cpp
+    src/tomereach/TomeReachPex.cpp
+    src/tomereach/TomeReachScripts.cpp
     src/tomereach/TomeReachConfig.cpp
     src/tomereach/TomeReachPass.cpp
     src/tomereach/TomeReach.cpp

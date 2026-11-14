@@ -118,8 +118,19 @@ spells at once, differences fixed or written down as deliberate.
    the stage-3 inputs switched off: equal on every line (232,122 roots, 1,895 tomes, 4,760 site counts, 598
    unreachable spells; the full Python model, with SPID, SkyPatcher and scripts, has 97). Graph and sites take
    1.5 s after the store. `questOnly` follows with the segments in stage 4.
-3. **Configs and scripts**: a SPID line parser with filter kinds, SkyPatcher `addToLLs`, VMAD properties, PEX
-   reading (loose and BSA) and the property-to-call data flow.
+3. **Configs and scripts** (done 2026-11-14): `DataFiles` (TomeReachData.cpp: loose files over BSA members, the
+   archives' `scripts` and `strings` folders only; TomeReachArchive.cpp reads v104 zlib and v105 LZ4 archives),
+   `ReadDistributionConfigs` / `ResolveDistribution` (TomeReachDistr.cpp: SPID `Item` / `DeathItem` lines with
+   their filter kinds, NPC names from localized string tables; SkyPatcher `addToLLs`; form tokens as
+   `id~plugin`, `plugin|id` or editor ids, first record wins), VMAD properties (`ParseVmad`, form lists expanded)
+   and PEX analysis (TomeReachPex.cpp: disassembly, then the property-to-AddItem / AddForm data flow, memoised
+   per function and seed set). A script is read only when a property holds a tome, scroll, staff or leveled item
+   list. Against the full Python model: equal on every line (2,074,502 roots, 1,895 tomes, 10,141 site counts, 97
+   unreachable spells). Author's order: 220 config files (15 SPID lines, 325 SkyPatcher adds), 293 archives with
+   scripts or strings, 568 scripts read; configs 1.1 s, graph with scripts 0.6 s. Deliberate differences: SPID
+   configs are read from the data folder's root only, as SPID itself does; an archive member loses to a loose
+   file, and among archives the folder's priority decides, then the archive name (in game, the order of the
+   plugins that load them is still to be settled in stage 5).
 4. **Classes, specialty mod vendors, segments**.
 5. **Scan and UI**: a `source` object per spell in the scan (segment, class, subtype, detail); `tomeUnreachable`
    and `questOnly` derived from it; the segment switches in the settings; the tree filters

@@ -87,6 +87,7 @@ namespace TomeReach
         NameTable& names;
         std::vector<std::uint32_t> masters;
         std::uint32_t self = 0;
+        bool localized = false;   // names (FULL) are ids into the plugin's string tables
 
         Key operator()(std::uint32_t formId) const
         {

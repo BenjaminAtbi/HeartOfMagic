@@ -28,6 +28,7 @@ namespace TomeReach
         constexpr std::uint32_t kPlayerBase = 0x7;
 
         const std::vector<Key> kNone;
+        const std::vector<Reward> kNoRewards;
         const std::string kNoName;
 
         char Lower(char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); }
@@ -71,7 +72,7 @@ namespace TomeReach
                ContainsAny(editorId, kNoiseWords);
     }
 
-    ReachGraph::ReachGraph(const SpellStore& store) :
+    ReachGraph::ReachGraph(const SpellStore& store, const Distribution* distribution, const DataFiles* data) :
         m_store(store)
     {
         for (const auto& [list, entries] : store.lists) {
@@ -85,18 +86,17 @@ namespace TomeReach
             if (store.kinds.at(holder) != Kind::kContainer || IsNoiseEditorId(EditorId(holder))) continue;
             for (const Key e : items) AddEdge(e, EdgeKind::kContainer, holder);
         }
-        for (const auto& [npc, data] : store.npcs) {
-            if (data.templ) m_npcParents[data.templ].push_back(npc);
+        for (const auto& [npc, record] : store.npcs) {
+            if (record.templ) m_npcParents[record.templ].push_back(npc);
             if (IsNoiseEditorId(EditorId(npc))) continue;
-            for (const Key e : data.items) AddEdge(e, EdgeKind::kNpc, npc);
-            if (data.deathItem) AddEdge(data.deathItem, EdgeKind::kNpc, npc);
+            for (const Key e : record.items) AddEdge(e, EdgeKind::kNpc, npc);
+            if (record.deathItem) AddEdge(record.deathItem, EdgeKind::kNpc, npc);
         }
         for (auto& [_child, parents] : m_npcParents) SortUnique(parents);
         for (const auto& [quest, items] : store.questItems) {
             if (IsNoiseEditorId(EditorId(quest))) continue;
-            for (const Key e : items) m_rewards[e].push_back(quest);
+            for (const Key e : items) m_rewards[e].push_back({ quest, true });
         }
-        for (auto& [_item, quests] : m_rewards) SortUnique(quests);
         for (const auto& [recipe, r] : store.recipes) m_recipes[r.created].push_back(recipe);
         for (auto& [_item, recipes] : m_recipes) std::sort(recipes.begin(), recipes.end());
         for (const auto& [_faction, ref] : store.vendorChests) {
@@ -105,6 +105,15 @@ namespace TomeReach
             const auto kind = store.kinds.find(r->second.base);
             if (kind != store.kinds.end() && kind->second == Kind::kContainer) m_vendorBases.insert(r->second.base);
         }
+        if (distribution) {
+            // SkyPatcher addToLLs: a list parent at run time; SPID lines: roots of their own
+            for (const ListAdd& add : distribution->listAdds) {
+                for (const Key list : add.lists) AddEdge(add.form, EdgeKind::kList, list);
+            }
+            for (std::size_t i = 0; i < distribution->spid.size(); ++i) AddEdge(distribution->spid[i].form, EdgeKind::kSpid, i);
+        }
+        if (data) AddScripts(*data);
+        for (auto& [_item, rewards] : m_rewards) SortUnique(rewards);
     }
 
     void ReachGraph::AddEdge(Key child, EdgeKind kind, Key parent)
@@ -134,7 +143,10 @@ namespace TomeReach
                 if (e.kind == EdgeKind::kList) {
                     if (seen.insert(e.parent).second) todo.push_back(e.parent);
                 } else {
-                    out.roots.push_back({ e.kind == EdgeKind::kContainer ? RootKind::kContainer : RootKind::kNpc, e.parent });
+                    const RootKind kind = e.kind == EdgeKind::kContainer ? RootKind::kContainer
+                                        : e.kind == EdgeKind::kNpc       ? RootKind::kNpc
+                                                                         : RootKind::kSpid;
+                    out.roots.push_back({ kind, e.parent });
                 }
             }
         }
@@ -167,10 +179,10 @@ namespace TomeReach
         return m_vendorBases.contains(container) || ContainsAny(EditorId(container), kVendorWords);
     }
 
-    const std::vector<Key>& ReachGraph::RewardsOf(Key item) const
+    const std::vector<Reward>& ReachGraph::RewardsOf(Key item) const
     {
         const auto it = m_rewards.find(item);
-        return it != m_rewards.end() ? it->second : kNone;
+        return it != m_rewards.end() ? it->second : kNoRewards;
     }
 
     const std::vector<Key>& ReachGraph::RecipesOf(Key item) const

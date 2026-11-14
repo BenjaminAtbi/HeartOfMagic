@@ -14,8 +14,10 @@
 
 #include "tomereach/TomeReachRecords.h"
 
+#include <array>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace TomeReach
@@ -33,7 +35,10 @@ namespace TomeReach
         kFaction,     // FACT
         kRecipe,      // COBJ
         kQuest,       // QUST
+        kFormList,    // FLST
     };
+
+    using RecordType = std::array<char, 4>;
 
     struct Npc
     {
@@ -43,6 +48,39 @@ namespace TomeReach
         Key templ = 0;               // TPLT
         std::vector<Key> factions;   // SNAM
         std::uint32_t flags = 0;     // ACBS flags (0x20: unique)
+        std::vector<Key> keywords;   // KWDA
+        Key race = 0;                // RNAM
+        std::string name;            // FULL, when it is one of the configs' strings (ConfigWants)
+        std::uint32_t nameId = 0;    // FULL of a localized plugin: the string's id ...
+        std::uint32_t namePlugin = 0;   // ... in this plugin's string table
+    };
+
+    // A script attached to a record (VMAD), with its properties that hold forms
+    struct ScriptProperty
+    {
+        std::string name;            // lower case
+        std::vector<Key> forms;      // object values, arrays flattened
+    };
+
+    struct AttachedScript
+    {
+        std::string name;            // lower case
+        std::vector<ScriptProperty> properties;
+    };
+
+    struct ScriptHolder
+    {
+        RecordType type{};
+        std::string editorId;
+        std::vector<AttachedScript> scripts;
+    };
+
+    // What the configs name, so the store resolves only those editor ids (TomeReachDistr.h)
+    struct ConfigWants
+    {
+        std::unordered_set<std::string> editorIds;   // lower case
+        std::unordered_set<Key> keys;
+        std::unordered_set<std::string> strings;     // SPID string filters, lower case: NPC names worth keeping
     };
 
     struct Recipe
@@ -92,10 +130,19 @@ namespace TomeReach
         std::unordered_map<Key, Cell> cells;
         std::unordered_map<Key, Location> locations;
         std::unordered_map<Key, std::string> worldspaces;   // WRLD -> its editor id
+        std::unordered_map<Key, std::vector<Key>> formLists;   // FLST LNAM
+        std::unordered_map<Key, ScriptHolder> holders;      // records of the script holder types with scripts
+        std::unordered_map<Key, std::vector<Key>> raceKeywords;   // RACE KWDA
+        std::unordered_map<Key, std::string> keywordIds;    // KYWD editor ids
+        // The configs' forms: editor id -> the first record (in load order) carrying it, and
+        // the record type of every form they name
+        std::unordered_map<std::string, Key> tokenEditorIds;
+        std::unordered_map<Key, RecordType> tokenTypes;
         std::vector<std::string> unreadable;
         std::vector<std::string> damaged;
     };
 
-    // Reads every plugin of `loadOrder` (masters first) into a SpellStore
-    SpellStore ReadSpellStore(const std::vector<PluginFile>& loadOrder, NameTable& names);
+    // Reads every plugin of `loadOrder` (masters first) into a SpellStore; `wants`: the
+    // configs' forms to resolve (none when null)
+    SpellStore ReadSpellStore(const std::vector<PluginFile>& loadOrder, NameTable& names, const ConfigWants* wants = nullptr);
 }
