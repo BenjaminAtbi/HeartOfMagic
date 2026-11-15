@@ -1,0 +1,34 @@
+Heart of Magic Librarian 1.9.3 - text for the Nexus upload
+(The page: docs/NEXUS_PAGE.bbcode, "New in 1.9.3". Full list: CHANGELOG.md. First draft by Gemini Argon from a fact sheet of CHANGELOG 1.9.3, checked against it; shortened by Claude. SpellLearning.dll and the panel changed; Magic Menu Rewrite stays 1.2.0.)
+
+=====================================================================
+1. Files tab - main file
+=====================================================================
+
+Name: Heart of Magic Librarian
+Version: 1.9.3
+
+Description:
+Bug-fix update. With "Tiers by Magicka cost" on the Scan tab, each school now starts at its cheapest spell and each tier is linked cheapest first, so a spell is not put under a spell that costs more. With "Roots / School" above 1, the school divider lines are now at the borders between schools instead of through the middle of them. Install over 1.9.2, no save changes; press Build, then Apply to get the new links and lines in an existing tree.
+
+Debug Symbols file description (same version):
+Optional. Puts function names into Crash Logger reports. Install it only if you want to send a crash log.
+
+
+=====================================================================
+2. Changelogs tab - version 1.9.3 (one line per entry)
+=====================================================================
+
+Fixed: "Tiers by Magicka cost" (Scan tab) now starts each school at its cheapest spell (a root you chose stays) and links each tier cheapest first, so a spell is not put under a spell that costs more, when a tree is built and when new spells are added to it.
+Fixed: with "Roots / School" above 1, the school divider lines are now at the borders between schools, with any number of roots, instead of through the middle of the schools.
+
+
+=====================================================================
+3. Bugs tab - replies to the two reports (posted by the author)
+=====================================================================
+
+Report "Tiers by magicka cost: Not working":
+Thank you for the report. This is fixed in 1.9.3: with "Tiers by Magicka cost", each school now starts at its cheapest spell (vanilla Destruction starts at Frostbite) and each tier is linked cheapest first, so a spell is not put under a spell that costs more. After installing 1.9.3 over 1.9.2, press Build, then Apply so your tree gets the new links.
+
+Report "Increasing roots/school count breaks layout":
+Thank you for the report. This is fixed in 1.9.3: with "Roots / School" above 1, the school divider lines are now at the borders between schools, with any number of roots. After installing 1.9.3 over 1.9.2, press Build, then Apply so your tree gets the new lines.
