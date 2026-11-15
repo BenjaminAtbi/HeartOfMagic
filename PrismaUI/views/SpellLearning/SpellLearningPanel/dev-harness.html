@@ -248,6 +248,99 @@
                 <!-- ============================================================ -->
                 <div class="scanner-mode-content" id="scannerComplexContent" style="display:none;">
 
+                <!-- Where spells come from: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
+                <div class="scan-section" id="tomeSourcesSection">
+                    <div class="settings-block" id="tomeSourcesBlock">
+                        <div class="settings-block-header">
+                            <span class="hom-icon settings-block-icon" data-icon="tome" aria-hidden="true"></span>
+                            <span class="settings-block-title" data-i18n="settings.tomeSources.title">Where Spells Come From</span>
+                        </div>
+                        <div class="settings-block-content">
+                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule they match, from top to bottom. Activate a category to include its spells on the tree. Spells whose tomes can't be accessed in-game never appear on the tree.</p>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.spellpackVendor">Spellpack mod vendors</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.spellpackVendorDesc">Sold by 1-3 vendors that collectively sell the majority of one mod's tomes.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceSpellpackVendorToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.ritualQuest">Ritual Quest</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.ritualQuestDesc">Sold by vendors only after the Winterhold master ritual quests.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceRitualQuestToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.standardSale">Standard Vendors</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.standardSaleDesc">Sold by 3 or more vendors.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceStandardSaleToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.standardLoot">Standard Loot</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.standardLootDesc">Looted from NPCs and Containers in 20+ locations or 5+ regions, or NPCs belonging to broad categories such as factions and races.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceStandardLootToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.regionalLoot">Regional Loot</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.regionalLootDesc">Looted from NPCs and Containers in 2+ locations.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceRegionalLootToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.uniqueVendor">Unique vendors</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.uniqueVendorDesc">Sold by 1 or 2 vendors, or only after a quest completes.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceUniqueVendorToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.uniqueReward">Unique rewards</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.uniqueRewardDesc">Hand-placed in the world, looted at one location (such as a boss or unique encounter), or handed out by a quest.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceUniqueRewardToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.crafted">Crafted</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.craftedDesc">Made with a crafting recipe.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceCraftedToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Section 2: Tree Building -->
                 <div class="scan-section" id="treeBuildSection">
                 </div>
@@ -1783,87 +1876,6 @@
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Where tomes come from: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
-                    <div class="settings-block" id="tomeSourcesBlock">
-                        <div class="settings-block-header">
-                            <span class="hom-icon settings-block-icon" data-icon="tome" aria-hidden="true"></span>
-                            <span class="settings-block-title" data-i18n="settings.tomeSources.title">Where Tomes Come From</span>
-                        </div>
-                        <div class="settings-block-content">
-                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">A spell goes on the tree when its tomes come from a source switched on here. Spells whose tomes nothing hands out never do. Gate Review (the blacklist window) lists the rest and can include any one. Counts at the next build.</p>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.generalSale">General sale</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.generalSaleDesc">Sold by five or more vendors, or loot in containers of three or more regions</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceGeneralSaleToggle" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.wideDrops">Wide drops</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.wideDropsDesc">Carried by NPCs of a faction found at 20+ sites, of many regions, or of a race (SPID)</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceWideDropsToggle" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.uncommonVendor">Uncommon vendors</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.uncommonVendorDesc">Sold by one to four vendors</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceUncommonVendorToggle" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.specialtyModVendor">Specialty mod vendors</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.specialtyModVendorDesc">One or two vendors that sell most of one mod's tomes</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceSpecialtyModVendorToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.specificLoot">Specific loot</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.specificLootDesc">Hand-placed, a boss's or one site's loot, or a mod's local faction</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceSpecificLootToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.questReward">Quest rewards</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.questRewardDesc">A quest hands it out</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceQuestRewardToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.craftedOnly">Crafted only</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.craftedOnlyDesc">Only a crafting recipe makes it</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceCraftedOnlyToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
                             </div>
                         </div>
                     </div>

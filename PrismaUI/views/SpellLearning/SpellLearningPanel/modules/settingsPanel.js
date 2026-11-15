@@ -353,7 +353,7 @@ function initializeSettings() {
     if (typeof NotificationSetting !== 'undefined') NotificationSetting.init();
     // Spell Research practice and memory (shown with the Spell Research line)
     if (typeof SpellResearchMemorySetting !== 'undefined') SpellResearchMemorySetting.init();
-    // Where tomes come from: the segment switches (tomeSourceSetting.js)
+    // Where spells come from (Complex tree builder): the segment switches (tomeSourceSetting.js)
     if (typeof TomeSourceSetting !== 'undefined') TomeSourceSetting.init();
     // Mastery ranks' switch (masterySetting.js)
     if (typeof MasterySetting !== 'undefined') MasterySetting.init();

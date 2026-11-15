@@ -273,10 +273,11 @@ game the placed references of cells that are not loaded are not in memory:
   Python model on every root, site count and unreachable spell (2026-11-14). `Classifier` (TomeReachClasses.cpp)
   turns each tome's roots, placements, rewards and recipes into routes of a class and subtype (generic, faction,
   vendor, encounter, placed, reward, crafted, other, none), and `ClassifySpells` (TomeReachSegments.cpp) finds the
-  specialty mod vendors and puts every spell with a tome in one segment, first match winning (unreachable, general
-  sale, specialty mod vendor, wide drops, specific loot, quest reward, crafted only, uncommon vendor, review);
+  spellpack vendors and puts every spell with a tome in one segment, first match winning (unreachable, spellpack
+  vendor, ritual quest, standard sale, standard loot, regional loot, unique vendor, unique reward, crafted, review;
+  rules in the header of TomeReachSegments.h);
   `SegmentSwitches` (TomeReachSwitches.h, header-only) says which segments go on the tree (`tome-reach-test
-  --sources`; equal to the Python classes, vendor entries, shops and buckets, 2026-11-14). `Model`
+  --sources`; equal to the Python classes, vendor entries, shops and buckets, 2026-11-15). `Model`
   (TomeReachModel.cpp) runs the whole chain for the harness and the game alike.
 - **In game** (2026-11-14): the worker thread runs the model (`ClassifyForGame`, TomeReachSources.cpp, over
   the plugin files and the game's Data folder), and the reach pass only when the model cannot run (until later
@@ -284,10 +285,10 @@ game the placed references of cells that are not loaded are not in memory:
   unreachable segment sets `tomeUnreachable` (a spell none of whose tomes is in the model's store is not
   marked), and a spell is
   `questOnly` when its segment is switched off (`QuestOnlySpells` reads config.json `tomeSources` on each call;
-  defaults in `SegmentSwitches`: general sale, wide drops and uncommon vendors on, specialty mod vendors,
-  specific loot, quest rewards and crafted only off; review always on). The scan writes each spell's
+  defaults in `SegmentSwitches`: ritual quest, standard sale and standard loot on, spellpack vendor, regional
+  loot, unique vendor, unique reward and crafted off; review always on). The scan writes each spell's
   `source` object (`SourceJson`: `segment` as `SegmentKey`, `class`, `subtype`, `detail`, `shop` for a
-  specialty mod vendor's spell). When a plugin is unreadable or the model throws, the pass answers as before,
+  spellpack vendor's spell). When a plugin is unreadable or the model throws, the pass answers as before,
   with no `source` objects. Archives are read in the game's order (`ArchiveOrder`, TomeReachData.h): the INI
   lists (`sResourceArchiveList`, then `sResourceArchiveList2`, read from the game's settings on the game thread),
   then each loaded plugin's `<stem>.bsa` and `<stem> - Textures.bsa` in load order, a later one winning; an
@@ -295,8 +296,8 @@ game the placed references of cells that are not loaded are not in memory:
   one, so the winning copy of each archive file is MO2's. The harness takes the same lists from inputs.json
   (`iniArchives`, lab/tome-reach/make_inputs.py) and `--archives` dumps what it reads. The game's tome pairs (SpellTomes) are the model's tomes: a book teaches its pair's
   spell whatever its DATA says (a non-teaching book Spell Research's Synthesizer pairs, a book a DLL rebinds),
-  and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, Settings > Spell Tomes >
-  Where Tomes Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
+  and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, at the top of the
+  Complex tree builder: Where Spells Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
   `offTree(spell)` is the segment switched off, `tomeUnreachable`, or `questOnly` for a scan without `source`
   objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).
   Gate Review's "Specialty sources" list shows the spells off by their source with the segment and route

@@ -75,55 +75,55 @@ var TomeSourceSettingTest = {
             g.settings = {};
             S.loadFrom({});
             var on = S.SEGMENTS.filter(function(k) { return S.onTree(k); }).join(',');
-            this.check(on === 'generalSale,wideDrops,uncommonVendor' && S.onTree('review') && !S.onTree('unreachable') &&
-                !S.onTree('somethingNew'), 'defaults: general sale, wide drops, uncommon vendors on; review on; unreachable off');
-            this.check(!S.offTree(spell('01', 'generalSale')) && S.offTree(spell('02', 'specificLoot')) &&
+            this.check(on === 'ritualQuest,standardSale,standardLoot' && S.onTree('review') && !S.onTree('unreachable') &&
+                !S.onTree('somethingNew'), 'defaults: ritual quest, standard sale, standard loot on; review on; unreachable off');
+            this.check(!S.offTree(spell('01', 'standardSale')) && S.offTree(spell('02', 'regionalLoot')) &&
                 !S.offTree(spell('03', 'review')) && S.offTree(spell('04', 'unreachable')),
                 'offTree goes by the source segment');
-            this.check(S.offTree(spell('05', 'generalSale', { tomeUnreachable: true })) &&
-                !S.offTree(spell('06', 'wideDrops', { questOnly: true })),
+            this.check(S.offTree(spell('05', 'standardSale', { tomeUnreachable: true })) &&
+                !S.offTree(spell('06', 'standardLoot', { questOnly: true })),
                 'tomeUnreachable is always off; with a source, questOnly does not count');
             this.check(S.offTree(spell('07', null, { questOnly: true })) && !S.offTree(spell('08')) &&
                 S.offTree(spell('09', 'somethingNew', { questOnly: true })),
                 'a scan without source objects (or an unknown segment) falls back on questOnly');
 
             S.init();
-            var toggle = els[S.toggleId('specificLoot')];
-            this.check(!!toggle && toggle.checked === false && els[S.toggleId('generalSale')].checked === true,
+            var toggle = els[S.toggleId('regionalLoot')];
+            this.check(!!toggle && toggle.checked === false && els[S.toggleId('standardSale')].checked === true,
                 'the toggles show the switches');
             toggle.checked = true;
             toggle.fire('change');
-            this.check(g.settings.tomeSources.specificLoot === true && !S.offTree(spell('02', 'specificLoot')) &&
+            this.check(g.settings.tomeSources.regionalLoot === true && !S.offTree(spell('02', 'regionalLoot')) &&
                 saves === 1 && counts === 1, 'a toggle saves, and the tree takes the segment at once');
 
             var config = S.saveTo({ other: 1 });
-            this.check(config.other === 1 && config.tomeSources.specificLoot === true && config.tomeSources.generalSale === true &&
+            this.check(config.other === 1 && config.tomeSources.regionalLoot === true && config.tomeSources.standardSale === true &&
                 Object.keys(config.tomeSources).length === S.SEGMENTS.length, 'save writes config.tomeSources, every switch');
             g.settings = {};
-            S.loadFrom({ tomeSources: { specificLoot: true, generalSale: 'no', craftedOnly: 1 } });
-            this.check(g.settings.tomeSources.specificLoot === true && g.settings.tomeSources.generalSale === true &&
-                g.settings.tomeSources.craftedOnly === false && els[S.toggleId('specificLoot')].checked === true,
+            S.loadFrom({ tomeSources: { regionalLoot: true, standardSale: 'no', crafted: 1 } });
+            this.check(g.settings.tomeSources.regionalLoot === true && g.settings.tomeSources.standardSale === true &&
+                g.settings.tomeSources.crafted === false && els[S.toggleId('regionalLoot')].checked === true,
                 'load: booleans only, the defaults for the rest');
             S.reset();
-            this.check(g.settings.tomeSources.specificLoot === false && els[S.toggleId('specificLoot')].checked === false,
+            this.check(g.settings.tomeSources.regionalLoot === false && els[S.toggleId('regionalLoot')].checked === false,
                 'Reset puts the defaults back');
 
-            var shop = spell('10', 'specialtyModVendor');
+            var shop = spell('10', 'spellpackVendor');
             shop.source.shop = 'apocalypse - magic of skyrim.esp';
-            this.check(S.reasonText(shop) === 'Specialty mod vendors (apocalypse - magic of skyrim.esp)' &&
-                S.reasonText(spell('11', 'generalSale', { tomeUnreachable: true })) === 'nothing hands out its tomes' &&
+            this.check(S.reasonText(shop) === 'Spellpack mod vendors (apocalypse - magic of skyrim.esp)' &&
+                S.reasonText(spell('11', 'standardSale', { tomeUnreachable: true })) === 'nothing hands out its tomes' &&
                 S.reasonText(spell('12', null, { questOnly: true })) === 'only a quest hands out its tomes',
                 'the reason Gate Review shows');
 
             // The tree filter: the source decides, Include brings any one back, the gate only flags
             g.settings = { gateReviewed: [] };
-            var loot = spell('13', 'specificLoot'), lost = spell('14', 'unreachable', { tomeUnreachable: true });
+            var loot = spell('13', 'regionalLoot'), lost = spell('14', 'unreachable', { tomeUnreachable: true });
             this.check(!g.isTreeCandidate(loot) && !g.isTreeCandidate(lost) && g.isTreeCandidate(spell('15', 'review')),
                 'the tree leaves out switched-off and unreachable spells, keeps review ones');
             g.settings.gateReviewed = ['mod.esp:000813', 'mod.esp:000814'];
             this.check(g.isTreeCandidate(loot) && g.isTreeCandidate(lost), 'Include brings either back');
             g.settings.gateReviewed = [];
-            this.check(g.isTaughtByTome(spell('16', 'generalSale', { gate: { band: 'out', reasons: ['free'] } })) &&
+            this.check(g.isTaughtByTome(spell('16', 'standardSale', { gate: { band: 'out', reasons: ['free'] } })) &&
                 g.isTaughtByTome(spell('17', null, { freeSpell: true })), 'the gate\'s "out" band and freeSpell stay in');
         } finally {
             g.settings = old.settings;

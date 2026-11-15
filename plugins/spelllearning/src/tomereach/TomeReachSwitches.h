@@ -25,25 +25,27 @@ namespace TomeReach
     enum class Segment : std::uint8_t
     {
         kUnreachable,
-        kGeneralSale,
-        kSpecialtyModVendor,
-        kWideDrops,
-        kSpecificLoot,
-        kQuestReward,
-        kCraftedOnly,
-        kUncommonVendor,
+        kSpellpackVendor,
+        kRitualQuest,
+        kStandardSale,
+        kStandardLoot,
+        kRegionalLoot,
+        kUniqueVendor,
+        kUniqueReward,
+        kCrafted,
         kReview,
     };
 
-    inline constexpr std::size_t kSegmentCount = 9;
+    inline constexpr std::size_t kSegmentCount = 10;
 
     namespace Detail
     {
-        inline constexpr std::array<std::string_view, kSegmentCount> kSegmentNames{ "unreachable", "general sale",
-            "specialty mod vendor", "wide drops", "specific loot", "quest reward", "crafted only", "uncommon vendor",
+        inline constexpr std::array<std::string_view, kSegmentCount> kSegmentNames{ "unreachable", "spellpack vendor",
+            "ritual quest", "standard sale", "standard loot", "regional loot", "unique vendor", "unique reward", "crafted",
             "review" };
-        inline constexpr std::array<std::string_view, kSegmentCount> kSegmentKeys{ "unreachable", "generalSale",
-            "specialtyModVendor", "wideDrops", "specificLoot", "questReward", "craftedOnly", "uncommonVendor", "review" };
+        inline constexpr std::array<std::string_view, kSegmentCount> kSegmentKeys{ "unreachable", "spellpackVendor",
+            "ritualQuest", "standardSale", "standardLoot", "regionalLoot", "uniqueVendor", "uniqueReward", "crafted",
+            "review" };
     }
 
     // For people (logs, the harness dump)
@@ -52,7 +54,7 @@ namespace TomeReach
         return Detail::kSegmentNames[static_cast<std::size_t>(segment)];
     }
 
-    // Its id in the scan's source object and in config.json's tomeSources (generalSale, wideDrops ...)
+    // Its id in the scan's source object and in config.json's tomeSources (standardSale, standardLoot ...)
     [[nodiscard]] inline std::string_view SegmentKey(Segment segment)
     {
         return Detail::kSegmentKeys[static_cast<std::size_t>(segment)];
@@ -71,24 +73,26 @@ namespace TomeReach
     // tree and Gate Review lists it, as the spell gate's review band
     struct SegmentSwitches
     {
-        bool generalSale = true;
-        bool wideDrops = true;
-        bool uncommonVendors = true;
-        bool specialtyModVendors = false;
-        bool specificLoot = false;
-        bool questRewards = false;
-        bool craftedOnly = false;
+        bool spellpackVendor = false;
+        bool ritualQuest = true;
+        bool standardSale = true;
+        bool standardLoot = true;
+        bool regionalLoot = false;
+        bool uniqueVendor = false;
+        bool uniqueReward = false;
+        bool crafted = false;
 
         [[nodiscard]] bool OnTree(Segment segment) const
         {
             switch (segment) {
-            case Segment::kGeneralSale: return generalSale;
-            case Segment::kSpecialtyModVendor: return specialtyModVendors;
-            case Segment::kWideDrops: return wideDrops;
-            case Segment::kSpecificLoot: return specificLoot;
-            case Segment::kQuestReward: return questRewards;
-            case Segment::kCraftedOnly: return craftedOnly;
-            case Segment::kUncommonVendor: return uncommonVendors;
+            case Segment::kSpellpackVendor: return spellpackVendor;
+            case Segment::kRitualQuest: return ritualQuest;
+            case Segment::kStandardSale: return standardSale;
+            case Segment::kStandardLoot: return standardLoot;
+            case Segment::kRegionalLoot: return regionalLoot;
+            case Segment::kUniqueVendor: return uniqueVendor;
+            case Segment::kUniqueReward: return uniqueReward;
+            case Segment::kCrafted: return crafted;
             case Segment::kReview: return true;
             default: return false;
             }
@@ -107,13 +111,14 @@ namespace TomeReach
         bool* Switch(Segment segment)
         {
             switch (segment) {
-            case Segment::kGeneralSale: return &generalSale;
-            case Segment::kSpecialtyModVendor: return &specialtyModVendors;
-            case Segment::kWideDrops: return &wideDrops;
-            case Segment::kSpecificLoot: return &specificLoot;
-            case Segment::kQuestReward: return &questRewards;
-            case Segment::kCraftedOnly: return &craftedOnly;
-            case Segment::kUncommonVendor: return &uncommonVendors;
+            case Segment::kSpellpackVendor: return &spellpackVendor;
+            case Segment::kRitualQuest: return &ritualQuest;
+            case Segment::kStandardSale: return &standardSale;
+            case Segment::kStandardLoot: return &standardLoot;
+            case Segment::kRegionalLoot: return &regionalLoot;
+            case Segment::kUniqueVendor: return &uniqueVendor;
+            case Segment::kUniqueReward: return &uniqueReward;
+            case Segment::kCrafted: return &crafted;
             default: return nullptr;
             }
         }

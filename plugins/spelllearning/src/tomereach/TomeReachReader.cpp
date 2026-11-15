@@ -117,6 +117,8 @@ namespace TomeReach
                 m_store.kinds.erase(m_key);
                 m_store.bookSpells.erase(m_key);
                 m_store.lists.erase(m_key);
+                m_store.listGates.erase(m_key);
+                m_store.globalIds.erase(m_key);
                 m_store.inventories.erase(m_key);
                 m_store.npcs.erase(m_key);
                 m_store.vendorChests.erase(m_key);
@@ -215,12 +217,15 @@ namespace TomeReach
                 } else if (Is(t, T("LVLI")) || Is(t, T("LVLN"))) {
                     kind = Is(t, T("LVLI")) ? Kind::kItemList : Kind::kNpcList;
                     auto& entries = m_store.lists[m_key];
+                    ListGate gate;
                     whole = Each([&](const Subrecord& s) {
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (Is(s.type, T("LVLO"))) {
                             if (const Key e = Form(s, kLevelEntryFormOffset)) entries.push_back(e);
-                        }
+                        } else if (Is(s.type, T("LVLD")) && s.size >= 1) gate.chanceNone = s.data[0];
+                        else if (Is(s.type, T("LVLG"))) gate.global = Form(s);
                     });
+                    if (gate.global && kind == Kind::kItemList) m_store.listGates[m_key] = gate;
                 } else if (Is(t, T("CONT")) || Is(t, T("OTFT"))) {
                     const bool outfit = Is(t, T("OTFT"));
                     kind = outfit ? Kind::kOutfit : Kind::kContainer;
@@ -267,6 +272,8 @@ namespace TomeReach
                 } else if (Is(t, T("RACE"))) {
                     auto& keywords = m_store.raceKeywords[m_key];
                     whole = Each([&](const Subrecord& s) { if (Is(s.type, T("KWDA"))) Forms(s, keywords); });
+                } else if (Is(t, T("GLOB"))) {
+                    whole = Each([&](const Subrecord& s) { if (Is(s.type, T("EDID"))) m_store.globalIds[m_key] = ZString(s); });
                 } else if (Is(t, T("KYWD"))) {
                     whole = Each([&](const Subrecord& s) { if (Is(s.type, T("EDID"))) m_store.keywordIds[m_key] = ZString(s); });
                 } else if (Is(t, T("FACT"))) {

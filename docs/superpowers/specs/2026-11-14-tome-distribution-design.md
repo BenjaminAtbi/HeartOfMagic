@@ -30,6 +30,27 @@ shared component: the plugin carries its own copy, tuned for the tree builder, w
 
    | Segment | What | Default |
    |---|---|---|
+   Revised 2026-11-15 (first match wins, in this order):
+
+   | Segment | What | Default |
+   |---|---|---|
+   | Spellpack vendor | at a shop of its own mod (up to 3 chests that sell 75%+ of the mod's vendor-sold tomes), with 3 or fewer open vendors | off |
+   | Ritual quest | stock a College master ritual quest unlocks (`MGRitual*` globals) | on |
+   | Standard sale | 3+ open vendor chests | on |
+   | Standard loot | loot (containers and placed NPCs) at 20+ sites or in 5+ regions; SPID by race, faction, class or NPC type | on |
+   | Regional loot | loot at 2+ sites | off |
+   | Unique vendor | 1-2 open vendor chests, or stock another quest unlocks | off |
+   | Unique reward | one site's loot, hand-placed, or a quest reward | off |
+   | Crafted | only a crafting recipe makes it | off |
+
+   A vendor chest's stock is gated when it comes through a list with 100% chance of nothing (LVLD) and a global
+   (LVLG): `PC*` globals are vanilla's skill thresholds and count as open, `MGRitual*` ones make ritual quest,
+   any other a quest. A chest counts by its most open entry for the spell.
+
+   The first version (2026-11-14), replaced by the table above:
+
+   | Segment | What | Default |
+   |---|---|---|
    | General sale | sold by 5+ vendor chests, or loot in containers of 3+ regions | on |
    | Wide drops | carried by NPCs of a faction at 20+ sites, of many regions, or of a race / every NPC (SPID) | on |
    | Uncommon vendors | sold by 1-4 vendor chests, not a specialty mod vendor | on |
@@ -88,10 +109,15 @@ placed, reward, crafted, other, none.
 sold by at most 2 vendor chests, counting only entries dedicated to the set (the tome, or a list 50%+ of whose
 spells are that plugin's), and leaving out spells sold through dedicated entries by more than 3 chests.
 
-**Segments**, first match wins: no route -> unreachable; general sale; specialty mod vendor; wide drops (generic
-or faction routes other than local / regional); specific (placed, encounter, local / regional faction); quest
-reward; crafted; uncommon vendor; anything else -> review. (Python's bucket rules put reward and crafted with
-specific; they get their own switches here.)
+Since 2026-11-15 loot counts placed references (containers and NPCs) by site and region: 20+ sites or 5+
+regions is generic `loot`, 2+ sites faction `regional`, one site an encounter; the faction-size rules are gone, and
+shops take up to 3 chests (decision 1's table).
+
+**Segments** (2026-11-15), first match wins: no route -> unreachable; spellpack vendor; ritual quest; standard
+sale; standard loot (generic or faction routes other than regional, vendors, specialty); regional loot; unique
+vendor; unique reward (placed, encounter, reward); crafted; anything else -> review. The segments equal Python's
+bucket rules one for one (`shops.py --buckets`). First version (2026-11-14): no route -> unreachable; general sale;
+specialty mod vendor; wide drops; specific; quest reward; crafted; uncommon vendor; review.
 
 ## Stages
 
@@ -141,7 +167,10 @@ spells at once, differences fixed or written down as deliberate.
    mod vendors and the segments. Against `distribution.py` and `shops.py`: equal on every line (4,349 tome
    routes, 1,877 spell classes, 96,701 vendor entries, 16 specialty mod vendors, 1,877 buckets: 97 unreachable,
    821 general sale, 274 specialty mod vendor, 13 wide drops, 408 specific loot, 23 quest reward, 101 crafted
-   only, 140 uncommon vendor, 0 review). 1.8 s after the graph. Route details are written for people and are
+   only, 140 uncommon vendor, 0 review). 1.8 s after the graph. Revised segments (2026-11-15), equal on every
+   line again: 3,841 tome routes, 96,701 vendor entries, 16 spellpack vendors, 1,877 buckets: 97 unreachable,
+   293 spellpack vendor, 54 ritual quest, 852 standard sale, 45 standard loot, 106 regional loot, 33 unique
+   vendor, 296 unique reward, 101 crafted, 0 review. Route details are written for people and are
    not compared (they differ from Python's in wording; recipe conditions are not spelled out).
 5. **Scan and UI** (done 2026-11-14, not yet tried in game): the worker thread runs the model over the
    plugin files and the Data folder (`ClassifyForGame`, TomeReachSources.cpp, on `Model`, TomeReachModel.cpp,
@@ -151,8 +180,8 @@ spells at once, differences fixed or written down as deliberate.
    reads config.json `tomeSources` on each call). The scan writes a `source` object per spell (`segment`,
    `class`, `subtype`, `detail`, `shop`). When the model cannot run, the pass answers as before and no `source`
    objects are written. The switches (`SegmentSwitches`, header-only TomeReachSwitches.h) are read by the DLL,
-   Tree Graft (`GraftCandidates.h` `OffTreeBySource`) and the panel (`modules/tomeSourceSetting.js`, Settings >
-   Spell Tomes > Where Tomes Come From: one toggle per segment, live, so a switch counts at the next build
+   Tree Graft (`GraftCandidates.h` `OffTreeBySource`) and the panel (`modules/tomeSourceSetting.js`, at the top
+   of the Complex tree builder since 2026-11-15 (before: Settings > Spell Tomes): one toggle per segment, live, so a switch counts at the next build
    without a rescan). The tree filter (`isTreeCandidate`, `IsBuildCandidate`) is the tome candidate rule, then
    the source, with Include bringing any one spell back (unreachable ones too, in Spell Research as well).
    The gate only flags: its "out" band joins "Spells to look over" and no longer leaves a spell out of the
