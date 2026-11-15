@@ -122,8 +122,32 @@ var TomeSourceSetting = {
                 self._switches()[segment] = this.checked;
                 self._save();
             });
+            // The whole row is the switch: a click on its name or description flips it (the switch's own
+            // label already does, so a click inside it is left alone)
+            var row = toggle.closest ? toggle.closest('.setting-row') : null;
+            if (row) {
+                row.addEventListener('click', function(e) {
+                    if (e.target && e.target.closest && e.target.closest('.toggle-switch')) return;
+                    toggle.checked = !toggle.checked;
+                    toggle.dispatchEvent(new Event('change'));
+                });
+            }
         });
+        this._initFold();
         this.sync();
+    },
+
+    /** The box folds by its header, open by default */
+    _initFold: function() {
+        var header = document.getElementById('tomeSourcesHeader');
+        var content = document.getElementById('tomeSourcesContent');
+        if (!header || !content || !header.addEventListener) return;
+        var icon = header.querySelector ? header.querySelector('.prm-collapse-icon') : null;
+        header.addEventListener('click', function() {
+            var folded = content.classList.toggle('collapsed');
+            if (icon) icon.classList.toggle('collapsed', folded);
+            header.setAttribute('aria-expanded', folded ? 'false' : 'true');
+        });
     },
 
     /** Put the saved switches on the toggles */

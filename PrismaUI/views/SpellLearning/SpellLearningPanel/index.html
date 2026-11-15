@@ -168,14 +168,16 @@
                 <div class="scanner-mode-content" id="scannerComplexContent" style="display:none;">
 
                 <!-- Where spells come from: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
-                <div class="scan-section" id="tomeSourcesSection">
+                <!-- Shown after a scan like the sections below (cppCallbacks.js); folds by its header, open by default, never scrolls inside -->
+                <div class="scan-section" id="tomeSourcesSection" style="display:none;">
                     <div class="settings-block" id="tomeSourcesBlock">
-                        <div class="settings-block-header">
+                        <div class="settings-block-header prm-header tome-sources-header" id="tomeSourcesHeader" aria-expanded="true">
                             <span class="hom-icon settings-block-icon" data-icon="tome" aria-hidden="true"></span>
                             <span class="settings-block-title" data-i18n="settings.tomeSources.title">Where Spells Come From</span>
+                            <span class="prm-collapse-icon" aria-hidden="true"></span>
                         </div>
-                        <div class="settings-block-content">
-                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule they match, from top to bottom. Activate a category to include its spells on the tree. Spells whose tomes can't be accessed in-game never appear on the tree.</p>
+                        <div class="settings-block-content tome-sources-content" id="tomeSourcesContent">
+                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule their spell tomes match, from top to bottom. Activate a category to include its spells on the tree. Spells whose tomes can't be accessed in-game never appear on the tree.</p>
                             <div class="setting-row">
                                 <div class="setting-info">
                                     <span class="setting-label" data-i18n="settings.tomeSources.spellpackVendor">Spellpack mod vendors</span>
@@ -2010,7 +2012,7 @@
                     <span data-i18n="modals.gateReview.sourceHeader">Specialty sources</span>
                     <span id="tome-source-count" class="blacklist-count">0</span>
                 </div>
-                <div class="blacklist-empty" data-i18n="modals.gateReview.sourceDescription">Spells whose tomes only come from a source switched off in Settings > Spell Tomes, or that nothing hands out. Include one to let it into the tree.</div>
+                <div class="blacklist-empty" data-i18n="modals.gateReview.sourceDescription">Spells whose tomes only come from a source switched off in Where Spells Come From (Complex tree builder), or that nothing hands out. Include one to let it into the tree.</div>
                 <div id="tome-source-entries" class="blacklist-entries"></div>
             </div>
             <div class="modal-footer">

@@ -281,6 +281,9 @@ window.updateSpellData = function(jsonStr) {
     // Show Extra Settings section after scan (preview renders empty state until tree is built)
     var prmSection = document.getElementById('prereqMasterSection');
     if (prmSection) prmSection.style.display = '';
+    // Where Spells Come From (tomeSourceSetting.js), at the top of the page, after a scan too
+    var tomeSourcesSection = document.getElementById('tomeSourcesSection');
+    if (tomeSourcesSection) tomeSourcesSection.style.display = '';
 
     // Notify growth modes that spells are available for building
     if (typeof TreeGrowth !== 'undefined') {
