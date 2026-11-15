@@ -101,6 +101,22 @@ What are you doing?
   3. `git reset --soft HEAD~N` — move HEAD back, keeping changes staged (NOT `--hard`)
 - If uncommitted changes exist and you need to reset, ALWAYS `git stash` first
 
+### Branches and releases (this fork)
+This repository (`origin`, BenjaminAtbi/HeartOfMagic) is a fork of `upstream`
+(https://github.com/Iwillbewarlock/HeartOfMagic). Upstream releases are its `v*` tags; they are not all on its
+master (1.7 to 1.9.2 were cut on a side branch).
+- `master` mirrors `upstream/master` and carries no fork work.
+- `fork/main` is the fork's line: an upstream release tag (first `v1.9.2`), then fork commits and merges, kept
+  linear in its first-parent history. Fork-wide tooling commits go on it directly.
+- Features live on `fork/feat/<name>`, branched from `fork/main` (features may depend on each other), merged back
+  with `git merge --no-ff` so each one stays a single revertible merge.
+- Fork releases are tagged on `fork/main` as `<upstream version>+f<fork version>` (`v1.9.2+f1.0`). The fork version
+  keeps counting across upstream releases (after `v1.9.2+f1.3`, the first on 1.9.3 is `v1.9.3+f1.4`).
+- A new upstream release: `git fetch upstream --tags`, then on `fork/main` `git merge <tag>` (a merge, not a
+  fast-forward, once the fork has commits); rebuild and test before the next fork tag.
+- A pull request to upstream: a branch from the upstream tag or branch it targets, with the feature (and the fork
+  features it needs) reconciled onto it; never a PR straight from `fork/feat/*` or `fork/main`.
+
 ## Sub-Agent Guidelines (Task Tool)
 
 When launching sub-agents via the Task tool, choose the correct `subagent_type` based on the work needed:
