@@ -1,7 +1,8 @@
 # Where a spell's tomes come from: distribution segments for the tree - design
 
-Date 2026-11-14. Branch: feature/tome-distribution. Status: decisions below are the author's; stages 1-5
-done (stage 5 not yet tried in game).
+Date 2026-11-14, segments revised 2026-11-15. Branch: fork/feat/tome-distribution, merged into fork/main
+(`v1.9.2+f1.0`, revised segments `v1.9.2+f1.0.1`). Status: decisions below are the author's; stages 1-5 done and
+verified in game. The current state in one place: docs/TOME_DISTRIBUTION.md.
 
 ## Why
 

@@ -18,6 +18,8 @@ What are you doing?
 ├─► Understanding the system?
 │   ├─► Overall architecture → docs/ARCHITECTURE.md
 │   ├─► Tree building (Classic builder) → docs/TREE_BUILDING_SYSTEM.md
+│   ├─► Where tomes come from (tome scan, segments, Where Spells Come From) → docs/TOME_DISTRIBUTION.md
+│   ├─► Open work on the fork → docs/TODO.md
 │   └─► Design patterns & UI → docs/DESIGN.md
 │
 ├─► Writing/modifying code?

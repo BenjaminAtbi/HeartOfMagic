@@ -197,7 +197,7 @@ records with their plugins).
   again; both are nodes, so each one's tome teaches that one. Copies a save already learned stay in the
   spellbook; nothing is removed.
 
-**Tomes nothing hands out (2026-09-30):** a tome record can exist that no player ever finds: no copy is placed,
+**Tomes nothing hands out (2026-09-30;** start at docs/TOME_DISTRIBUTION.md for the distribution model**):** a tome record can exist that no player ever finds: no copy is placed,
 sold, dropped, crafted or given (a mod's cut or unfinished content, a patch that is not installed). The spell
 it teaches would be a tree node nobody can learn. `src/tomereach/` finds them from the plugin files, since in
 game the placed references of cells that are not loaded are not in memory:
