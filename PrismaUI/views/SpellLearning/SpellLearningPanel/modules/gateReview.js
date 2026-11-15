@@ -1,20 +1,20 @@
 /**
- * GateReview - the spell gate's two lists and the quest-only list in the blacklist window
- * (docs/librarian/ToDo.md M9, SpellScannerGate.cpp).
+ * GateReview - the spell gate's list and the specialty sources list in the blacklist window
+ * (docs/librarian/ToDo.md M9, SpellScannerGate.cpp; where tomes come from: TomeReach).
  *
- * "Spells to look over": tome spells the scan marked gate.band "review" (a horse
+ * "Spells to look over": tree spells the scan flagged - gate.band "review" (a horse
  * summon, a named unique summon, a summon that stays over an hour, a cheap
- * script-only spell, a rule from gate/rules.json). They stay in the tree; Leave
- * out puts one on the spell blacklist, Keep takes it off the list.
+ * script-only spell, a rule from gate/rules.json), gate.band "out" (free to cast, or
+ * one that only dismisses a summon: a free spell can be a real one, Mysticism's
+ * Symmetry), or source segment "review" (the distribution model found no clear
+ * source). They stay in the tree; Leave out puts one on the spell blacklist, Keep
+ * takes it off the list. Since 2026-11-14 the gate only flags: where the tomes
+ * come from decides the tree.
  *
- * "Left out by itself": tome spells marked "out" (free to cast, or one that only
- * dismisses a summon). They stay out of the tree and Spell Research unless the
- * player puts one back in with Include - a free spell can be a real one
- * (Mysticism's Symmetry, a spell whose cost follows another spell).
- *
- * "Quest only": tome spells the scan marked questOnly (only a quest's script, alias,
- * dialogue or scene fragment hands their tomes out - TomeReach.cpp). They stay out
- * of the tree unless the player puts one back in with Include.
+ * "Specialty sources": tome spells off the tree by where their tomes come from
+ * (TomeSourceSetting.offTree: a segment switched off in Settings > Spell Tomes,
+ * or nothing hands their tomes out; questOnly in a scan without source objects).
+ * Include puts one in the tree.
  *
  * Keep and Include write the same list, settings.gateReviewed (config.json,
  * "plugin.esp:localid" keys, plugin A-Z folded (foldPluginName), local id as getLocalFormId
@@ -117,22 +117,31 @@ var GateReview = {
         return replaced;
     },
 
-    /**
-     * The spells of one band to list: marked with it, not blacklisted, not kept already.
-     * @param {Array} spells - tree candidates (getPrimedSpells)
-     * @param {string} band - 'review' or 'out'
-     */
-    pending: function(spells, blacklist, reviewed, band) {
-        band = band || 'review';
-        return this._listed(spells, blacklist, reviewed, function(s) { return !!s.gate && s.gate.band === band; });
+    /** The scan flagged the spell for a look: either gate band, or no clear source */
+    flagged: function(spell) {
+        var band = spell.gate && spell.gate.band;
+        return band === 'review' || band === 'out' || !!(spell.source && spell.source.segment === 'review');
     },
 
     /**
-     * The quest-only spells to list: marked questOnly, not blacklisted, not included already.
-     * @param {Array} spells - tome candidates before the quest-only rule (getPrimedSpells(isTomeCandidate))
+     * The spells to look over: flagged, not blacklisted, not kept already.
+     * @param {Array} spells - tree candidates (getPrimedSpells(isTreeCandidate))
      */
-    questOnly: function(spells, blacklist, reviewed) {
-        return this._listed(spells, blacklist, reviewed, function(s) { return s.questOnly === true; });
+    pending: function(spells, blacklist, reviewed) {
+        var self = this;
+        return this._listed(spells, blacklist, reviewed, function(s) { return self.flagged(s); });
+    },
+
+    /**
+     * The spells off the tree by their source: TomeSourceSetting.offTree, not blacklisted,
+     * not included already.
+     * @param {Array} spells - tome candidates before the source (getPrimedSpells(isTomeCandidate))
+     */
+    offSource: function(spells, blacklist, reviewed) {
+        var off = (typeof TomeSourceSetting !== 'undefined')
+            ? function(s) { return TomeSourceSetting.offTree(s); }
+            : function(s) { return s.tomeUnreachable === true || s.questOnly === true; };
+        return this._listed(spells, blacklist, reviewed, off);
     },
 
     /** The spells that pass `test`, not blacklisted and not kept or included already (settings.gateReviewed) */
@@ -161,7 +170,7 @@ var GateReview = {
     },
 
     render: function() {
-        // Tree candidates before the gate (tome, quest-only, voice slot, copies, blacklist, plugin whitelist)
+        // Tree candidates (tome, source, voice slot, copies, blacklist, plugin whitelist)
         var all = (state.lastSpellData && state.lastSpellData.spells) || [];
         var primed = function(filter) {
             return typeof getPrimedSpells === 'function' ? getPrimedSpells(filter) : all;
@@ -170,28 +179,40 @@ var GateReview = {
         this.migrateKeys(all);
         var blacklist = settings.spellBlacklist, kept = settings.gateReviewed;
         var self = this;
-        this._renderList('gate-review', this.pending(spells, blacklist, kept, 'review'),
+        this._renderList('gate-review', this.pending(spells, blacklist, kept),
             ['modals.gateReview.empty', 'Nothing to look over'], [
                 ['modals.gateReview.keep', 'Keep', function(spell) { self.keep(spell); }],
                 ['modals.gateReview.exclude', 'Leave out', function(spell) { self.exclude(spell); }]
             ]);
-        this._renderList('gate-out', this.pending(spells, blacklist, kept, 'out'),
-            ['modals.gateReview.outEmpty', 'Nothing left out'], [
+        // Spells off by their source are not tree candidates: list them from the filter before it
+        var tomeSpells = primed(typeof isTomeCandidate === 'function' ? isTomeCandidate : null);
+        this._renderList('tome-source', this.offSource(tomeSpells, blacklist, kept),
+            ['modals.gateReview.sourceEmpty', 'No spell is off the tree by its source'], [
                 ['modals.gateReview.include', 'Include', function(spell) { self.keep(spell); }]
-            ]);
-        // Quest-only spells are not tree candidates: list them from the filter before that rule
-        var questSpells = primed(typeof isTomeCandidate === 'function' ? isTomeCandidate : null);
-        this._renderList('quest-only', this.questOnly(questSpells, blacklist, kept),
-            ['modals.gateReview.questEmpty', 'No quest-only spells in the last scan'], [
-                ['modals.gateReview.include', 'Include', function(spell) { self.keep(spell); }]
-            ]);
+            ], true);
+    },
+
+    /** Why a row is listed: the source first when the list is the source one, then the gate's reasons */
+    _reasons: function(spell, withSource) {
+        var self = this, out = [];
+        if (withSource && typeof TomeSourceSetting !== 'undefined') {
+            var why = TomeSourceSetting.reasonText(spell);
+            if (why) out.push(why);
+        } else if (withSource && spell.questOnly === true) {
+            out.push(this._t('settings.tomeSources.questOnly', 'only a quest hands out its tomes'));
+        }
+        if (!withSource && spell.source && spell.source.segment === 'review') {
+            out.push(this._t('settings.tomeSources.review', 'source unclear'));
+        }
+        ((spell.gate && spell.gate.reasons) || []).forEach(function(r) { out.push(self.reasonText(r)); });
+        return out;
     },
 
     /**
-     * One list: rows of name, plugin and the gate's reasons (a quest-only spell the gate
-     * marked "review" or "out" shows them too), with its buttons ([key, fallback, onClick])
+     * One list: rows of name, plugin and why it is listed (the source list's rows say the source,
+     * then the gate's reasons), with its buttons ([key, fallback, onClick])
      */
-    _renderList: function(prefix, list, emptyText, buttons) {
+    _renderList: function(prefix, list, emptyText, buttons, withSource) {
         var box = document.getElementById(prefix + '-entries');
         var count = document.getElementById(prefix + '-count');
         if (!box) return;
@@ -215,9 +236,8 @@ var GateReview = {
             name.textContent = spell.name || '???';
             var why = document.createElement('div');
             why.className = 'blacklist-entry-school';
-            var reasons = (spell.gate && spell.gate.reasons) || [];
-            why.textContent = (spell.plugin || '') + (reasons.length ? ' - ' +
-                reasons.map(function(r) { return self.reasonText(r); }).join(', ') : '');
+            var reasons = self._reasons(spell, withSource === true);
+            why.textContent = (spell.plugin || '') + (reasons.length ? ' - ' + reasons.join(', ') : '');
             info.appendChild(name);
             info.appendChild(why);
             row.appendChild(info);
@@ -232,7 +252,7 @@ var GateReview = {
         });
     },
 
-    /** Keep (a review spell) or Include (an out spell): the same list, read by the panel and the DLL */
+    /** Keep (a flagged spell) or Include (one off by its source): the same list, read by the panel and the DLL */
     keep: function(spell) {
         if (!settings.gateReviewed) settings.gateReviewed = [];
         var key = this.key(spell);

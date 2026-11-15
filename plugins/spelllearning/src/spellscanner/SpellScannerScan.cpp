@@ -135,7 +135,8 @@ namespace SpellScanner
         std::vector<RE::FormID> kept;    // passed every filter; marked for the tree after the loop
         std::unordered_set<RE::FormID> taught;
         std::unordered_set<RE::FormID> unreachable;
-        std::unordered_set<RE::FormID> questOnly;   // at least one reached tome, every reached tome quest-only (TomeReach)
+        std::unordered_set<RE::FormID> questOnly;   // off the tree by its tomes' source (TomeReach::QuestOnlySpells)
+        std::unordered_map<RE::FormID, TomeReach::SpellSourceInfo> sources;   // the distribution model's (when it ran)
         std::unordered_map<RE::FormID, RE::FormID> duplicates;
         json spellArray = json::array();
 
@@ -381,6 +382,7 @@ namespace SpellScanner
             // The same answer: once ready it stays so until a Restart, which runs on this (game)
             // thread, so its return (true here) is not checked again
             (void)TomeReach::QuestOnlySpells(questOnly);
+            (void)TomeReach::SourcesOfSpells(sources);   // false when the model could not run: no source objects
         }
         LogSpellsOutOfTree(spells, taught, unreachable);
         duplicates = FindDuplicateSpells(spells, taught, unreachable);
@@ -410,6 +412,7 @@ namespace SpellScanner
             MarkGate(spellJson, spell);
             if (unreachable.contains(formId)) spellJson["tomeUnreachable"] = true;
             if (questOnly.contains(formId)) spellJson["questOnly"] = true;
+            if (const auto s = sources.find(formId); s != sources.end()) spellJson["source"] = TomeReach::SourceJson(s->second);
             if (auto it = duplicates.find(formId); it != duplicates.end()) {
                 spellJson["duplicateOf"] = FormIdText::Format(it->second);
             }

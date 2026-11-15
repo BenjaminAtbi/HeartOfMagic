@@ -5,19 +5,27 @@
 // =============================================================================
 //
 // After the data loads, a worker thread reads the load order's plugin files and
-// distribution configs (TomeReachPass) and finds the spells whose every tome
-// nothing hands out: no placed copy, no leveled list, container, inventory,
-// recipe, form list, quest item or script property, no distribution config.
-// The scan marks them tomeUnreachable and the tree leaves them out.
+// the Data folder's configs and scripts, and puts every spell with a tome in a
+// distribution segment (the distribution model, TomeReachModel.h): no route
+// (tomeUnreachable), general sale, wide drops, uncommon vendor, specialty mod
+// vendor, specific loot, quest reward, crafted only. The settings switch each
+// segment on or off the tree (config.json tomeSources); a spell of a segment that
+// is off is questOnly. The older reach pass (TomeReachPass: any record or config
+// that names a tome) runs only when the model cannot (a plugin it could not read,
+// or it threw), and answers then.
 // See docs/ARCHITECTURE.md, "Tomes nothing hands out".
 
 #include "tomereach/TomeReachOutcome.h"
+#include "tomereach/TomeReachSegments.h"
 
 #include <chrono>
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
+
+#include <nlohmann/json.hpp>
 
 namespace TomeReach
 {
@@ -29,15 +37,37 @@ namespace TomeReach
     // is marked; a pass of an older generation that finishes later is dropped.
     void Restart(std::uint64_t generation);
 
-    // The spells whose every tome nothing hands out. False while the pass runs,
-    // and when it failed (a plugin it could not read): then no spell is marked.
+    // The spells whose every tome nothing hands out (the model's unreachable segment). False
+    // while the pass runs, and when it failed (a plugin it could not read): then no spell is marked.
     bool UnreachableSpells(std::unordered_set<RE::FormID>& out);
 
-    // The quest-only spells: at least one reached tome, every reached tome one only a
-    // quest hands out (its script or an alias: PassResult::questOnly, OnlyQuestsReach).
-    // False when UnreachableSpells is. With the dev self-test on (selftest.json) the pass
-    // logs each one ("TomeReach quest-only:" lines) when it finishes.
+    // The spells off the tree by their source: a segment whose switch is off
+    // (ReadSegmentSwitches, read on each call). When the model could not run, the reach
+    // pass's quest-only spells: at least one reached tome, every reached one only a quest
+    // hands out (PassResult::questOnly, OnlyQuestsReach). False when UnreachableSpells is.
+    // With the dev self-test on (selftest.json) the pass logs each one when it finishes.
     bool QuestOnlySpells(std::unordered_set<RE::FormID>& out);
+
+    // A spell's source as the model found it: its segment and most generic route
+    struct SpellSourceInfo
+    {
+        Segment segment = Segment::kUnreachable;
+        SourceClass cls = SourceClass::kNone;
+        std::string subtype;
+        std::string detail;
+        std::string shop;   // specialty mod vendor: the plugin whose tomes the chest sells
+    };
+
+    // Every spell with a tome and its source. False while the pass runs, when it failed,
+    // and when the model could not run (the reach pass answered). Any thread.
+    bool SourcesOfSpells(std::unordered_map<RE::FormID, SpellSourceInfo>& out);
+
+    // The scan's source object of a spell: { segment (SegmentKey), class, subtype, detail, shop? }
+    nlohmann::json SourceJson(const SpellSourceInfo& info);
+
+    // The tree switches of the segments: config.json "tomeSources" ({ "<SegmentKey>": bool }),
+    // the defaults (SegmentSwitches) for what is missing. Any thread.
+    SegmentSwitches ReadSegmentSwitches();
 
     // Any thread but the game thread: waits until the pass is done (or failed),
     // at most `limit`. Returns at once when no pass was started. True when done.

@@ -19,11 +19,11 @@
 // SPELL GATE - is a tome spell a player's spell? (docs/librarian/ToDo.md, M9)
 // =============================================================================
 //
-// Evidence from the record, each with a reason the panel shows. "out" leaves the
-// tree and Spell Research unless the player includes it again (the panel's
-// gateReviewed list, ReadGateKept / GateLeavesOut); "review" stays in and goes to
-// the panel's review list, where the player keeps it or blacklists it; "in" is
-// everything else. Since 2026-10-06 only free spells and dismiss-only spells are
+// Evidence from the record, each with a reason the panel shows. Since 2026-11-14
+// the gate only flags: "out" and "review" both stay in and go to the panel's
+// review list, where the player keeps a spell or blacklists it; "in" is everything
+// else. Where a spell's tomes come from decides the tree (TomeReach segments), and
+// the player's Include (gateReviewed, ReadGateKept / GateKept) brings any one back. Since 2026-10-06 only free spells and dismiss-only spells are
 // "out" by themselves; long summons and the rules file's families are reviewed.
 //
 // Measured on TAKEALOOK (2026-10-06, lab/spell-gate): the free rule alone caught 37
@@ -299,16 +299,16 @@ namespace SpellScanner
         return kept;
     }
 
-    bool GateLeavesOut(RE::SpellItem* spell, const std::unordered_set<std::string>& kept)
+    bool GateKept(RE::SpellItem* spell, const std::unordered_set<std::string>& kept)
     {
-        if (!spell || JudgeSpell(spell).band != "out") return false;
+        if (!spell || kept.empty()) return false;
         auto* file = spell->GetFile(0);
-        if (!file) return true;
+        if (!file) return false;
         // The local id as the panel's getLocalFormId reads it: 12 bits in a light plugin, 24 in a full one
         const RE::FormID id = spell->GetFormID();
         using namespace FormIdBits;
         const RE::FormID local = (id >> kFileIndexShift) == kLightIndex ? (id & kLightLocalMask) : (id & kFullLocalMask);
-        return !kept.contains(PluginKey(file->fileName) + "|" + std::to_string(local));
+        return kept.contains(PluginKey(file->fileName) + "|" + std::to_string(local));
     }
 
     void MarkGate(json& spellJson, RE::SpellItem* spell)

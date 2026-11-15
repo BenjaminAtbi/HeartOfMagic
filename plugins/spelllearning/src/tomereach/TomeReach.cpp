@@ -3,7 +3,9 @@
 #include "ThreadUtils.h"
 #include "tomereach/TomeReach.h"
 #include "tomereach/TomeReachConfig.h"
+#include "tomereach/TomeReachData.h"
 #include "tomereach/TomeReachPass.h"
+#include "tomereach/TomeReachSources.h"
 #include "ScanRecordRules.h"
 #include "SpellScanner.h"
 #include "environment/EnvironmentSelfTest.h"
@@ -30,6 +32,9 @@ namespace TomeReach
             NameTable names;
             std::unordered_set<Key> tomes;
             std::unordered_map<RE::FormID, std::vector<Key>> tomesOf;  // spell -> its tomes
+            std::unordered_map<Key, Key> tomeSpells;                     // tome -> its spell's key (the model)
+            std::unordered_map<RE::FormID, Key> spellKeys;               // spell -> its key
+            std::vector<std::string> iniArchives;   // [Archive] sResourceArchiveList, then ...List2 (the model's archive order)
             bool logQuestOnly = false;   // the dev self-test is on (selftest.json): the quest-only list is logged
             std::unordered_map<RE::FormID, std::string> spellLabels;   // spell -> "'name' formId persistentId" (only then)
         };
@@ -47,13 +52,18 @@ namespace TomeReach
             std::string failure;  // finished without an answer: what failed, for OutcomeKey
             std::unordered_set<RE::FormID> unreachable;
             std::unordered_set<RE::FormID> questOnly;
+            bool model = false;   // the distribution model answered: `sources` holds the segments
+            std::unordered_map<RE::FormID, SpellSourceInfo> sources;
         };
 
-        // A pass's answer: the spells nothing hands a tome of, and those only a quest does
+        // A pass's answer: the spells nothing hands a tome of, the reach pass's quest-only ones,
+        // and the model's sources (when it ran)
         struct Answer
         {
             std::unordered_set<RE::FormID> unreachable;
             std::unordered_set<RE::FormID> questOnly;
+            bool model = false;
+            std::unordered_map<RE::FormID, SpellSourceInfo> sources;
         };
 
         Result& Shared()
@@ -77,6 +87,8 @@ namespace TomeReach
                 if (answer) {
                     shared.unreachable = std::move(answer->unreachable);
                     shared.questOnly = std::move(answer->questOnly);
+                    shared.model = answer->model;
+                    shared.sources = std::move(answer->sources);
                     shared.ready = true;
                 } else {
                     shared.failure = std::move(failure);
@@ -133,42 +145,97 @@ namespace TomeReach
             logger::info("TomeReach quest-only: {} spells (tome pairs generation {})", spells.size(), job.generation);
         }
 
-        void Run(std::shared_ptr<Job> job)
+        // Every spell off the tree by its source with the switches now, one line each (the
+        // dev self-test's counterpart of LogQuestOnly for the model). Sorted by formId.
+        void LogOffTree(const Job& job, const Answer& answer)
+        {
+            const SegmentSwitches switches = ReadSegmentSwitches();
+            std::vector<RE::FormID> spells;
+            for (const auto& [spell, s] : answer.sources) {
+                if (s.segment != Segment::kUnreachable && !switches.OnTree(s.segment)) spells.push_back(spell);
+            }
+            std::ranges::sort(spells);
+            for (const RE::FormID spell : spells) {
+                const auto& s = answer.sources.at(spell);
+                const auto label = job.spellLabels.find(spell);
+                logger::info("TomeReach off the tree: {} - {} ({} {}): {}",
+                    label != job.spellLabels.end() ? label->second : std::format("{:08X}", spell), SegmentName(s.segment),
+                    ClassName(s.cls), s.subtype, s.detail);
+            }
+            logger::info("TomeReach off the tree: {} spells (tome pairs generation {})", spells.size(), job.generation);
+        }
+
+        // The reach pass (TomeReachPass.h), only when the distribution model could not run: a tome
+        // counts as handed out when any record or config names it. False when a plugin could not be
+        // read: Finish was called with the failure.
+        bool AnswerByPass(Job& job, Answer& answer)
         {
             const auto started = std::chrono::steady_clock::now();
+            const auto configs = FindDistributionConfigs(std::filesystem::path(kDataDir));
+            const auto pass = FindReachedTomes(job.loadOrder, job.names, job.tomes, configs);
+            if (!pass.unreadable.empty()) {
+                logger::warn("TomeReach: {} plugins could not be read (first: {}) - no spell is marked, "
+                             "every tome counts", pass.unreadable.size(), pass.unreadable.front());
+                // The same plugins fail the same way next start: their names make the outcome
+                auto names = pass.unreadable;
+                std::ranges::sort(names);
+                std::string joined;
+                for (const auto& name : names) joined += name + "\n";
+                Finish(job.generation, nullptr, "unreadable:" + ScanRecordRules::HashText(joined));
+                return false;
+            }
+            for (const auto& [spell, tomes] : job.tomesOf) {
+                if (NoTomeReached(tomes, pass)) answer.unreachable.insert(spell);
+                if (OnlyQuestsReach(tomes, pass)) answer.questOnly.insert(spell);
+            }
+            for (const auto& d : pass.damaged) {
+                logger::warn("TomeReach: '{}' is damaged (read in part) - the tomes of it and its masters count "
+                             "as handed out", d);
+            }
+            logger::info("TomeReach: reach pass: {} plugins, {} tomes, {} handed out by a record, {} only by a "
+                         "script property or alias, {} only by a distribution config ({} configs), {} kept for a "
+                         "damaged plugin, {} debug tomes left out; {} spells have no tome anything hands out, {} only "
+                         "tomes a quest hands out ({} such tomes) ({} ms, tome pairs generation {})",
+                job.loadOrder.size(), job.tomes.size(), pass.byRecord, pass.byLooseOnly, pass.byConfig,
+                pass.configFiles, pass.byDamaged, pass.byDebug, answer.unreachable.size(), answer.questOnly.size(),
+                pass.questOnly.size(), std::chrono::duration_cast<std::chrono::milliseconds>(
+                                           std::chrono::steady_clock::now() - started).count(), job.generation);
+            if (job.logQuestOnly) LogQuestOnly(job, pass, answer.questOnly);
+            return true;
+        }
+
+        // The distribution model's answer: its unreachable segment and every spell's source
+        // (questOnly follows from the sources and the switches, QuestOnlySpells). A spell none of
+        // whose tomes is in the model's store is not marked: its tomes count as handed out.
+        // False when the model could not run (ClassifyForGame logged why).
+        bool AnswerByModel(Job& job, Answer& answer)
+        {
+            const auto started = std::chrono::steady_clock::now();
+            if (!ClassifyForGame(job.loadOrder, job.names, job.iniArchives, job.tomeSpells, job.spellKeys, answer.sources)) return false;
+            std::size_t unclassified = 0;
+            for (const auto& [spell, tomes] : job.tomesOf) {
+                const auto source = answer.sources.find(spell);
+                if (source == answer.sources.end()) ++unclassified;
+                else if (source->second.segment == Segment::kUnreachable) answer.unreachable.insert(spell);
+            }
+            answer.model = true;
+            logger::info("TomeReach: the model marks {} spells unreachable; {} spells with a tome it has none of are "
+                         "not marked ({} ms, tome pairs generation {})", answer.unreachable.size(), unclassified,
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count(),
+                job.generation);
+            if (job.logQuestOnly) LogOffTree(job, answer);
+            return true;
+        }
+
+        void Run(std::shared_ptr<Job> job)
+        {
             try {
-                const auto configs = FindDistributionConfigs(std::filesystem::path(kDataDir));
-                const auto pass = FindReachedTomes(job->loadOrder, job->names, job->tomes, configs);
-                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - started).count();
-                if (!pass.unreadable.empty()) {
-                    logger::warn("TomeReach: {} plugins could not be read (first: {}) - no spell is marked, "
-                                 "every tome counts", pass.unreadable.size(), pass.unreadable.front());
-                    // The same plugins fail the same way next start: their names make the outcome
-                    auto names = pass.unreadable;
-                    std::ranges::sort(names);
-                    std::string joined;
-                    for (const auto& name : names) joined += name + "\n";
-                    Finish(job->generation, nullptr, "unreadable:" + ScanRecordRules::HashText(joined));
-                    return;
-                }
                 Answer answer;
-                for (const auto& [spell, tomes] : job->tomesOf) {
-                    if (NoTomeReached(tomes, pass)) answer.unreachable.insert(spell);
-                    if (OnlyQuestsReach(tomes, pass)) answer.questOnly.insert(spell);
+                if (!AnswerByModel(*job, answer)) {
+                    logger::info("TomeReach: the reach pass answers instead of the model");
+                    answer = Answer{};
+                    if (!AnswerByPass(*job, answer)) return;
                 }
-                for (const auto& d : pass.damaged) {
-                    logger::warn("TomeReach: '{}' is damaged (read in part) - the tomes of it and its masters count "
-                                 "as handed out", d);
-                }
-                logger::info("TomeReach: {} plugins, {} tomes, {} handed out by a record, {} only by a script "
-                             "property or alias, {} only by a distribution config ({} configs), {} kept for a damaged "
-                             "plugin, {} debug tomes left out; {} spells have no tome anything hands out, {} only "
-                             "tomes a quest hands out ({} such tomes) ({} ms, tome pairs generation {})",
-                    job->loadOrder.size(), job->tomes.size(), pass.byRecord, pass.byLooseOnly, pass.byConfig,
-                    pass.configFiles, pass.byDamaged, pass.byDebug, answer.unreachable.size(), answer.questOnly.size(),
-                    pass.questOnly.size(), ms, job->generation);
-                if (job->logQuestOnly) LogQuestOnly(*job, pass, answer.questOnly);
                 Finish(job->generation, &answer);
             } catch (const std::exception& e) {
                 logger::warn("TomeReach: the pass failed ({}) - no spell is marked", e.what());
@@ -209,6 +276,16 @@ namespace TomeReach
             job->names.SetLight(job->names.Id(file->GetFilename()), file->IsLight());
         }
 
+        // The INI archive lists as the game read them: registered before the plugins' archives
+        if (auto* ini = RE::INISettingCollection::GetSingleton()) {
+            for (const char* key : { "sResourceArchiveList:Archive", "sResourceArchiveList2:Archive" }) {
+                const RE::Setting* setting = ini->GetSetting(key);
+                const char* list = setting && setting->GetType() == RE::Setting::Type::kString ? setting->GetString() : nullptr;
+                if (!list) continue;
+                for (auto& name : SplitArchiveList(list)) job->iniArchives.push_back(std::move(name));
+            }
+        }
+
         // Every tome, a book that teaches nothing but has a Spell Research pair too
         SpellTomes::ForEachTome([&](RE::TESObjectBOOK* book, RE::SpellItem* spell) {
             Key key = 0;
@@ -220,15 +297,19 @@ namespace TomeReach
             job->tomes.insert(key);
             const RE::FormID spellId = spell->GetFormID();
             job->tomesOf[spellId].push_back(key);
+            if (Key spellKey = 0; KeyOf(dh, spellId, job->names, spellKey)) {
+                job->tomeSpells[key] = spellKey;
+                job->spellKeys[spellId] = spellKey;
+            }
             if (job->logQuestOnly && !job->spellLabels.contains(spellId)) {
                 const char* name = spell->GetName();
                 job->spellLabels.emplace(spellId, std::format("'{}' {:08X} {}", name ? name : "", spellId,
                     SpellScanner::GetPersistentFormId(spellId)));
             }
         });
-        logger::info("TomeReach: reading {} plugins for {} tomes on a worker thread (first: '{}', tome pairs generation {})",
-            job->loadOrder.size(), job->tomes.size(),
-            job->loadOrder.empty() ? std::string() : job->loadOrder.front().path.string(), generation);
+        logger::info("TomeReach: reading {} plugins for {} tomes on a worker thread (first: '{}', {} INI archives, "
+                     "tome pairs generation {})", job->loadOrder.size(), job->tomes.size(),
+            job->loadOrder.empty() ? std::string() : job->loadOrder.front().path.string(), job->iniArchives.size(), generation);
 
         auto& shared = Shared();
         {
@@ -242,6 +323,8 @@ namespace TomeReach
             shared.failure.clear();
             shared.unreachable.clear();
             shared.questOnly.clear();
+            shared.model = false;
+            shared.sources.clear();
         }
         try {
             std::thread(Run, std::move(job)).detach();
@@ -351,10 +434,27 @@ namespace TomeReach
 
     bool QuestOnlySpells(std::unordered_set<RE::FormID>& out)
     {
+        const SegmentSwitches switches = ReadSegmentSwitches();   // config.json, before the lock
         auto& shared = Shared();
         std::lock_guard guard(shared.lock);
         if (!shared.ready) return false;
-        out = shared.questOnly;
+        if (!shared.model) {
+            out = shared.questOnly;
+            return true;
+        }
+        out.clear();
+        for (const auto& [spell, s] : shared.sources) {
+            if (s.segment != Segment::kUnreachable && !switches.OnTree(s.segment)) out.insert(spell);
+        }
+        return true;
+    }
+
+    bool SourcesOfSpells(std::unordered_map<RE::FormID, SpellSourceInfo>& out)
+    {
+        auto& shared = Shared();
+        std::lock_guard guard(shared.lock);
+        if (!shared.ready || !shared.model) return false;
+        out = shared.sources;
         return true;
     }
 }

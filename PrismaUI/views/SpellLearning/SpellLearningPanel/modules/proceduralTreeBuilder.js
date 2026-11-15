@@ -20,58 +20,51 @@
 // =============================================================================
 
 /**
- * A spell the tree takes: some tome teaches it, as the scan page's "Tomes only"
- * switch did in its default (on) position before it went (2026-09-30); something
- * in the load order hands one of its tomes out (tomeUnreachable is not set: a
- * placed copy, a leveled list, a container, a recipe, a quest item, a script
- * property or a distribution config); and it is not equipped in the voice slot
- * (a mod's script or animation spell, which would take the shout's place when
- * learned); and it is not another plugin's copy of a spell the tree has
- * (duplicateOf names the kept record: same editor id and school, its tome reads
- * as the kept spell's - SpellScannerDuplicates.cpp); and not only a quest hands
- * its tomes out (questOnly: a quest script, alias, dialogue or scene fragment -
- * TomeReach.cpp), unless the player included it; and it costs something to
- * cast and the spell gate does not leave it out (isTreeCandidate covers the rest).
- * The gate's "out" (gate.band: free to cast, or only dismisses a summon - the same
- * JudgeSpell the tree load and Spell Research use, SpellScannerGate.cpp) holds
- * unless the player put the spell back in (GateReview.isKept, settings.gateReviewed);
- * "review" stays in, GateReview lists it. A scan from before the gate has only
- * freeSpell (2026-10-05). The scan keeps every spell for the librarian and the
- * perk adapters and marks taughtByTome, tomeUnreachable, questOnly, voiceSlot,
- * freeSpell, gate and duplicateOf; a scan from before the marks has no fields, and its
- * spells count as taken.
+ * A spell the tree takes (isTreeCandidate). The name is older than the rule; the
+ * scan page, the primed count and the tree build call it.
  * @param {Object} spell
  * @returns {boolean}
  */
 function isTaughtByTome(spell) {
-    if (!spell) return true;
-    if (!isTreeCandidate(spell)) return false;
-    var kept = typeof GateReview !== 'undefined' && GateReview.isKept(spell);
-    return spell.gate ? (spell.gate.band !== 'out' || kept) : spell.freeSpell !== true;
+    return isTreeCandidate(spell);
 }
 
 /**
- * The tome filter before the spell gate: a tome teaches it, something hands the
- * tome out, not in the voice slot, not another plugin's copy, and not quest-only
- * unless the player included it (GateReview.isKept: the gate's kept list).
- * GateReview's "to look over" and "left out" lists start from these.
+ * A spell the tree takes: a tome candidate (isTomeCandidate) whose tomes come from
+ * a source the settings put on the tree (TomeSourceSetting.offTree: not
+ * tomeUnreachable, its source segment switched on; questOnly in a scan without
+ * source objects), unless the player included it (GateReview.isKept,
+ * settings.gateReviewed: Include brings any one spell back, unreachable ones too).
+ * The spell gate only flags since 2026-11-14: its "out" and "review" bands and
+ * freeSpell stay in, GateReview lists them. GraftCandidates.h IsBuildCandidate
+ * is the DLL's copy. The scan keeps every spell for the librarian and the perk
+ * adapters and marks taughtByTome, tomeUnreachable, questOnly, source, voiceSlot,
+ * freeSpell, gate and duplicateOf; a scan from before the marks has no fields, and
+ * its spells count as taken.
  * @param {Object} spell
  * @returns {boolean}
  */
 function isTreeCandidate(spell) {
-    return !spell || (isTomeCandidate(spell) && (spell.questOnly !== true ||
-        (typeof GateReview !== 'undefined' && GateReview.isKept(spell))));
+    if (!spell) return true;
+    if (!isTomeCandidate(spell)) return false;
+    var off = (typeof TomeSourceSetting !== 'undefined') ? TomeSourceSetting.offTree(spell)
+        : (spell.tomeUnreachable === true || spell.questOnly === true);
+    return !off || (typeof GateReview !== 'undefined' && GateReview.isKept(spell));
 }
 
 /**
- * isTreeCandidate without the quest-only rule: GateReview's "quest only" list
- * starts from these.
+ * The tome filter before the source: some tome teaches it, as the scan page's
+ * "Tomes only" switch did in its default (on) position before it went
+ * (2026-09-30); it is not equipped in the voice slot (a mod's script or animation
+ * spell, which would take the shout's place when learned); and it is not another
+ * plugin's copy of a spell the tree has (duplicateOf names the kept record: same
+ * editor id and school, its tome reads as the kept spell's -
+ * SpellScannerDuplicates.cpp). GateReview's "specialty sources" list starts from these.
  * @param {Object} spell
  * @returns {boolean}
  */
 function isTomeCandidate(spell) {
-    return !spell || (spell.taughtByTome !== false && spell.tomeUnreachable !== true &&
-        spell.voiceSlot !== true && !spell.duplicateOf);
+    return !spell || (spell.taughtByTome !== false && spell.voiceSlot !== true && !spell.duplicateOf);
 }
 
 /** The spells the tree takes (isTaughtByTome). */

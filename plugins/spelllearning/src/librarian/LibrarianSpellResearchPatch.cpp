@@ -148,7 +148,6 @@ namespace Librarian::SpellResearchPatch
         struct Skipped
         {
             std::size_t voiceSlot = 0;
-            std::size_t gateOut = 0;      // the spell gate's "out" (free, a summon that stays, a rule)
             std::size_t duplicate = 0;
             std::size_t unreachable = 0;
             std::size_t playerLeftOut = 0;   // the player's spell blacklist or a plugin turned off
@@ -167,10 +166,10 @@ namespace Librarian::SpellResearchPatch
         // The catalog spells to register: a tome teaches them (the catalog also
         // holds NPC, quest and creature spells, which SR must not hand out), and
         // the rest exactly as the panel's builder takes spells into the tree
-        // (2026-10-05): whose tome something hands out (not tomeUnreachable), not
-        // in the voice slot, not left out by the spell gate (JudgeSpell), not another plugin's copy
-        // (duplicateOf), not blacklisted and not from a plugin turned off in the
-        // whitelist. SR can file them by school and tier, and no tier list has them yet.
+        // (2026-10-05): whose tome something hands out (not tomeUnreachable, unless the player
+        // included it), not in the voice slot, not another plugin's copy (duplicateOf), not
+        // blacklisted and not from a plugin turned off in the whitelist. Spells only a switched-off
+        // segment hands out (questOnly) are registered: the player can still find their tomes. SR can file them by school and tier, and no tier list has them yet.
         json MissingSpells(const json& catalogSpells, const Registered& registered,
             const std::unordered_map<RE::FormID, RE::TESObjectBOOK*>& tomes,
             Skipped& skipped)
@@ -188,12 +187,10 @@ namespace Librarian::SpellResearchPatch
                 if (!spell) continue;
                 if (SpellScanner::IsEquippedInVoiceSlot(spell)) {
                     ++skipped.voiceSlot;
-                } else if (unreachable.contains(formId)) {
+                } else if (unreachable.contains(formId) && !SpellScanner::GateKept(spell, gateKept)) {
                     ++skipped.unreachable;
                 } else if (PlayerLeftOut(id, formId, playerFilter)) {
                     ++skipped.playerLeftOut;
-                } else if (SpellScanner::GateLeavesOut(spell, gateKept)) {
-                    ++skipped.gateOut;
                 } else if (DuplicateLeftOut(formId, registered)) {
                     ++skipped.duplicate;
                 } else {
@@ -390,11 +387,11 @@ namespace Librarian::SpellResearchPatch
             Skipped skipped;
             const json missing = MissingSpells(catalog["spells"], registered, tomes, skipped);
             steps.Mark("missing");
-            if (skipped.voiceSlot || skipped.gateOut || skipped.duplicate || skipped.unreachable || skipped.playerLeftOut) {
+            if (skipped.voiceSlot || skipped.duplicate || skipped.unreachable || skipped.playerLeftOut) {
                 logger::info("SpellResearch: {} - left out as the tree leaves them: {} voice slot spells, "
-                             "{} the spell gate leaves out, {} copies from another plugin, {} whose tomes nothing hands out, "
+                             "{} copies from another plugin, {} whose tomes nothing hands out, "
                              "{} blacklisted or from a plugin turned off", reason, skipped.voiceSlot,
-                             skipped.gateOut, skipped.duplicate, skipped.unreachable, skipped.playerLeftOut);
+                             skipped.duplicate, skipped.unreachable, skipped.playerLeftOut);
             }
             if (missing.empty()) {
                 WriteParity(reason, 0, {});   // nothing planned: an older run's file must not stand in
@@ -444,7 +441,7 @@ namespace Librarian::SpellResearchPatch
             report["problems"] = problems;
             report["alreadyRegistered"] = registered.spells.size();
             report["noSchoolOrTier"] = registrations.noSchoolOrTier;
-            report["leftOut"] = { { "voiceSlot", skipped.voiceSlot }, { "gate", skipped.gateOut },
+            report["leftOut"] = { { "voiceSlot", skipped.voiceSlot },
                                   { "duplicate", skipped.duplicate }, { "tomeUnreachable", skipped.unreachable },
                                   { "player", skipped.playerLeftOut } };
             const Totals totals = Register(registrations, report);

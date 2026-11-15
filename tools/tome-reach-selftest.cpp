@@ -12,6 +12,7 @@
 // no game and no load order.
 
 #include "tomereach/TomeReachConfig.h"
+#include "tomereach/TomeReachData.h"
 #include "tomereach/TomeReachOutcome.h"
 #include "tomereach/TomeReachPass.h"
 
@@ -202,6 +203,27 @@ namespace
         Check(!questOnly({ 1, 2 }), "quest-only spell: a quest's tome and a merchant's is not");
         Check(!questOnly({ 9 }) && unreachable({ 9 }), "quest-only spell: no tome reached is unreachable, not quest-only");
         Check(!questOnly({}) && unreachable({}), "quest-only spell: a spell without tomes is not");
+    }
+
+    // The game's archive order (TomeReachData.h): the INI lists first, then each plugin's
+    // <stem>.bsa and <stem> - Textures.bsa in load order, each name once, lower case
+    void ArchiveRules()
+    {
+        using TomeReach::ArchiveOrder;
+        using TomeReach::SplitArchiveList;
+        Check(SplitArchiveList(" Skyrim - Misc.bsa,Skyrim - Patch.bsa ,, \tB.bsa\r") ==
+                  std::vector<std::string>{ "Skyrim - Misc.bsa", "Skyrim - Patch.bsa", "B.bsa" },
+            "archive list: names split at commas, trimmed, empty ones dropped");
+        Check(SplitArchiveList("").empty(), "archive list: an empty list names nothing");
+        Check(ArchiveOrder({ "Skyrim - Misc.bsa", "Skyrim - Patch.bsa" }, { "Skyrim.esm", "Dawnguard.esm", "A.esl", "B.esp" }) ==
+                  std::vector<std::string>{ "skyrim - misc.bsa", "skyrim - patch.bsa", "skyrim.bsa", "skyrim - textures.bsa",
+                      "dawnguard.bsa", "dawnguard - textures.bsa", "a.bsa", "a - textures.bsa", "b.bsa", "b - textures.bsa" },
+            "archive order: the INI lists, then each plugin's archive and textures archive in load order");
+        Check(ArchiveOrder({ "B.bsa", "Skyrim - Patch.bsa" }, { "B.esp" }) ==
+                  std::vector<std::string>{ "b.bsa", "skyrim - patch.bsa", "b - textures.bsa" },
+            "archive order: an archive the INI lists keeps that place when its plugin loads too");
+        Check(ArchiveOrder({}, { "Name.With.Dots.esp" }).front() == "name.with.dots.bsa",
+            "archive order: only the extension leaves the plugin name");
     }
 
     void ConfigRules()
@@ -426,6 +448,7 @@ int RunSelfTest()
     }
     SpellRules();
     ConfigRules();
+    ArchiveRules();
     PassOutcomes();
 
     std::printf("self-test: %d passed, %d failed\n", g_passed, g_failed);

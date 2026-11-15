@@ -96,9 +96,10 @@ record on each: `taughtByTome` (from `SpellsTaughtByTomes`), `voiceSlot` (`IsEqu
 `freeSpell` (`IsFreeSpell`: under 0.5 Magicka to cast - a pet's, mount's or follower's call, a mod's utility
 spell, 2026-10-05), `gate` (the spell gate, `SpellScannerGate.cpp` `JudgeSpell`, 2026-10-06: `{band, reasons}`
 when the band is not "in". "out" - free, or only dismisses a summon (banish only), or an "out" rule from
-`gate/rules.json` (none ships) - leaves the tree, a saved tree's load (`ValidateAndFixTree`) and Spell Research
-unless the player includes it again from the blacklist window's "Left out by itself" list (`GateLeavesOut`
-with `ReadGateKept`, the panel's `gateReviewed` in config.json: "plugin:localid" keys whose plugin name is
+`gate/rules.json` (none ships) - left the tree, a saved tree's load and Spell Research until 2026-11-14; since
+then the gate only flags (where the tomes come from decides, "Tomes nothing hands out" below), and an "out"
+spell stays and is listed in "Spells to look over" beside the review band. The player's Keep and Include go to
+one list (`GateKept` with `ReadGateKept`, the panel's `gateReviewed` in config.json: "plugin:localid" keys whose plugin name is
 UTF-8 with A-Z folded and nothing else, `PluginKey` in C++ and `foldPluginName` (constants.js)
 in the panel, so a Korean, Russian or accented plugin name matches on both sides since 2026-10-17; the
 panel's blacklist, plugin list and chosen roots compare plugin names through `foldPluginName` too. A key the
@@ -110,11 +111,12 @@ RACE_DATA flags2 NonHostile: mounts and pets, 2026-10-10), a script-only spell u
 `gate/rules.json` (plugin masters plus effect archetypes, never spell names; the shipped one is "review") -
 stays and is listed in "Spells to look over" (`modules/gateReview.js`: Leave out blacklists it, Keep stores
 it in `gateReviewed`)),
-`tomeUnreachable` (below, "Tomes nothing hands out") and `duplicateOf` (below, "One spell
-from two plugins"). The tree takes a spell a tome teaches, whose tome something hands out, that is not in the
-voice slot, costs something to cast, is not left out by the spell gate and is not another plugin's copy of a tree spell: `isTaughtByTome` / `filterTomeSpells`
-(proceduralTreeBuilder.js) in Classic's build request, the primed count (`getPrimedSpells`) and the tree
-preview's school sizes. A scan from before the marks has no fields and keeps every spell. The scan status's
+`tomeUnreachable`, `questOnly` and `source` (below, "Tomes nothing hands out") and `duplicateOf` (below, "One spell
+from two plugins"). The tree takes a spell a tome teaches, that is not in the voice slot and is not another
+plugin's copy of a tree spell (`isTomeCandidate`), whose tomes come from a source the settings put on the tree
+(`TomeSourceSetting.offTree`), or that the player included (`GateReview.isKept`): `isTreeCandidate` (alias
+`isTaughtByTome`) / `filterTomeSpells` (proceduralTreeBuilder.js) in Classic's build request, the primed count
+(`getPrimedSpells`) and the tree preview's school sizes. A scan from before the marks has no fields and keeps every spell. The scan status's
 spell count still counts every scanned spell. Papyrus `RunScan`'s tome scan (`ScanSpellTomes`) is unchanged
 and has neither mark.
 
@@ -206,8 +208,9 @@ game the placed references of cells that are not loaded are not in memory:
   "Spell tomes that teach nothing" -, keyed by plugin name and local id), then hands them to a detached worker
   thread; no RE object crosses over. A new generation of tome pairs runs the pass again (`TomeReach::Restart`);
   until it is done no spell is marked, and a pass of an older generation that finishes later is dropped.
-- The worker (`FindReachedTomes`, TomeReachPass.cpp) reads every plugin (`ScanPlugin`, TomeReachRecords.cpp;
-  compressed records through zlib). A tome counts as handed out when a record refers to it: a placed
+- The worker (`FindReachedTomes`, TomeReachPass.cpp) reads every plugin (`ScanPlugin`, TomeReachRecords.cpp,
+  over the shared walker `WalkPlugin`, TomeReachPlugin.cpp: groups, master-list form ids, compressed records
+  through zlib, the cell and worldspace each record sits in). A tome counts as handed out when a record refers to it: a placed
   reference (`REFR` `NAME`), a leveled list (`LVLI` `LVLO`), a container, NPC or quest inventory (`CNTO`), a
   form list (`FLST` `LNAM`), a recipe (`COBJ` `CNAM`), a quest alias's created, forced or unique item
   (`ALCO`, `ALFR`, `ALUA`) or a script property (`VMAD`). Aliases and script properties are read loosely,
@@ -230,8 +233,9 @@ game the placed references of cells that are not loaded are not in memory:
   goes by the name, so a real tome whose editor id happens to contain `debug` is left out too; its spell
   stays in the tree only if another reached tome teaches it.
 - A spell is `tomeUnreachable` when every tome that teaches it is unreached. The scan marks it
-  (`UnreachableSpells`), and the tree filter (`isTaughtByTome`) leaves it out; it stays in the catalog and
-  the perk adapters.
+  (`UnreachableSpells`), and the tree filter (`isTreeCandidate`) leaves it out unless the player included it;
+  it stays in the catalog and the perk adapters. Since 2026-11-14 the distribution model below answers this
+  and `questOnly`; the pass's own answers are the fallback.
 - A spell whose reached tomes only a quest hands out is `questOnly` (2026-10-28; the rules and the log list:
   "Tree Graft", "Quest-only spells", under Data Flow).
 - A damaged plugin (a record or subrecord past its end, a compressed record that does not inflate, a file
@@ -251,6 +255,52 @@ game the placed references of cells that are not loaded are not in memory:
   expected list), and `tools/tome-reach-test` runs the plugin's own pass on the same inputs.
 - The file path is the engine's own folder for the plugin (`TESFile::path`), then `Data/<name>`; the log's
   `TomeReach: reading ...` line names the first one, and `TomeReach: N plugins, N tomes ...` the result.
+- The tome distribution model (`docs/superpowers/specs/2026-11-14-tome-distribution-design.md`)
+  reads its inputs into the spell store with `ReadSpellStore` (TomeReachReader.cpp, over the same walker): the
+  winning version of every tome, scroll, staff, leveled list, container, NPC, outfit, faction (vendor chest),
+  recipe and quest, the winning version of each reference to a container, NPC, leveled NPC list, tome, scroll or
+  staff (kept by the base's record type while reading, filtered by its winning kind at the end), and the cells
+  (merged field by field) and locations they are in. Nothing uses it in game yet; `tome-reach-test --store`
+  dumps it (about 3.4 s and 84 MB on the author's 3,227 plugins), and it matched the author's Python reader on
+  every parent, placement count, cell, location and vendor chest (2026-11-14). On the store, `ReachGraph`
+  (TomeReachGraph.cpp) walks each tome up through leveled lists to its roots (containers, NPC inventories and
+  death items; test and debug records left out), with the bases that place an NPC, vendor chests, recipes and
+  quest alias rewards, and `Sites` (TomeReachSites.cpp) counts placements by region and site (`tome-reach-test
+  --graph`). With the data folders it also reads SPID and SkyPatcher configs (TomeReachDistr.cpp: SPID item lines
+  become roots judged by their filters, SkyPatcher `addToLLs` adds list parents) and the attached scripts
+  (TomeReachScripts.cpp: VMAD properties; TomeReachPex.cpp disassembles each script, loose or from a BSA through
+  TomeReachData.cpp / TomeReachArchive.cpp, and follows each property to AddItem or AddForm), and it matched the
+  Python model on every root, site count and unreachable spell (2026-11-14). `Classifier` (TomeReachClasses.cpp)
+  turns each tome's roots, placements, rewards and recipes into routes of a class and subtype (generic, faction,
+  vendor, encounter, placed, reward, crafted, other, none), and `ClassifySpells` (TomeReachSegments.cpp) finds the
+  specialty mod vendors and puts every spell with a tome in one segment, first match winning (unreachable, general
+  sale, specialty mod vendor, wide drops, specific loot, quest reward, crafted only, uncommon vendor, review);
+  `SegmentSwitches` (TomeReachSwitches.h, header-only) says which segments go on the tree (`tome-reach-test
+  --sources`; equal to the Python classes, vendor entries, shops and buckets, 2026-11-14). `Model`
+  (TomeReachModel.cpp) runs the whole chain for the harness and the game alike.
+- **In game** (2026-11-14): the worker thread runs the model (`ClassifyForGame`, TomeReachSources.cpp, over
+  the plugin files and the game's Data folder), and the reach pass only when the model cannot run (until later
+  the same day the pass ran first every time, reading the plugins and configs a second time). The model's
+  unreachable segment sets `tomeUnreachable` (a spell none of whose tomes is in the model's store is not
+  marked), and a spell is
+  `questOnly` when its segment is switched off (`QuestOnlySpells` reads config.json `tomeSources` on each call;
+  defaults in `SegmentSwitches`: general sale, wide drops and uncommon vendors on, specialty mod vendors,
+  specific loot, quest rewards and crafted only off; review always on). The scan writes each spell's
+  `source` object (`SourceJson`: `segment` as `SegmentKey`, `class`, `subtype`, `detail`, `shop` for a
+  specialty mod vendor's spell). When a plugin is unreadable or the model throws, the pass answers as before,
+  with no `source` objects. Archives are read in the game's order (`ArchiveOrder`, TomeReachData.h): the INI
+  lists (`sResourceArchiveList`, then `sResourceArchiveList2`, read from the game's settings on the game thread),
+  then each loaded plugin's `<stem>.bsa` and `<stem> - Textures.bsa` in load order, a later one winning; an
+  archive no plugin loads is not read, and a loose file beats them all. In game the Data folder is MO2's virtual
+  one, so the winning copy of each archive file is MO2's. The harness takes the same lists from inputs.json
+  (`iniArchives`, lab/tome-reach/make_inputs.py) and `--archives` dumps what it reads. The game's tome pairs (SpellTomes) are the model's tomes: a book teaches its pair's
+  spell whatever its DATA says (a non-teaching book Spell Research's Synthesizer pairs, a book a DLL rebinds),
+  and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, Settings > Spell Tomes >
+  Where Tomes Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
+  `offTree(spell)` is the segment switched off, `tomeUnreachable`, or `questOnly` for a scan without `source`
+  objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).
+  Gate Review's "Specialty sources" list shows the spells off by their source with the segment and route
+  detail as the reason; Include brings any one back, unreachable ones too (also for Spell Research).
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no
   property, and a config that names a tome by its runtime id (`0xFE000800~Plugin.esl`, a load order
   prefix) instead of its id in the plugin. Such a spell would leave the tree wrongly; none was found on the author's load order (no script
@@ -2225,8 +2275,9 @@ order's; log prefix `TreeGraft:`).
   was another known load order's), so a graft dropped this start still has it next time.
 - **Candidates** (`include/treebuilder/GraftCandidates.h`): `NewSpells` - not in the seen list, not in the tree
   (a node is its persistentId, or its formId when it has none), with a persistentId, no node of its duplicate
-  group. `IsBuildCandidate` ports the panel's rule line by line (`proceduralTreeBuilder.js` `isTaughtByTome`,
-  blacklist, plugin whitelist, quest-only, gate kept); the player's rules come from config.json.
+  group. `IsBuildCandidate` ports the panel's rule line by line (`proceduralTreeBuilder.js` `isTreeCandidate`,
+  blacklist, plugin whitelist, the source with the segment switches, gate kept); the player's rules come from
+  config.json.
 - **The plan** (off the game thread; `TreeGraftRun.h` `PlanGraft`, on the file's own tree, not the remapped
   copy): (1) `RefreshIds` - a live node's stale formId becomes what validation says it is now, with every link
   to it; a rematched node takes its new persistentId; a node validation drops keeps its id, and a live node
@@ -2299,7 +2350,9 @@ distribution config that names it, or a damaged plugin that could, counts as han
 spell is quest-only when at least one of its tomes is reached and every reached tome is quest-only
 (`TomeReachPass.h` `OnlyQuestsReach`; an unreached tome does not count against it). The scan marks it
 `questOnly: true` (`TomeReach::QuestOnlySpells`); `isTreeCandidate` leaves it out unless the player included it
-(`GateReview.isKept`); the blacklist window's "Quest only" list (`gateReview.js`) shows it with Include. The
+(`GateReview.isKept`); the blacklist window's "Specialty sources" list (`gateReview.js`) shows it with Include.
+Since 2026-11-14 this is the fallback: when the distribution model runs, `questOnly` means a segment switched
+off ("Tomes nothing hands out", In game), and the self-test logs `TomeReach off the tree:` lines instead. The
 College of Winterhold's novice tomes stay: a merchant's leveled list reaches them too. With the dev self-test on
 (`selftest.json` `{"enabled": true}`, `Environment::SelfTest::IsOn`, read when the pass starts; Ruling 20) each
 pass that answers logs every quest-only spell of the load order, one `TomeReach quest-only: '<name>' <formId>

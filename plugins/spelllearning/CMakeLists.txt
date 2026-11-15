@@ -68,7 +68,20 @@ add_commonlibsse_plugin(${PROJECT_NAME}
     src/spellscanner/SpellScannerGate.cpp
     src/spellscanner/SpellScannerDuplicates.cpp
     src/spellscanner/SpellScannerScan.cpp
+    src/tomereach/TomeReachPlugin.cpp
     src/tomereach/TomeReachRecords.cpp
+    src/tomereach/TomeReachReader.cpp
+    src/tomereach/TomeReachGraph.cpp
+    src/tomereach/TomeReachSites.cpp
+    src/tomereach/TomeReachArchive.cpp
+    src/tomereach/TomeReachData.cpp
+    src/tomereach/TomeReachDistr.cpp
+    src/tomereach/TomeReachPex.cpp
+    src/tomereach/TomeReachScripts.cpp
+    src/tomereach/TomeReachClasses.cpp
+    src/tomereach/TomeReachSegments.cpp
+    src/tomereach/TomeReachModel.cpp
+    src/tomereach/TomeReachSources.cpp
     src/tomereach/TomeReachConfig.cpp
     src/tomereach/TomeReachPass.cpp
     src/tomereach/TomeReach.cpp

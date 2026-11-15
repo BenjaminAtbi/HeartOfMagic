@@ -188,22 +188,21 @@ namespace SpellScanner
 
     namespace
     {
-        // What a tree node must be to show: a spell with a name, that the spell gate does
-        // not leave out (GateLeavesOut: free or dismiss-only, unless the player included it) and that is not in
-        // the voice slot - what a scan lets into a new tree. A saved tree is checked again as it loads: a stale formId can name another
-        // plugin's record (an unnamed Constant Effect ability), and a tree built before a
-        // rule came in still holds spells the rule leaves out (2026-10-05).
-        bool IsPlayerSpellForm(RE::SpellItem* spell, const std::unordered_set<std::string>& gateKept)
+        // What a tree node must be to show: a spell with a name that is not in the voice slot.
+        // A saved tree is checked again as it loads: a stale formId can name another plugin's
+        // record (an unnamed Constant Effect ability). The spell gate only flags since
+        // 2026-11-14 (its "out" band left a spell out here from 2026-10-05).
+        bool IsPlayerSpellForm(RE::SpellItem* spell)
         {
             if (!spell) return false;
             const char* name = spell->GetFullName();
-            return name && *name && !GateLeavesOut(spell, gateKept) && !IsEquippedInVoiceSlot(spell);
+            return name && *name && !IsEquippedInVoiceSlot(spell);
         }
 
-        bool IsPlayerSpell(const std::string& formIdStr, const std::unordered_set<std::string>& gateKept)
+        bool IsPlayerSpell(const std::string& formIdStr)
         {
             const auto formId = FormIdText::ParseSpellOf(formIdStr);  // a copy's node id names its spell
-            return formId && IsPlayerSpellForm(RE::TESForm::LookupByID<RE::SpellItem>(*formId), gateKept);
+            return formId && IsPlayerSpellForm(RE::TESForm::LookupByID<RE::SpellItem>(*formId));
         }
 
         // A persistentId that resolved to nothing: why, in the log the player can read, and which
@@ -260,8 +259,7 @@ namespace SpellScanner
         // sharing an editor id would read as two. Returns 0
         // when the node is not found again (no editor id, no such spell, another school, several)
         RE::FormID RematchByEditorId(const json& node, const std::string& school,
-                                     std::optional<SpellsByEditorId>& spellsByEditorId,
-                                     const std::unordered_set<std::string>& gateKept)
+                                     std::optional<SpellsByEditorId>& spellsByEditorId)
         {
             if (!node.contains("editorId") || !node["editorId"].is_string()) return 0;
             const std::string editorId = node["editorId"].get<std::string>();
@@ -270,7 +268,7 @@ namespace SpellScanner
             EditorIdRematch::Candidates candidates;
             if (const auto* found = spellsByEditorId->Find(editorId)) {
                 for (const auto& candidate : *found) {
-                    if (IsPlayerSpellForm(RE::TESForm::LookupByID<RE::SpellItem>(candidate.first), gateKept)) {
+                    if (IsPlayerSpellForm(RE::TESForm::LookupByID<RE::SpellItem>(candidate.first))) {
                         candidates.push_back(candidate);
                     }
                 }
@@ -301,7 +299,7 @@ namespace SpellScanner
         // What the game says about one saved node (in the tree school `school`): its formId now, and whether it stays
         TreeRemap::NodeVerdict JudgeNode(const json& node, const std::string& school, PluginLookup& lookup,
                                          std::optional<SpellsByEditorId>& spellsByEditorId,
-                                         const std::unordered_set<std::string>& gateKept, std::size_t& notPlayerSpells)
+                                         std::size_t& notPlayerSpells)
         {
             TreeRemap::NodeVerdict verdict;
             const std::string saved = node["formId"].get<std::string>();
@@ -328,7 +326,7 @@ namespace SpellScanner
                         logger::info("SpellScanner: Resolved {} -> {} from persistent ID {}", saved, verdict.formId,
                             persistentId);
                     }
-                } else if (const RE::FormID rematchedId = RematchByEditorId(node, school, spellsByEditorId, gateKept);
+                } else if (const RE::FormID rematchedId = RematchByEditorId(node, school, spellsByEditorId);
                            rematchedId != 0 && IsFormIdValid(rematchedId)) {
                     // Its plugin was renamed, merged or compacted: the same spell by editor id. The
                     // plugin is not reported missing, the node is there. TreeRemap gives the node the
@@ -349,7 +347,7 @@ namespace SpellScanner
 
             // A node the tree shows is a player's spell (IsPlayerSpell). Anything else leaves
             // the tree as it loads, so the player never meets an unnamed or code-like node
-            if (isValid && !IsPlayerSpell(verdict.formId, gateKept)) {
+            if (isValid && !IsPlayerSpell(verdict.formId)) {
                 isValid = false;
                 notPlayerSpells++;
                 logger::info("SpellScanner: {} ({}) is not a player's spell now - left out of the tree",
@@ -391,7 +389,6 @@ namespace SpellScanner
             return result;
         }
 
-        const auto gateKept = ReadGateKept();
         // One per pass: the file list is converted once, not once per node
         PluginLookup pluginLookup;
         std::optional<SpellsByEditorId> spellsByEditorId;  // built at the first node that needs a rematch
@@ -401,7 +398,7 @@ namespace SpellScanner
         // by TreeRemap (no game types, tools/tree-remap-check runs the same code). Saved links
         // hold the formIds the file was saved with, so each is looked up once by that value
         const auto report = TreeRemap::FixTree(treeData, [&](const json& node, const std::string& school) {
-            return JudgeNode(node, school, pluginLookup, spellsByEditorId, gateKept, notPlayerSpells);
+            return JudgeNode(node, school, pluginLookup, spellsByEditorId, notPlayerSpells);
         });
         LogReport(report);
 
