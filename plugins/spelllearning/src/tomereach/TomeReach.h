@@ -7,8 +7,8 @@
 // After the data loads, a worker thread reads the load order's plugin files and
 // the Data folder's configs and scripts, and puts every spell with a tome in a
 // distribution segment (the distribution model, TomeReachModel.h): no route
-// (tomeUnreachable), general sale, wide drops, uncommon vendor, specialty mod
-// vendor, specific loot, quest reward, crafted only. The settings switch each
+// (tomeUnreachable), spellpack vendor, ritual quest, standard sale, standard
+// loot, regional loot, unique vendor, unique reward, crafted. The settings switch each
 // segment on or off the tree (config.json tomeSources); a spell of a segment that
 // is off is questOnly. The older reach pass (TomeReachPass: any record or config
 // that names a tome) runs only when the model cannot (a plugin it could not read,
@@ -55,7 +55,7 @@ namespace TomeReach
         SourceClass cls = SourceClass::kNone;
         std::string subtype;
         std::string detail;
-        std::string shop;   // specialty mod vendor: the plugin whose tomes the chest sells
+        std::string shop;   // spellpack vendor: the plugin whose tomes the chest sells
     };
 
     // Every spell with a tome and its source. False while the pass runs, when it failed,

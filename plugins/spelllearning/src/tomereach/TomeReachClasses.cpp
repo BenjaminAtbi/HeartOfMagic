@@ -10,16 +10,13 @@ namespace TomeReach
 {
     namespace
     {
-        constexpr std::size_t kGenericVendors = 5;      // vendor chests that make a shared list generic
-        constexpr std::size_t kGenericRegions = 3;      // regions of containers or NPCs that make it generic
-        constexpr std::size_t kGenericNpcs = 100;       // placed NPCs of mixed factions that make it generic
-        constexpr std::size_t kFactionReach = 3;        // NPCs and containers, and sites, of a faction route
-        constexpr std::size_t kWideSites = 20;          // a faction's drops below this many sites are local
+        constexpr std::size_t kGenericVendors = 5;      // vendor chests that make a generic vendors route
+        // Loot (containers and NPCs, by placed references) is standard at this many sites or regions, regional at
+        // two sites or more, one site's loot below
+        constexpr std::size_t kStandardSites = 20;
+        constexpr std::size_t kStandardRegions = 5;
         constexpr std::uint32_t kUniqueNpc = 0x20;      // ACBS flag
         constexpr std::size_t kDetailItems = 4;         // names listed in a detail
-        // Factions too broad to name a group of NPCs
-        constexpr std::array<std::string_view, 7> kBroadFactions{ "CreatureFaction", "PredatorFaction", "PreyFaction",
-            "CurrentFollowerFaction", "PotentialFollowerFaction", "PotentialMarriageFaction", "DunPlayerAllyFaction" };
         const std::string kNoName;
 
         bool HasBoss(const std::string& editorId) { return AsciiText::ToLower(editorId).find("boss") != std::string::npos; }
@@ -85,63 +82,41 @@ namespace TomeReach
             placedNpcs.push_back(n);
             npcPlaces.Add(p);
         }
+        std::size_t npcRefs = 0;
+        for (const Key n : placedNpcs) npcRefs += m_sites.OfNpc(n).count;
         std::set<RegionSite> sites;
-        for (const auto& [where, _n] : cont.sites) sites.insert(where);
-        for (const auto& [where, _n] : npcPlaces.sites) sites.insert(where);
-        // The faction most placed NPCs share (broad ones left out); a faction route when half of them do
-        std::map<Key, std::size_t> factions;
-        for (const Key n : placedNpcs) {
-            const auto npc = m_store.npcs.find(n);
-            if (npc == m_store.npcs.end()) continue;
-            const std::set<Key> own(npc->second.factions.begin(), npc->second.factions.end());
-            for (const Key f : own) {
-                const std::string& id = EditorId(f);
-                if (std::find(kBroadFactions.begin(), kBroadFactions.end(), id) == kBroadFactions.end()) ++factions[f];
-            }
+        std::map<std::string, std::size_t> regions;   // region -> placements
+        for (const auto& [where, n] : cont.sites) {
+            sites.insert(where);
+            regions[where.region] += n;
         }
-        Key topFaction = 0;
-        std::size_t topCount = 0;
-        for (const auto& [f, n] : factions) {
-            if (n > topCount) std::tie(topFaction, topCount) = std::tie(f, n);
+        for (const auto& [where, n] : npcPlaces.sites) {
+            sites.insert(where);
+            regions[where.region] += n;
         }
-        const bool isFaction = topCount && 2 * topCount >= placedNpcs.size();
 
-        std::vector<std::string> vendorIds;
-        for (const Key v : vendors) vendorIds.push_back(EditorId(v));
-        std::sort(vendorIds.begin(), vendorIds.end());
-        if (vendors.size() >= kGenericVendors)
+        if (vendors.size() >= kGenericVendors) {
+            std::vector<std::string> vendorIds;
+            for (const Key v : vendors) vendorIds.push_back(EditorId(v));
+            std::sort(vendorIds.begin(), vendorIds.end());
             out.push_back({ SourceClass::kGeneric, "vendors", std::to_string(vendors.size()) + " vendors: " + Join(vendorIds, kDetailItems) });
-        std::set<std::string> contRegions, npcRegions;
-        for (const auto& [where, _n] : cont.sites) contRegions.insert(where.region);
-        for (const auto& [where, _n] : npcPlaces.sites) npcRegions.insert(where.region);
-        if (contRegions.size() >= kGenericRegions)
-            out.push_back({ SourceClass::kGeneric, "loot",
-                std::to_string(cont.count) + " containers in " + std::to_string(contRegions.size()) + " regions" });
-        if (placedNpcs.size() >= kGenericNpcs && npcRegions.size() >= kGenericRegions && !isFaction)
-            out.push_back({ SourceClass::kGeneric, "npcs",
-                std::to_string(placedNpcs.size()) + " NPCs in " + std::to_string(npcRegions.size()) + " regions" });
-        if (out.empty() && placedNpcs.size() + cont.count >= kFactionReach && sites.size() >= kFactionReach) {
-            const std::string what = isFaction
-                ? EditorId(topFaction) + " (" + std::to_string(topCount) + " of " + std::to_string(placedNpcs.size()) + " NPCs)"
-                : std::to_string(placedNpcs.size()) + " NPCs, " + std::to_string(cont.count) + " containers";
-            std::map<std::string, std::size_t> regions;
-            for (const auto& [where, n] : cont.sites) regions[where.region] += n;
-            for (const auto& [where, n] : npcPlaces.sites) regions[where.region] += n;
+        }
+        if (sites.size() >= 2) {
             std::vector<std::pair<std::size_t, std::string>> top;
             for (const auto& [r, n] : regions) top.emplace_back(n, r);
             std::stable_sort(top.begin(), top.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
             std::vector<std::string> regionText;
             for (const auto& [n, r] : top) regionText.push_back(r + " " + std::to_string(n));
-            out.push_back({ SourceClass::kFaction,
-                isFaction ? (sites.size() >= kWideSites ? "faction" : "local") : "regional",
-                what + "; " + std::to_string(sites.size()) + " sites; regions " + Join(regionText, 3) });
+            const std::string what = std::to_string(npcRefs) + " NPCs placed (" + std::to_string(placedNpcs.size()) +
+                                     " bases), " + std::to_string(cont.count) + " containers; " +
+                                     std::to_string(sites.size()) + " sites in " + std::to_string(regions.size()) +
+                                     " regions: " + Join(regionText, 3);
+            if (sites.size() >= kStandardSites || regions.size() >= kStandardRegions)
+                out.push_back({ SourceClass::kGeneric, "loot", what });
+            else
+                out.push_back({ SourceClass::kFaction, "regional", what });
         }
-        const auto has = [&](std::initializer_list<SourceClass> classes) {
-            return std::any_of(out.begin(), out.end(), [&](const Route& r) {
-                return std::find(classes.begin(), classes.end(), r.cls) != classes.end();
-            });
-        };
-        if (!vendors.empty() && !has({ SourceClass::kGeneric })) {
+        if (!vendors.empty() && vendors.size() < kGenericVendors) {
             std::vector<std::string> where;
             for (std::size_t i = 0; i < vendors.size() && i < kDetailItems; ++i) {
                 const auto names = SiteNames(m_sites.OfBase(vendors[i]));
@@ -149,7 +124,7 @@ namespace TomeReach
             }
             out.push_back({ SourceClass::kVendor, "specialty", Join(where, where.size()) });
         }
-        if (!has({ SourceClass::kGeneric, SourceClass::kFaction }) && !sites.empty()) {
+        if (sites.size() == 1) {
             std::vector<std::string> bosses;
             for (const Key n : placedNpcs) {
                 const auto npc = m_store.npcs.find(n);
@@ -157,11 +132,8 @@ namespace TomeReach
             }
             const bool boss = !bosses.empty() ||
                 std::any_of(containers.begin(), containers.end(), [&](Key c) { return HasBoss(EditorId(c)); });
-            std::set<std::string> siteNames;
-            for (const auto& s : sites) siteNames.insert(s.site);
             out.push_back({ SourceClass::kEncounter, boss ? "boss" : "loot",
-                std::to_string(sites.size()) + " site(s): " + Join({ siteNames.begin(), siteNames.end() }, 3) +
-                    (bosses.empty() ? "" : " (" + Join(bosses, 3) + ")") });
+                "1 site(s): " + sites.begin()->site + (bosses.empty() ? "" : " (" + Join(bosses, 3) + ")") });
         }
         return m_memo.emplace(std::move(key), std::move(out)).first->second;
     }

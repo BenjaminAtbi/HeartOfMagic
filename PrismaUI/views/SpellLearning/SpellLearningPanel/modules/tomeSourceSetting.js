@@ -1,18 +1,19 @@
 /**
- * TomeSourceSetting - Settings > Spell Tomes, "Where tomes come from": which
+ * TomeSourceSetting - the Complex tree builder's "Where spells come from": which
  * distribution segments put their spells on the tree.
  *
  * The scan gives every spell with a tome a source object (TomeReach's distribution
  * model, SpellScannerScan.cpp): { segment, class, subtype, detail, shop? }. The
- * segment is one of unreachable, generalSale, specialtyModVendor, wideDrops,
- * specificLoot, questReward, craftedOnly, uncommonVendor, review. Each segment but
+ * segment is one of unreachable, spellpackVendor, ritualQuest, standardSale,
+ * standardLoot, regionalLoot, uniqueVendor, uniqueReward, crafted, review (the
+ * order the model tries them, first match winning). Each segment but
  * unreachable and review has a switch here; a spell of a segment switched off is
  * off the tree (offTree) until the player includes it in Gate Review. Unreachable
  * spells (tomeUnreachable) are always off; review ones always on (Gate Review lists
  * them). A scan without source objects (the reach pass answered: the model could
  * not run) falls back on its questOnly flag.
  *
- * Saved as config.tomeSources = { generalSale: true, ... } (the keys of SegmentKey,
+ * Saved as config.tomeSources = { standardSale: true, ... } (the keys of SegmentKey,
  * TomeReachSwitches.h, with the same defaults). The DLL reads it for the scan's
  * questOnly flag and Tree Graft (GraftCandidates.h); the panel reads it live, so a
  * switch counts at the next build without a new scan. Not in settings presets.
@@ -22,34 +23,37 @@
 
 var TomeSourceSetting = {
 
-    /** The switched segments, in the order the settings page lists them */
-    SEGMENTS: ['generalSale', 'wideDrops', 'uncommonVendor', 'specialtyModVendor', 'specificLoot', 'questReward', 'craftedOnly'],
+    /** The switched segments, in the model's order (the page lists them so) */
+    SEGMENTS: ['spellpackVendor', 'ritualQuest', 'standardSale', 'standardLoot', 'regionalLoot', 'uniqueVendor',
+        'uniqueReward', 'crafted'],
 
     DEFAULTS: {
-        generalSale: true,
-        wideDrops: true,
-        uncommonVendor: true,
-        specialtyModVendor: false,
-        specificLoot: false,
-        questReward: false,
-        craftedOnly: false
+        spellpackVendor: false,
+        ritualQuest: true,
+        standardSale: true,
+        standardLoot: true,
+        regionalLoot: false,
+        uniqueVendor: false,
+        uniqueReward: false,
+        crafted: false
     },
 
     /** Every segment's name ([i18n key, English]); also the Gate Review reason of a spell off the tree */
     NAMES: {
         unreachable: ['settings.tomeSources.unreachable', 'nothing hands out its tomes'],
-        generalSale: ['settings.tomeSources.generalSale', 'General sale'],
-        wideDrops: ['settings.tomeSources.wideDrops', 'Wide drops'],
-        uncommonVendor: ['settings.tomeSources.uncommonVendor', 'Uncommon vendors'],
-        specialtyModVendor: ['settings.tomeSources.specialtyModVendor', 'Specialty mod vendors'],
-        specificLoot: ['settings.tomeSources.specificLoot', 'Specific loot'],
-        questReward: ['settings.tomeSources.questReward', 'Quest rewards'],
-        craftedOnly: ['settings.tomeSources.craftedOnly', 'Crafted only'],
+        spellpackVendor: ['settings.tomeSources.spellpackVendor', 'Spellpack mod vendors'],
+        ritualQuest: ['settings.tomeSources.ritualQuest', 'Ritual Quest'],
+        standardSale: ['settings.tomeSources.standardSale', 'Standard Vendors'],
+        standardLoot: ['settings.tomeSources.standardLoot', 'Standard Loot'],
+        regionalLoot: ['settings.tomeSources.regionalLoot', 'Regional Loot'],
+        uniqueVendor: ['settings.tomeSources.uniqueVendor', 'Unique vendors'],
+        uniqueReward: ['settings.tomeSources.uniqueReward', 'Unique rewards'],
+        crafted: ['settings.tomeSources.crafted', 'Crafted'],
         review: ['settings.tomeSources.review', 'source unclear'],
         questOnly: ['settings.tomeSources.questOnly', 'only a quest hands out its tomes']
     },
 
-    /** The toggle of a segment on the settings page */
+    /** The toggle of a segment on the page */
     toggleId: function(segment) {
         return 'tomeSource' + segment.charAt(0).toUpperCase() + segment.slice(1) + 'Toggle';
     },
@@ -118,8 +122,32 @@ var TomeSourceSetting = {
                 self._switches()[segment] = this.checked;
                 self._save();
             });
+            // The whole row is the switch: a click on its name or description flips it (the switch's own
+            // label already does, so a click inside it is left alone)
+            var row = toggle.closest ? toggle.closest('.setting-row') : null;
+            if (row) {
+                row.addEventListener('click', function(e) {
+                    if (e.target && e.target.closest && e.target.closest('.toggle-switch')) return;
+                    toggle.checked = !toggle.checked;
+                    toggle.dispatchEvent(new Event('change'));
+                });
+            }
         });
+        this._initFold();
         this.sync();
+    },
+
+    /** The box folds by its header, open by default */
+    _initFold: function() {
+        var header = document.getElementById('tomeSourcesHeader');
+        var content = document.getElementById('tomeSourcesContent');
+        if (!header || !content || !header.addEventListener) return;
+        var icon = header.querySelector ? header.querySelector('.prm-collapse-icon') : null;
+        header.addEventListener('click', function() {
+            var folded = content.classList.toggle('collapsed');
+            if (icon) icon.classList.toggle('collapsed', folded);
+            header.setAttribute('aria-expanded', folded ? 'false' : 'true');
+        });
     },
 
     /** Put the saved switches on the toggles */

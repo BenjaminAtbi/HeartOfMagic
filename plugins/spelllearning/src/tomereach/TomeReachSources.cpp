@@ -56,14 +56,14 @@ namespace TomeReach
                 summary += std::format("{}{} {}", i ? ", " : "", SegmentName(static_cast<Segment>(i)), counts[i]);
             }
             const ModelTimes& t = model.Times();
-            logger::info("TomeReach: distribution model: {} spells with a tome ({}), {} specialty mod vendors; {} config "
+            logger::info("TomeReach: distribution model: {} spells with a tome ({}), {} spellpack vendors; {} config "
                          "files, {} SPID lines, {} SkyPatcher adds, {} archives with scripts or strings, {} scripts read, {} "
                          "not found; configs {} ms, plugins {} ms, graph {} ms, classes {} ms", out.size(), summary,
                 sources.shops.size(), model.ConfigFiles().files, model.Configs()->spid.size(),
                 model.Configs()->listAdds.size(), model.Data() ? model.Data()->ArchiveCount() : 0,
                 model.Graph().ScriptsRead(), model.Graph().ScriptsMissing(), t.configs, t.store, t.graph, ms);
-            for (const SpecialtyShop& shop : sources.shops) {
-                logger::info("TomeReach: specialty mod vendor: {} - {} of {} vendor-sold tome spells", shop.plugin, shop.sold,
+            for (const SpellpackShop& shop : sources.shops) {
+                logger::info("TomeReach: spellpack vendor: {} - {} of {} vendor-sold tome spells", shop.plugin, shop.sold,
                     shop.set);
             }
             if (!model.Store().damaged.empty()) {

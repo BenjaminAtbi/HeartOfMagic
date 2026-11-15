@@ -92,6 +92,13 @@ namespace TomeReach
         std::vector<std::vector<unsigned char>> conditions;   // CTDA, as written
     };
 
+    // A leveled item list's chance of nothing (LVLD) and the global that sets it in game (LVLG)
+    struct ListGate
+    {
+        std::uint8_t chanceNone = 0;
+        Key global = 0;
+    };
+
     struct PlacedRef
     {
         Key base = 0;
@@ -119,6 +126,8 @@ namespace TomeReach
         std::unordered_map<Key, std::string> editorIds;     // EDID of every record below
         std::unordered_map<Key, Key> bookSpells;            // tome -> the spell it teaches
         std::unordered_map<Key, std::vector<Key>> lists;    // LVLI and LVLN entries
+        std::unordered_map<Key, ListGate> listGates;        // LVLI whose chance of nothing a global holds (LVLG)
+        std::unordered_map<Key, std::string> globalIds;     // GLOB editor ids
         std::unordered_map<Key, std::vector<Key>> inventories;   // CONT CNTO, OTFT INAM
         std::unordered_map<Key, Npc> npcs;
         std::unordered_map<Key, Key> vendorChests;          // FACT -> its VENC reference

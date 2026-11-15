@@ -126,21 +126,21 @@ namespace
 
         // The source object decides over questOnly; the switches come from config.json tomeSources
         auto sourced = [&with](const char* segment) { return with("source", { { "segment", segment } }); };
-        check.Check(TreeGraft::IsBuildCandidate(sourced("generalSale"), none), "source: general sale is on by default");
-        check.Check(!TreeGraft::IsBuildCandidate(sourced("specificLoot"), none), "source: specific loot is off by default");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("standardSale"), none), "source: standard sale is on by default");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("regionalLoot"), none), "source: regional loot is off by default");
         check.Check(TreeGraft::IsBuildCandidate(sourced("review"), none), "source: review stays on the tree");
-        Json sourcedQuestOnly = sourced("wideDrops");
+        Json sourcedQuestOnly = sourced("standardLoot");
         sourcedQuestOnly["questOnly"] = true;
         check.Check(TreeGraft::IsBuildCandidate(sourcedQuestOnly, none), "source: the segment decides, not questOnly");
         Json config = Json::object();
-        config["tomeSources"]["specificLoot"] = true;
-        config["tomeSources"]["generalSale"] = false;
+        config["tomeSources"]["regionalLoot"] = true;
+        config["tomeSources"]["standardSale"] = false;
         config["tomeSources"]["review"] = false;
         const PlayerRules switched = TreeGraft::PlayerRulesOf(config);
-        check.Check(TreeGraft::IsBuildCandidate(sourced("specificLoot"), switched), "switches: specific loot on");
-        check.Check(!TreeGraft::IsBuildCandidate(sourced("generalSale"), switched), "switches: general sale off");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("regionalLoot"), switched), "switches: regional loot on");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("standardSale"), switched), "switches: standard sale off");
         check.Check(TreeGraft::IsBuildCandidate(sourced("review"), switched), "switches: review has no switch");
-        check.Check(TreeGraft::IsBuildCandidate(sourced("craftedOnly"), kept), "gateKept brings a switched-off segment back");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("crafted"), kept), "gateKept brings a switched-off segment back");
 
         PlayerRules blacklist;
         blacklist.blacklistKeys = { "mymod.esp:001234" };

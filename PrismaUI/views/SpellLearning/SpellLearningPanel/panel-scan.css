@@ -182,3 +182,10 @@
 /* The bar at the foot of the Complex page is solid: its upper part faded to nothing, and the page
    scrolled under it showed through its Presets row (2.0 audit) */
 #contentSpellScan .scan-actions-bottom { background: var(--panel-bg-solid, #0a0a0a); }
+
+/* Where Spells Come From (tomeSourceSetting.js): folds like Extra Settings, but opens to its full length (no
+   inner scroll); each row is its switch, so the whole row takes the pointer */
+.tome-sources-content.collapsed { display: none; }
+.tome-sources-content { max-height: none; overflow: visible; }
+#tomeSourcesBlock .setting-row { cursor: pointer; user-select: none; }
+#tomeSourcesBlock .setting-row:hover { background: rgba(255, 255, 255, 0.04); }

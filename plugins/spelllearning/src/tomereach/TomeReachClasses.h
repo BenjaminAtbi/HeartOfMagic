@@ -5,11 +5,11 @@
 // =============================================================================
 //
 // How each tome enters the game, as routes of a class and subtype, the most
-// generic first: generic (a shared list on 5+ vendor chests, in containers of 3+
-// regions, on 100+ NPCs of mixed factions), faction (3+ NPCs or containers of one
-// faction or region), vendor (1-4 vendor chests), encounter (one or two sites),
-// placed, reward, crafted, other (a SPID line whose filters can't be judged) and
-// none. Port of the author's Python (scripts/spellmap/distribution.py). Pure C++,
+// generic first: generic (5+ vendor chests; loot of containers and NPCs, counted
+// by placed references, at 20+ sites or in 5+ regions; SPID by race, keyword or
+// none), faction (loot at 2+ sites below that: regional; SPID by faction or
+// class), vendor (1-4 vendor chests), encounter (one site's loot), placed,
+// reward, crafted, other (a SPID line whose filters can't be judged) and none. Port of the author's Python (scripts/spellmap/distribution.py). Pure C++,
 // shared by the plugin and tools/tome-reach-test.
 
 #include "tomereach/TomeReachDistr.h"
@@ -42,7 +42,7 @@ namespace TomeReach
     struct Route
     {
         SourceClass cls = SourceClass::kNone;
-        std::string subtype;   // vendors, loot, npcs, spid ...; faction / local / regional; boss; the recipe's bench
+        std::string subtype;   // vendors, loot, spid ...; regional; specialty; boss; the recipe's bench
         std::string detail;    // for people: vendors, sites, factions, SPID filters, recipe
 
         // Python's tuple order: class, then subtype, then detail

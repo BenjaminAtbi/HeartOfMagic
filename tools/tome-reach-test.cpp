@@ -7,7 +7,7 @@
 //   tome-reach-test -i inputs.json --store out.tsv   the distribution model's spell store (tome-reach-store.cpp)
 //   tome-reach-test -i inputs.json --graph out.tsv [--records-only]   its reach graph, sites and unreachable
 //                                    spells, with the configs and scripts of the data folders (tome-reach-graph.cpp)
-//     [--sources sources.tsv]          and every tome's routes, spell's class and segment, specialty mod vendors
+//     [--sources sources.tsv]          and every tome's routes, spell's class and segment, spellpack vendors
 //                                    (tome-reach-sources.cpp)
 //   tome-reach-test -i inputs.json --archives out.tsv   the archives the model reads, in the game's order, and
 //                                    the one each Scripts/Strings member is read from (TomeReachData.h)

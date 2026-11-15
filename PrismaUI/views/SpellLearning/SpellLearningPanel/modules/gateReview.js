@@ -12,7 +12,7 @@
  * come from decides the tree.
  *
  * "Specialty sources": tome spells off the tree by where their tomes come from
- * (TomeSourceSetting.offTree: a segment switched off in Settings > Spell Tomes,
+ * (TomeSourceSetting.offTree: a segment switched off in the Complex tree builder,
  * or nothing hands their tomes out; questOnly in a scan without source objects).
  * Include puts one in the tree.
  *
