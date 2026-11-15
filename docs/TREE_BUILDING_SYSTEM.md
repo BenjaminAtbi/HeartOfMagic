@@ -211,13 +211,46 @@ with a Magicka cost above 0 (`magickaCost`, a number or a numeric string in the 
 the same five tiers by rank (`CostTiers` in `TreeBuilderClassic.cpp`): a group of equal costs goes to the tier
 its first spell's rank falls in (`floor(5 × rank / count)`), so equal costs never split and the tiers come out
 about the same size. Ranks, not the numbers: mods put costs ten times the game's. Spells without a cost keep
-their level's tier. The tier pass, `PickRoot` (a vanilla spell from the cheapest tier), the orphan pass and the
+their level's tier. The tier pass, `PickRoot` (the cheapest vanilla spell of the cheapest tier), the orphan pass and the
 cross-school bridges (`TreeBuilder::SpellTiers`, the same tiers handed to `ComputeCrossSchoolBridges`) all
 read this tier; the node's `skillLevel` stays the spell's level, so XP, the spell card and every
 `getTierIndex`-style lookup (level first) are unchanged - only `tier` (depth + 1) follows cost. The output
 says `config.tier_mode`: `"cost"` or `"level"`; the layout reads it (*Radial order*, below). The log has one
 line per school: `TreeBuilder: <school> tiers by Magicka cost a/b/c/d/e (n without a cost)`. Panel: *Tiers by
 Magicka cost* under *Type grouping* (`TreeBuilderSetting`, `treeTiersByCost`).
+
+*Links by cost* (2026-11-15, a Nexus bug report: "Frostbite is first, followed by Ice Spike and two others before
+you can unlock Flames"). The tiers alone left the links inside a tier to chance: the root was any vanilla spell of
+the cheapest tier, and a tier's spells were linked in shuffled order, so a spell could need a dearer one of its
+tier (526 of 2,730 links on the 3,791-spell dev scan, seed 42). With `tiersByCost` the builder now also keeps to
+`TreeBuilder::SpellCosts` (formId -> cost, the spells with a cost above 0):
+
+- `PickRoot`: the cheapest of the spells it would draw from (vanilla ones of the lowest tier first, as before; the
+  lower formId of equal costs). A root the player chose stays.
+- The tier pass places a tier cheapest first (equal costs as shuffled) and a placed spell is a parent for the rest
+  of its tier at once; by level a tier's spells become parents only when the tier is done.
+- `FindBestClassicParent` (the build and the tree graft) leaves out a parent that costs more than the spell, when
+  both have a cost. With no such parent - a spell cheaper than a chosen or vanilla root - it chooses as it did.
+- The orphan pass is as it was; with `tiersByCost` it has nothing left to do, since every spell finds a parent in
+  the tier pass (which is also why such a tree keeps to the child cap: at most 3 children on the dev scan, seed
+  42, against 6 by level, where the orphan pass ignores the cap; the deepest school is 31 links by cost, 33 by level).
+
+The panel's layout replaces a link when it cannot place a spell by its parent (the deferred and forced passes of
+`ClassicLayout._layoutOnGrid`); in a tree by cost a candidate that costs more than the spell now loses
+`DEARER_PARENT_PENALTY` (300, as a parent of a higher tier does: `ClassicLayout._costsMore`). On a crowded grid
+(the whole 3,791-spell scan on the 400 x 400 fallback canvas) the layout added 49 or more dearer links to the new
+build's 4; with the term 9. On a 1207 x 500 canvas it adds none. A tree by level lays out as before (same saved
+tree, compared by digest).
+
+What is left is a spell cheaper than its school's root, which hangs under the root (4 of 2,773 links on the same
+scan, each a mod's spell under a vanilla root). A tree by level is unchanged: `treebuilder-test` gives the same
+tree as before for the same seed (seeds 7 and 42 compared). Checked by `graft-check --self-test` (*the tree's own
+build settings*: a new spell goes under the cheaper node, by level under its twin; a build of twelve spells by
+cost starts at the cheapest and has no link from a dearer spell - the builder before gave a root of cost 30 and
+two such links). With Roots / School above 1 the school's entry points are its cheapest spells (the root and its
+children; vanilla Destruction with 2 roots: Frostbite, Flames, Sparks, where it was Ice Spike, Sparks, Firebolt).
+Not covered: `ClassicLayout._sanitizeTree` moves children without looking at cost when a spell has more than 5
+(a build by cost gives at most `max_children_per_node`, 3 by default).
 
 Tier sizes on the 3,546-spell dev scan (`treebuilder-test -c` with `tiers_by_cost`, seeds 1-3, all exit 0;
 spells per tier Novice/Apprentice/Adept/Expert/Master, then by level for comparison):

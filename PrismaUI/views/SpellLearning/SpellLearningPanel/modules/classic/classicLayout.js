@@ -700,6 +700,7 @@ var ClassicLayout = {
                             // Ideal: immediate predecessor tier
                             dfScore += 30;
                         }
+                        if (this._costsMore(pn.formId, def.formId)) dfScore -= this.DEARER_PARENT_PENALTY;
 
                         // Fan-out cap: strongly discourage parents already at limit
                         var pnCC = parentChildCount[pn.formId] || 0;
@@ -850,6 +851,7 @@ var ClassicLayout = {
                     } else if (fpCandTier === fpNodeTier - 1) {
                         fpScore += 30; // Ideal predecessor tier
                     }
+                    if (this._costsMore(fpCandidate.formId, fpId)) fpScore -= this.DEARER_PARENT_PENALTY;
 
                     // Fan-out cap: strongly discourage parents already at limit
                     var fpCandCC = parentChildCount[fpCandidate.formId] || 0;
@@ -1549,6 +1551,32 @@ var ClassicLayout = {
             hash = hash | 0;
         }
         return hash;
+    },
+
+    // ---- LINKS BY COST --------------------------------------------------------
+
+    /**
+     * What a parent that costs more than the spell loses when a late placement
+     * (the deferred and forced passes) picks a new parent, in a tree by Magicka
+     * cost. As much as a parent of a higher tier loses there.
+     */
+    DEARER_PARENT_PENALTY: 300,
+
+    /**
+     * Whether `parentId` costs more Magicka than `childId`, in a tree built with
+     * tiers by Magicka cost (this._treeLevels) where both have a cost above 0.
+     * The C++ builder links such a tree by cost; the late placements must not
+     * undo it. Always false for a tree by level.
+     * @param {string} parentId
+     * @param {string} childId
+     * @returns {boolean}
+     */
+    _costsMore: function (parentId, childId) {
+        if (!this._treeLevels || !this._spellMap) return false;
+        var parent = this._spellMap[parentId], child = this._spellMap[childId];
+        var parentCost = parent ? Number(parent.magickaCost) : 0;
+        var childCost = child ? Number(child.magickaCost) : 0;
+        return parentCost > 0 && childCost > 0 && parentCost > childCost;
     },
 
     // ---- TREE SANITIZATION ---------------------------------------------------
