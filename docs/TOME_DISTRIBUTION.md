@@ -8,8 +8,8 @@ check it and how to change a rule. The details are elsewhere:
 
 Status (2026-11-15): released as `v1.9.2+f1.0.1` on `fork/main`, verified in game. The harness and the game give
 the same counts on the author's load order. The model changes of 2026-11-16 (spawned NPCs, scripts on placed
-references, effective NPC inventories, path gates) are on `fork/feat/tome-distribution`, checked with the harness,
-not yet in game.
+references, effective NPC inventories, path gates) were merged into `fork/main` on 2026-11-16 after an in-game run
+on a 603-plugin test order gave the harness's counts exactly (1,877 spells, every segment and spellpack vendor).
 
 ## What it does
 
