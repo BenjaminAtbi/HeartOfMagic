@@ -44,8 +44,8 @@ shared component: the plugin carries its own copy, tuned for the tree builder, w
    | Unique reward | one site's loot, hand-placed, or a quest reward | off |
    | Crafted | only a crafting recipe makes it | off |
 
-   A vendor chest's stock is gated when it comes through a list with 100% chance of nothing (LVLD) and a global
-   (LVLG): `PC*` globals are vanilla's skill thresholds and count as open, `MGRitual*` ones make ritual quest,
+   A vendor chest's stock is gated when it comes through a gated list, one with 100% chance of nothing (LVLD) and a
+   global (LVLG): `PC*` globals are vanilla's skill thresholds and count as open, `MGRitual*` ones make ritual quest,
    any other a quest. A chest counts by its most open entry for the spell.
 
    The first version (2026-11-14), replaced by the table above:
@@ -119,6 +119,25 @@ sale; standard loot (generic or faction routes other than regional, vendors, spe
 vendor; unique reward (placed, encounter, reward); crafted; anything else -> review. The segments equal Python's
 bucket rules one for one (`shops.py --buckets`). First version (2026-11-14): no route -> unreachable; general sale;
 specialty mod vendor; wide drops; specific; quest reward; crafted; uncommon vendor; review.
+
+Since 2026-11-16 (the Python model's changes of 2026-11-15 and 16, ported with full parity):
+- an NPC carries its effective inventory (template flags Use Inventory for `CNTO` and `DOFT`, Use Traits for
+  `INAM`; a leveled NPC template gives its members'); the bases that place an inventory are leveled NPC lists only;
+- SkyPatcher `addOnceToLLs` counts like `addToLLs`, and `removeFromLLs` removes the list parent after every
+  addition;
+- scripts are read on records (the holder types plus `INFO`, `SCEN`, `PACK`) and on placed references (their
+  winning version, deleted ones and test cells left out, one set per base and cell); `AddForm` is matched per
+  call (receiver and argument from properties within one function, an element of a form list or array counting
+  as any member), and PlaceAtMe gives as AddItem does;
+- spawned NPCs: a quest alias that creates one, an explosion that places one (`EXPL` `DATA`, counted where the
+  records firing it from a destruction stage are), a script's PlaceAtMe / PlaceActorAtMe property (on a placed
+  reference: there); with no known placement a stand-in site `spawned`, kept only when nothing else has a site;
+- a reference in a world's persistent cell counts in the exterior cell at its position;
+- a vendor chest named so must be placed; a SPID class filter makes a faction route;
+- a vendor chest's gate is its most open path down to the tome, each path as closed as its most closed gated
+  list;
+- noise editor ids: `QA` only as written and not before a lower case letter; test cells: `TestCell`, or `QA`
+  and a capital or `_`, as written.
 
 ## Stages
 

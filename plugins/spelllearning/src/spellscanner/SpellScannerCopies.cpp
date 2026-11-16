@@ -25,7 +25,9 @@ namespace SpellScanner
     // tome teaches, whose tome something hands out, that are not voice slot spells
     // or copies (isTaughtByTome, proceduralTreeBuilder.js): a player casts spells from the
     // hands, and a voice slot spell (a mod's script or animation spell, Smooth
-    // Animation's ChargeEffect) would take the shout's place when learned.
+    // Animation's ChargeEffect) would take the shout's place when learned. A free
+    // spell a tome teaches stays in the tree: the gate only flags it (freeSpell) and
+    // Gate Review lists it; the log counts these on a line of their own.
     //
     // What that leaves out, counted in the log:
     // - Non-player copies. The game keeps copies of many spells for NPCs, traps
@@ -36,7 +38,7 @@ namespace SpellScanner
     //   Novice. The editor id filter in the scan (IsNonPlayerSpell) seldom catches them: it
     //   reads the engine's own editor id, which spells do not keep (not powerofthree's
     //   Tweaks' one on purpose - with it the filter would drop Soul Trap, "trap").
-    // - Free spells: a creature's attack, a follower's call, a pet's whistle.
+    // - Free spells no tome teaches: a creature's attack, a follower's call, a pet's whistle.
     // - Voice slot spells, whether a tome teaches them or not.
     // - The other spells no tome teaches: quest, perk and script spells.
 
@@ -54,10 +56,12 @@ namespace SpellScanner
             return key;
         }
 
-        // One kind of spell the tree leaves out: how many, and the first few by name
+        // One kind of spell the log counts: how many, and the first few by name
         struct OutOfTree
         {
             const char* what;
+            // Where the tree stands on them: the rest of the log line
+            const char* verdict = "stay in the scan, out of the tree";
             std::size_t count = 0;
             std::string named;
 
@@ -72,8 +76,8 @@ namespace SpellScanner
             void Log() const
             {
                 if (!count) return;
-                logger::info("SpellScanner: {} {} stay in the scan, out of the tree: {}{}",
-                    count, what, named, count > kLoggedSpells ? ", ..." : "");
+                logger::info("SpellScanner: {} {} {}: {}{}",
+                    count, what, verdict, named, count > kLoggedSpells ? ", ..." : "");
             }
         };
     }
@@ -116,7 +120,8 @@ namespace SpellScanner
 
         OutOfTree voice{ "spells equipped in the voice slot (script and animation spells)" };
         OutOfTree unhanded{ "spells whose tomes nothing hands out (not placed, sold, dropped, crafted or given)" };
-        OutOfTree freeTaught{ "free spells a tome teaches (pet and follower calls, quest utility spells)" };
+        OutOfTree freeTaught{ "free spells a tome teaches (pet and follower calls, quest utility spells)",
+                              "stay in the tree, flagged for Gate Review" };
         OutOfTree copies{ "non-player copies (same name and school as a spell with a half-cost perk, "
                           "no perk of their own, no tome)" };
         OutOfTree freeSpells{ "free spells no tome teaches (NPC attacks, follower calls, test and utility spells)" };
@@ -125,10 +130,10 @@ namespace SpellScanner
             if (IsEquippedInVoiceSlot(spell)) {
                 voice.Add(spell);
             } else if (taught.contains(spell->GetFormID())) {
-                if (IsFreeSpell(spell)) {
-                    freeTaught.Add(spell);
-                } else if (unreachable.contains(spell->GetFormID())) {
+                if (unreachable.contains(spell->GetFormID())) {
                     unhanded.Add(spell);
+                } else if (IsFreeSpell(spell)) {
+                    freeTaught.Add(spell);
                 }
             } else if (!Librarian::PerkAdapters::OriginalCastingPerk(spell) && keysWithPerk.contains(CopyKey(spell))) {
                 copies.Add(spell);

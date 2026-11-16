@@ -121,7 +121,10 @@ spell count still counts every scanned spell. Papyrus `RunScan`'s tome scan (`Sc
 and has neither mark.
 
 `LogSpellsOutOfTree` logs what that leaves out, by kind, naming the first five of each
-(`SpellScanner: N <kind> stay in the scan, out of the tree: ...`):
+(`SpellScanner: N <kind> stay in the scan, out of the tree: ...`), and on a line of its own the free spells a tome
+teaches whose tomes something hands out (`... stay in the tree, flagged for Gate Review: ...`; the gate only flags
+`freeSpell`). A spell whose tomes nothing hands out counts as unreachable whether it is free or not. Out of the
+tree:
 
 - **Voice slot spells**, whether a tome teaches them or not. A player's spells equip in the hands; voice slot
   spells are mods' script and animation spells (11 of Smooth Animation's - ChargeEffect, dodge and shield

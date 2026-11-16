@@ -55,6 +55,7 @@ namespace TomeReach
     {
         std::vector<FormToken> forms;
         std::vector<FormToken> lists;
+        bool remove = false;                 // removeFromLLs: the forms leave those lists
     };
 
     struct DistributionConfigs
@@ -68,13 +69,13 @@ namespace TomeReach
 
     DistributionConfigs ReadDistributionConfigs(const DataFiles& data, NameTable& names);
 
-    enum class FilterKind : std::uint8_t { kFaction, kRace, kKeyword, kNpc, kString, kOther };
+    enum class FilterKind : std::uint8_t { kFaction, kClass, kRace, kKeyword, kNpc, kString, kOther };
 
     struct SpidLine
     {
         Key form = 0;
         bool deathItem = false;
-        bool judged = false;                 // every form filter is a faction, race, keyword or NPC
+        bool judged = false;                 // every form filter is a faction, class, race, keyword or NPC
         std::vector<FilterKind> filters;
         std::string chance;
         std::string source;
@@ -84,6 +85,7 @@ namespace TomeReach
     {
         Key form = 0;
         std::vector<Key> lists;
+        bool remove = false;                 // removeFromLLs (ReachGraph drops these after every addition)
     };
 
     struct Distribution

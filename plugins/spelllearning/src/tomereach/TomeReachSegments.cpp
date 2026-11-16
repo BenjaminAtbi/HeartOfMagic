@@ -21,24 +21,7 @@ namespace TomeReach
             "dragonborn.esm", "hearthfires.esm" };
         constexpr std::size_t kShopSale = 3;         // open vendors a spellpack vendor's spell may have, at most
         constexpr std::size_t kStandardVendors = 3;  // open vendors that make standard sale
-        constexpr std::uint8_t kAlwaysNone = 100;    // a list's chance of nothing that closes it until a global opens it
-        constexpr std::string_view kRitualGlobal = "mgritual";   // the College's master ritual globals
-        constexpr std::string_view kSkillGlobal = "pc";          // vanilla's skill thresholds: ordinary stock
         const std::string kNoName;
-
-        // A vendor chest's stock of a spell: open, unlocked by a master ritual quest, or by another quest
-        enum class Gate : std::uint8_t { kOpen, kRitual, kQuest };
-
-        // The gate of one entry a vendor chest holds: a list a global holds at 100% chance of nothing
-        Gate GateOf(const SpellStore& store, Key entry)
-        {
-            const auto list = store.listGates.find(entry);
-            if (list == store.listGates.end() || list->second.chanceNone < kAlwaysNone) return Gate::kOpen;
-            const auto global = store.globalIds.find(list->second.global);
-            const std::string id = AsciiText::ToLower(global != store.globalIds.end() ? global->second : kNoName);
-            if (id.starts_with(kSkillGlobal)) return Gate::kOpen;
-            return id.starts_with(kRitualGlobal) ? Gate::kRitual : Gate::kQuest;
-        }
 
         using Chests = std::set<Key>;
 
@@ -170,19 +153,17 @@ namespace TomeReach
                 }
             }
             // Each vendor chest's stock of the spell: its most open entry (a tome held directly is open)
-            std::map<Key, Gate> chests;
+            std::map<Key, GatedKind> chests;
             for (const Key tome : s.tomes) {
                 for (const VendorEntries& v : out.tomes[tome].vendors) {
-                    Gate g = v.entries.empty() ? Gate::kOpen : Gate::kQuest;
-                    for (const Key e : v.entries) g = std::min(g, GateOf(store, e));
-                    const auto [it, added] = chests.emplace(v.chest, g);
-                    if (!added) it->second = std::min(it->second, g);
+                    const auto [it, added] = chests.emplace(v.chest, v.gate);
+                    if (!added) it->second = std::min(it->second, v.gate);
                 }
             }
             std::size_t open = 0;
-            std::set<Gate> gated;
+            std::set<GatedKind> gated;
             for (const auto& [_chest, g] : chests) {
-                if (g == Gate::kOpen) ++open;
+                if (g == GatedKind::kOpen) ++open;
                 else gated.insert(g);
             }
             const bool standardLoot = std::any_of(routes.begin(), routes.end(), [](const auto& r) {
@@ -194,7 +175,7 @@ namespace TomeReach
                 s.segment = Segment::kUnreachable;
             else if (!s.shop.empty() && open <= kShopSale)
                 s.segment = Segment::kSpellpackVendor;
-            else if (gated.contains(Gate::kRitual))
+            else if (gated.contains(GatedKind::kRitual))
                 s.segment = Segment::kRitualQuest;
             else if (open >= kStandardVendors)
                 s.segment = Segment::kStandardSale;
@@ -202,7 +183,7 @@ namespace TomeReach
                 s.segment = Segment::kStandardLoot;
             else if (routes.contains({ SourceClass::kFaction, "regional" }))
                 s.segment = Segment::kRegionalLoot;
-            else if (open > 0 || gated.contains(Gate::kQuest))
+            else if (open > 0 || gated.contains(GatedKind::kQuest))
                 s.segment = Segment::kUniqueVendor;
             else if (classes.contains(SourceClass::kPlaced) || classes.contains(SourceClass::kEncounter) ||
                      classes.contains(SourceClass::kReward))

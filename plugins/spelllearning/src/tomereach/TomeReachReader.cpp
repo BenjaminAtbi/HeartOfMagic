@@ -4,6 +4,8 @@
 #include "AsciiText.h"
 
 #include <algorithm>
+#include <cmath>
+#include <map>
 #include <cstring>
 #include <tuple>
 #include <optional>
@@ -19,6 +21,13 @@ namespace TomeReach
         constexpr std::uint8_t kTeachesSpell = 0x04;
         constexpr std::uint8_t kStaffAnimation = 8;         // WEAP DNAM: the animation type, first byte
         constexpr std::uint8_t kInteriorCell = 0x01;        // CELL DATA: flags, first byte
+        constexpr std::size_t kTemplateFlagsOffset = 18;    // ACBS: template flags (u16)
+        constexpr std::size_t kTemplateFlagsEnd = 20;
+        constexpr std::size_t kExplosionPlacedOffset = 16;  // EXPL DATA: the object it places
+        constexpr std::size_t kStageExplosionOffset = 8;    // DSTD: health, index, stage, flags, self damage, explosion
+        constexpr std::size_t kPositionSize = 8;            // REFR/ACHR DATA: x, y (then z and rotation)
+        constexpr std::size_t kGridSize = 8;                // CELL XCLC: x, y
+        constexpr float kCellUnits = 4096.0f;               // an exterior cell's side in game units
 
         constexpr std::array kRead = {
             T("BOOK"), T("SCRL"), T("WEAP"), T("LVLI"), T("LVLN"), T("CONT"), T("NPC_"), T("OTFT"),
@@ -26,14 +35,18 @@ namespace TomeReach
             // Read for their scripts, form lists, keywords, or only for the editor ids the configs name
             T("SPEL"), T("ENCH"), T("MGEF"), T("ARMO"), T("LVSP"), T("PERK"), T("AVIF"), T("RACE"), T("KYWD"),
             T("FLST"), T("HAZD"), T("EXPL"), T("PROJ"), T("SHOU"), T("WOOP"), T("ACTI"), T("GLOB"), T("MISC"),
-            T("ALCH"),
+            T("ALCH"), T("CLAS"),
+            // Script holders outside the record types above: dialogue (INFO, under DIAL), scenes, packages
+            T("INFO"), T("SCEN"), T("PACK"),
         };
 
         // Records whose scripts can hand items out (scripts/spellmap/reach.py HOLDERS)
         constexpr std::array kHolderTypes = {
             T("QUST"), T("ACTI"), T("MGEF"), T("PERK"), T("MISC"), T("BOOK"), T("CONT"), T("NPC_"), T("ALCH"),
-            T("WEAP"), T("ARMO"),
+            T("WEAP"), T("ARMO"), T("INFO"), T("SCEN"), T("PACK"),
         };
+        // Of those, the ones whose deleted version holds no scripts (placedindex.holder_scripts)
+        constexpr std::array kDeletableHolders = { T("INFO"), T("SCEN"), T("PACK") };
 
         bool Wanted(const unsigned char* type)
         {
@@ -70,6 +83,8 @@ namespace TomeReach
             const ConfigWants* wants = nullptr;
             const std::unordered_map<Key, Key>* tomeSpells = nullptr;   // books the game pairs with a spell
             std::unordered_map<Key, std::string> named;   // records whose editor id a config names (lower case)
+            // Exterior cells by (worldspace, grid x, grid y), the latest plugin's (persistent cells left out)
+            std::map<std::tuple<Key, std::int32_t, std::int32_t>, Key> grid;
         };
 
         class Reader
@@ -117,13 +132,17 @@ namespace TomeReach
                 m_store.kinds.erase(m_key);
                 m_store.bookSpells.erase(m_key);
                 m_store.lists.erase(m_key);
-                m_store.listGates.erase(m_key);
+                m_store.gatedLists.erase(m_key);
                 m_store.globalIds.erase(m_key);
                 m_store.inventories.erase(m_key);
                 m_store.npcs.erase(m_key);
                 m_store.vendorChests.erase(m_key);
                 m_store.recipes.erase(m_key);
                 m_store.questItems.erase(m_key);
+                m_store.questCreates.erase(m_key);
+                m_store.explosions.erase(m_key);
+                m_store.destruction.erase(m_key);
+                m_store.noisy.erase(m_key);
                 m_store.formLists.erase(m_key);
                 m_store.holders.erase(m_key);
                 m_store.raceKeywords.erase(m_key);
@@ -145,8 +164,13 @@ namespace TomeReach
                 bool editorIdSeen = false;
                 std::string editorId;
                 std::optional<Subrecord> vmad;
-                const bool holder = OneOf(kHolderTypes, t);
+                const bool holder = OneOf(kHolderTypes, t) &&
+                                    !(OneOf(kDeletableHolders, t) && (m_record.flags & kDeletedRecord));
+                std::vector<Key> explosions;
                 const bool whole = Each([&](const Subrecord& s) {
+                    if (Is(s.type, T("DSTD")) && s.size >= kStageExplosionOffset + kFormSize) {
+                        if (const Key e = Form(s, kStageExplosionOffset)) explosions.push_back(e);
+                    }
                     if (Is(s.type, T("EDID")) && !editorIdSeen) {
                         editorIdSeen = true;
                         editorId = ZString(s);
@@ -163,6 +187,12 @@ namespace TomeReach
                     if (named) m_state.named[m_key] = std::move(lower);
                     else m_state.named.erase(m_key);
                     if (named || wants->keys.contains(m_key)) std::memcpy(m_store.tokenTypes[m_key].data(), t, 4);
+                }
+                if (IsNoiseEditorId(editorId)) m_store.noisy.insert(m_key);
+                if (!explosions.empty()) {
+                    // Its placements are kept while it is read: an explosion it fires may spawn an NPC there
+                    m_placeable.insert(m_key);
+                    m_store.destruction[m_key] = std::move(explosions);
                 }
                 if (vmad) {
                     auto scripts = ParseVmad(vmad->data, vmad->size, m_resolve);
@@ -217,15 +247,15 @@ namespace TomeReach
                 } else if (Is(t, T("LVLI")) || Is(t, T("LVLN"))) {
                     kind = Is(t, T("LVLI")) ? Kind::kItemList : Kind::kNpcList;
                     auto& entries = m_store.lists[m_key];
-                    ListGate gate;
+                    GatedList gated;
                     whole = Each([&](const Subrecord& s) {
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (Is(s.type, T("LVLO"))) {
                             if (const Key e = Form(s, kLevelEntryFormOffset)) entries.push_back(e);
-                        } else if (Is(s.type, T("LVLD")) && s.size >= 1) gate.chanceNone = s.data[0];
-                        else if (Is(s.type, T("LVLG"))) gate.global = Form(s);
+                        } else if (Is(s.type, T("LVLD")) && s.size >= 1) gated.chanceNone = s.data[0];
+                        else if (Is(s.type, T("LVLG"))) gated.global = Form(s);
                     });
-                    if (gate.global && kind == Kind::kItemList) m_store.listGates[m_key] = gate;
+                    if (gated.global && kind == Kind::kItemList) m_store.gatedLists[m_key] = gated;
                 } else if (Is(t, T("CONT")) || Is(t, T("OTFT"))) {
                     const bool outfit = Is(t, T("OTFT"));
                     kind = outfit ? Kind::kOutfit : Kind::kContainer;
@@ -253,7 +283,10 @@ namespace TomeReach
                         else if (Is(s.type, T("TPLT"))) npc.templ = Form(s);
                         else if (Is(s.type, T("SNAM"))) {
                             if (const Key f = Form(s)) npc.factions.push_back(f);
-                        } else if (Is(s.type, T("ACBS")) && s.size >= kFormSize) npc.flags = U32(s.data);
+                        } else if (Is(s.type, T("ACBS")) && s.size >= kFormSize) {
+                            npc.flags = U32(s.data);
+                            if (s.size >= kTemplateFlagsEnd) npc.templateFlags = U16(s.data + kTemplateFlagsOffset);
+                        }
                         else if (Is(s.type, T("KWDA"))) Forms(s, npc.keywords);
                         else if (Is(s.type, T("RNAM")) && !npc.race) npc.race = Form(s);
                         else if (Is(s.type, T("FULL")) && !fullSeen) {
@@ -300,12 +333,24 @@ namespace TomeReach
                 } else if (Is(t, T("QUST"))) {
                     kind = Kind::kQuest;
                     auto& items = m_store.questItems[m_key];
+                    std::vector<Key> creates;
                     whole = Each([&](const Subrecord& s) {
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (Is(s.type, T("ALCO")) || Is(s.type, T("CNTO"))) {   // a QUST has CNTO only in aliases
-                            if (const Key e = Form(s)) items.push_back(e);
+                            if (const Key e = Form(s)) {
+                                items.push_back(e);
+                                if (Is(s.type, T("ALCO"))) creates.push_back(e);
+                            }
                         }
                     });
+                    if (!creates.empty()) m_store.questCreates[m_key] = std::move(creates);
+                } else if (Is(t, T("EXPL"))) {
+                    Explosion explosion;
+                    whole = Each([&](const Subrecord& s) {
+                        if (Is(s.type, T("EDID"))) explosion.editorId = ZString(s);
+                        else if (Is(s.type, T("DATA"))) explosion.placed = Form(s, kExplosionPlacedOffset);
+                    });
+                    if (explosion.placed) m_store.explosions[m_key] = std::move(explosion);
                 }
                 if (kind) {
                     m_store.kinds[m_key] = *kind;
@@ -331,16 +376,30 @@ namespace TomeReach
 
             bool ReadRef()
             {
-                Key base = 0;
+                PlacedRef ref;
+                std::optional<Subrecord> vmad;
                 const bool whole = Each([&](const Subrecord& s) {
-                    if (Is(s.type, T("NAME"))) base = Form(s);
+                    if (Is(s.type, T("NAME"))) ref.base = Form(s);
+                    else if (Is(s.type, T("VMAD")) && !vmad && s.size) vmad = s;
+                    else if (Is(s.type, T("DATA")) && s.size >= kPositionSize) {
+                        std::memcpy(&ref.x, s.data, sizeof(float));
+                        std::memcpy(&ref.y, s.data + sizeof(float), sizeof(float));
+                        ref.hasPosition = true;
+                    }
                 });
+                ref.flags = m_record.flags;
+                if (m_record.cell) ref.cell = m_resolve(m_record.cell);
+                // A scripted reference, whatever its base: its scripts may hand items out or spawn NPCs there
+                std::vector<AttachedScript> scripts;
+                if (vmad && ref.cell) scripts = ParseVmad(vmad->data, vmad->size, m_resolve);
+                if (!scripts.empty()) m_store.scriptedRefs[m_key] = ScriptedRef{ ref, ref.cell, std::move(scripts) };
+                else m_store.scriptedRefs.erase(m_key);
                 // Kept by its base's record type; ReadSpellStore checks the winning kind
-                if (!m_record.cell || !m_placeable.contains(base)) {
+                if (!ref.cell || !m_placeable.contains(ref.base)) {
                     m_store.refs.erase(m_key);
                     return whole;
                 }
-                m_store.refs[m_key] = PlacedRef{ base, m_resolve(m_record.cell), m_record.flags };
+                m_store.refs[m_key] = ref;
                 return whole;
             }
 
@@ -349,11 +408,19 @@ namespace TomeReach
                 Key location = 0;
                 std::string editorId;
                 bool interior = false;
+                std::optional<std::pair<std::int32_t, std::int32_t>> at;
                 const bool whole = Each([&](const Subrecord& s) {
                     if (Is(s.type, T("EDID"))) editorId = ZString(s);
                     else if (Is(s.type, T("XLCN"))) location = Form(s);
                     else if (Is(s.type, T("DATA")) && s.size >= 1) interior = (s.data[0] & kInteriorCell) != 0;
+                    else if (Is(s.type, T("XCLC")) && s.size >= kGridSize)
+                        at.emplace(static_cast<std::int32_t>(U32(s.data)), static_cast<std::int32_t>(U32(s.data + 4)));
                 });
+                // A world's persistent cell is the CELL right in the world's children group; the others sit in blocks
+                const bool persistent = m_record.worldspace && !interior && m_record.group == kWorldChildren;
+                if (persistent) m_store.cells[m_key].persistent = true;
+                else if (m_record.worldspace && !interior && at)
+                    m_state.grid[{ m_resolve(m_record.worldspace), at->first, at->second }] = m_key;
                 // Field by field: a later version without a location or worldspace keeps the earlier one's
                 Cell& cell = m_store.cells[m_key];
                 if (m_record.worldspace && !interior) cell.worldspace = m_resolve(m_record.worldspace);
@@ -398,10 +465,33 @@ namespace TomeReach
             if (scan.status == ScanStatus::kUnreadable) store.unreadable.push_back(plugin.name);
             else if (scan.status == ScanStatus::kDamaged) store.damaged.push_back(plugin.name);
         }
-        // Only references of the placed kinds stay, by their bases' winning versions
+        // A reference in a world's persistent cell counts in the exterior cell at its position (placedindex
+        // _to_grid_cells): the persistent cell has no location, and would be a site of its own named after the world
+        const auto toGrid = [&](PlacedRef& ref) {
+            const auto c = store.cells.find(ref.cell);
+            if (c == store.cells.end() || !c->second.persistent || !ref.hasPosition) return;
+            const auto at = state.grid.find({ c->second.worldspace,
+                static_cast<std::int32_t>(std::floor(ref.x / kCellUnits)),
+                static_cast<std::int32_t>(std::floor(ref.y / kCellUnits)) });
+            if (at != state.grid.end()) ref.cell = at->second;
+        };
+        for (auto& [_ref, r] : store.refs) toGrid(r);
+        for (auto& [_ref, r] : store.scriptedRefs) toGrid(r.placed);
+        // Only references of the placed kinds stay, by their bases' winning versions, and those of records whose
+        // destruction fires an explosion that places an NPC (the NPC appears where they are)
+        std::unordered_set<Key> spawnSites;
+        for (const auto& [record, explosions] : store.destruction) {
+            for (const Key e : explosions) {
+                const auto x = store.explosions.find(e);
+                if (x == store.explosions.end()) continue;
+                const auto kind = store.kinds.find(x->second.placed);
+                if (kind != store.kinds.end() && (kind->second == Kind::kNpc || kind->second == Kind::kNpcList))
+                    spawnSites.insert(record);
+            }
+        }
         std::erase_if(store.refs, [&](const auto& ref) {
             const auto kind = store.kinds.find(ref.second.base);
-            return kind == store.kinds.end() || !PlacedKind(kind->second);
+            return !spawnSites.contains(ref.second.base) && (kind == store.kinds.end() || !PlacedKind(kind->second));
         });
         store.refs.rehash(0);
 

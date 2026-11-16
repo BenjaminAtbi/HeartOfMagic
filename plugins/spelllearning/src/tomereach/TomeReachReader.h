@@ -16,6 +16,7 @@
 
 #include <array>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -48,6 +49,7 @@ namespace TomeReach
         Key templ = 0;               // TPLT
         std::vector<Key> factions;   // SNAM
         std::uint32_t flags = 0;     // ACBS flags (0x20: unique)
+        std::uint16_t templateFlags = 0;   // ACBS template flags: what the template (TPLT) supplies
         std::vector<Key> keywords;   // KWDA
         Key race = 0;                // RNAM
         std::string name;            // FULL, when it is one of the configs' strings (ConfigWants)
@@ -92,8 +94,9 @@ namespace TomeReach
         std::vector<std::vector<unsigned char>> conditions;   // CTDA, as written
     };
 
-    // A leveled item list's chance of nothing (LVLD) and the global that sets it in game (LVLG)
-    struct ListGate
+    // A leveled item list's chance of nothing (LVLD) and the global that sets it in game (LVLG). The list is a
+    // gated list when the chance is 100: it gives nothing until a script lowers the global (TomeReachSegments)
+    struct GatedList
     {
         std::uint8_t chanceNone = 0;
         Key global = 0;
@@ -102,8 +105,11 @@ namespace TomeReach
     struct PlacedRef
     {
         Key base = 0;
-        Key cell = 0;
+        Key cell = 0;                // a reference in a world's persistent cell: the exterior cell at its position
         std::uint32_t flags = 0;     // record flags of the winning version (kDeletedRecord, kDisabledRecord)
+        float x = 0.0f;              // DATA position (the winning version's)
+        float y = 0.0f;
+        bool hasPosition = false;
     };
 
     struct Cell
@@ -111,6 +117,22 @@ namespace TomeReach
         Key worldspace = 0;          // exterior cells: their worldspace
         Key location = 0;            // XLCN
         bool interior = false;
+        bool persistent = false;     // a world's persistent cell (no location, no grid)
+        std::string editorId;
+    };
+
+    // A placed reference that carries scripts (its winning version's VMAD), whatever its base
+    struct ScriptedRef
+    {
+        PlacedRef placed;            // cell: where it is (moved out of a persistent cell like every reference)
+        Key cell = 0;                // the cell whose group holds it, as written
+        std::vector<AttachedScript> scripts;
+    };
+
+    // An explosion that places an object (EXPL DATA): an NPC it places is spawned where the explosion goes off
+    struct Explosion
+    {
+        Key placed = 0;
         std::string editorId;
     };
 
@@ -126,13 +148,18 @@ namespace TomeReach
         std::unordered_map<Key, std::string> editorIds;     // EDID of every record below
         std::unordered_map<Key, Key> bookSpells;            // tome -> the spell it teaches
         std::unordered_map<Key, std::vector<Key>> lists;    // LVLI and LVLN entries
-        std::unordered_map<Key, ListGate> listGates;        // LVLI whose chance of nothing a global holds (LVLG)
+        std::unordered_map<Key, GatedList> gatedLists;      // LVLI whose chance of nothing a global holds (LVLG)
         std::unordered_map<Key, std::string> globalIds;     // GLOB editor ids
         std::unordered_map<Key, std::vector<Key>> inventories;   // CONT CNTO, OTFT INAM
         std::unordered_map<Key, Npc> npcs;
         std::unordered_map<Key, Key> vendorChests;          // FACT -> its VENC reference
         std::unordered_map<Key, Recipe> recipes;
         std::unordered_map<Key, std::vector<Key>> questItems;   // QUST alias ALCO and CNTO
+        std::unordered_map<Key, std::vector<Key>> questCreates; // QUST alias ALCO only (an NPC a quest creates)
+        std::unordered_map<Key, Explosion> explosions;          // EXPL that place an object
+        std::unordered_map<Key, std::vector<Key>> destruction;  // record -> explosions its destruction stages fire (DSTD)
+        std::unordered_map<Key, ScriptedRef> scriptedRefs;      // placed references with scripts
+        std::unordered_set<Key> noisy;                          // records whose editor id marks test or debug ones
         // References whose base is a container, NPC, leveled NPC list, tome, scroll or
         // staff: the winning version of each
         std::unordered_map<Key, PlacedRef> refs;
@@ -141,6 +168,7 @@ namespace TomeReach
         std::unordered_map<Key, std::string> worldspaces;   // WRLD -> its editor id
         std::unordered_map<Key, std::vector<Key>> formLists;   // FLST LNAM
         std::unordered_map<Key, ScriptHolder> holders;      // records of the script holder types with scripts
+                                                            // (dialogue, scene and package ones not deleted)
         std::unordered_map<Key, std::vector<Key>> raceKeywords;   // RACE KWDA
         std::unordered_map<Key, std::string> keywordIds;    // KYWD editor ids
         // The configs' forms: editor id -> the first record (in load order) carrying it, and
@@ -150,6 +178,10 @@ namespace TomeReach
         std::vector<std::string> unreadable;
         std::vector<std::string> damaged;
     };
+
+    // Editor ids of test and debug records: containers, NPCs and script holders that hand nothing to the player
+    // (scripts/spellmap/reach.py NOISE)
+    [[nodiscard]] bool IsNoiseEditorId(std::string_view editorId);
 
     // Reads every plugin of `loadOrder` (masters first) into a SpellStore; `wants`: the
     // configs' forms to resolve (none when null)

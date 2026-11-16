@@ -11,9 +11,10 @@
 // - A spellpack vendor is up to three vendor chests that sell 75%+ of a plugin's
 //   vendor-sold tome spells through entries dedicated to that plugin; its spells
 //   count when they have three open vendors or fewer.
-// - A vendor's stock is gated when it comes through a list held at 100% chance
-//   of nothing by a global: MGRitual* globals (the College's master rituals) make
-//   ritual quest, PC* globals (skill thresholds) count as open, others as quest.
+// - A gated list is a leveled list held at 100% chance of nothing by a global; a
+//   vendor's stock that comes through one is gated: MGRitual* globals (the College's
+//   master rituals) make ritual quest, PC* globals (skill thresholds) count as open,
+//   others as quest.
 // - Standard sale: 3+ open vendors. Unique vendor: 1-2, or quest-gated stock.
 // Port of the author's Python (scripts/spellmap/shops.py --buckets).
 // Pure C++, shared by the plugin and tools/tome-reach-test.

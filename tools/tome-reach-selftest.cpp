@@ -8,8 +8,8 @@
 // plugin's 12-bit ids), the tomes nothing reaches, the tomes only a quest's
 // script or alias reaches (quest-only), four kinds of damaged plugin (their own
 // and their masters' tomes count as reached, no other plugin's), a plugin that
-// cannot be opened or whose header is cut, and the config matching rules. Needs
-// no game and no load order.
+// cannot be opened or whose header is cut, the config matching rules, and the
+// distribution model (tome-reach-modeltest.cpp). Needs no game and no load order.
 
 #include "tomereach/TomeReachConfig.h"
 #include "tomereach/TomeReachData.h"
@@ -255,6 +255,9 @@ namespace
     }
 }
 
+// tome-reach-modeltest.cpp: the distribution model on a hand-built spell store; returns the failures
+int RunModelChecks(int& passed);
+
 int RunSelfTest()
 {
     namespace fs = std::filesystem;
@@ -450,6 +453,7 @@ int RunSelfTest()
     ConfigRules();
     ArchiveRules();
     PassOutcomes();
+    g_failed += RunModelChecks(g_passed);
 
     std::printf("self-test: %d passed, %d failed\n", g_passed, g_failed);
     std::error_code ec;
