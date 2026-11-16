@@ -210,7 +210,8 @@ spells at once, differences fixed or written down as deliberate.
    and route detail as the reason. `SpellScannerDuplicates.cpp` and `ScanRecordRules.h` read the unreachable
    set, which keeps its meaning: unchanged.
    Choices made here: the review segment stays on the tree (the gate's review band does too) and Gate Review
-   lists it to look over; archives in game are read in the game's order (stage 3, corrected the same day from
+   lists it to look over (changed 2026-11-16 on fork/feat/tree-builder-ui: review and unknown segments follow a
+   new `unreachable` switch, off by default; docs/TOME_DISTRIBUTION.md); archives in game are read in the game's order (stage 3, corrected the same day from
    name order within the Data folder); the game's tome pairs
    (SpellTomes) are the model's tomes, each teaching its pair's spell whatever its DATA says (a non-teaching
    book Spell Research's Synthesizer pairs; since later the same day also a book a DLL rebinds, and a book

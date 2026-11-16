@@ -69,10 +69,12 @@ namespace TomeReach
         return std::nullopt;
     }
 
-    // Which segments go on the tree (the settings' switches). Unreachable never does; review stays on the
-    // tree and Gate Review lists it, as the spell gate's review band
+    // Which segments go on the tree (the settings' switches). Review has no switch of its own: every
+    // spell is meant to fall in one of the other segments, and one that falls through goes with
+    // unreachable (off by default; the panel shows both as its "Unreachable" row)
     struct SegmentSwitches
     {
+        bool unreachable = false;
         bool spellpackVendor = false;
         bool ritualQuest = true;
         bool standardSale = true;
@@ -93,12 +95,11 @@ namespace TomeReach
             case Segment::kUniqueVendor: return uniqueVendor;
             case Segment::kUniqueReward: return uniqueReward;
             case Segment::kCrafted: return crafted;
-            case Segment::kReview: return true;
-            default: return false;
+            default: return unreachable;   // kUnreachable, kReview
             }
         }
 
-        // The switch of a segment that has one; false for unreachable and review
+        // The switch of a segment that has one; false for review (it follows unreachable's)
         bool Set(Segment segment, bool on)
         {
             bool* which = Switch(segment);
@@ -111,6 +112,7 @@ namespace TomeReach
         bool* Switch(Segment segment)
         {
             switch (segment) {
+            case Segment::kUnreachable: return &unreachable;
             case Segment::kSpellpackVendor: return &spellpackVendor;
             case Segment::kRitualQuest: return &ritualQuest;
             case Segment::kStandardSale: return &standardSale;

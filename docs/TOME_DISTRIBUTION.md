@@ -28,7 +28,7 @@ author's Python `RULES`.
 
 | # | Key (config, JSON) | Rule | Default |
 |---|---|---|---|
-| 1 | `unreachable` | no route: nothing hands out its tomes | always off |
+| 1 | `unreachable` | no route: nothing hands out its tomes | off (the panel's last row, a warning) |
 | 2 | `spellpackVendor` | at a shop of its own mod (see below), with 3 or fewer open vendors | off |
 | 3 | `ritualQuest` | some vendor's stock of it is unlocked by an `MGRitual*` global (the College master rituals) | on |
 | 4 | `standardSale` | 3+ open vendor chests | on |
@@ -37,7 +37,12 @@ author's Python `RULES`.
 | 7 | `uniqueVendor` | 1-2 open vendor chests, or stock another quest unlocks | off |
 | 8 | `uniqueReward` | one site's loot, hand-placed, or a quest reward | off |
 | 9 | `crafted` | only a recipe makes it | off |
-| 10 | `review` | anything else | always on (Gate Review lists them) |
+| 10 | `review` | anything else | follows `unreachable` (no row of its own) |
+
+Every spell is meant to fall in one of segments 1 to 9; `review` is the oversight net. It has no switch: a review
+spell, and a `source.segment` no switch knows, goes with the `unreachable` switch and counts in its row
+(`TomeSourceSetting.categoryOf`, `OffTreeBySource`, `SegmentSwitches::OnTree`). Before 2026-11-16 (fork/feat/tree-builder-ui)
+unreachable was always off and review always on.
 
 How the rules are measured:
 - **Spellpack vendor (shop):** a plugin's vendor-sold tome spells (3 or more of them; the base game and DLC
@@ -107,7 +112,11 @@ Consumers:
   - `modules/gateReview.js`;
   - `isTreeCandidate` in `modules/proceduralTreeBuilder.js`;
 - panel UI: "Where Spells Come From", at the top of the Complex tree builder in `index.html`. It is mirrored in
-  `dev-harness.html`, shown after a scan (`cppCallbacks.js`), and folds by its header;
+  `dev-harness.html`, shown after a scan (`cppCallbacks.js`), and folds by its header. Nine rows, Unreachable last
+  (red tinted, off by default). Each row shows a count column made by `TomeSourceSetting.renderCounts`
+  (ScanStage.refresh calls it): the found spells (`isTomeCandidate`) of that category whether it is on or not,
+  plus "(N Whitelisted / N Blacklisted)" when either list holds any of them; then a hidden button for the
+  scoped override menu, still to come;
 - strings: `lang/en.json` and `lang/en.js`, `settings.tomeSources.<key>` / `<key>Desc`.
 
 Config: config.json `tomeSources: { "<key>": bool }`. Missing or non-boolean values take the defaults, and
@@ -151,7 +160,8 @@ To add, remove or rename a segment, change all of these:
 2. `TomeReachSegments.cpp`: the rule chain at the end of `ClassifySpells`, and its header comment.
 3. `tools/tome-reach-sources.cpp`: `PythonRule` is the enum + 1, so it stays right as long as the order matches.
 4. `tools/graft-check.cpp`: the switch cases.
-5. `modules/tomeSourceSetting.js`: `SEGMENTS`, `DEFAULTS`, `NAMES`; and `modules/tomeSourceSettingTest.js`.
+5. `modules/tomeSourceSetting.js`: `SEGMENTS` (the page's row order), `DEFAULTS`, `NAMES`, `CATCH_ALL`; and
+   `modules/tomeSourceSettingTest.js`.
 6. `lang/en.json` and `lang/en.js`.
 7. `index.html` and `dev-harness.html`: one `setting-row` per segment, with the toggle id
    `tomeSource<Key>Toggle` and `checked` on the default-on ones.

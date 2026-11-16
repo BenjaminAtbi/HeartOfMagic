@@ -116,19 +116,46 @@
 #contentSpellScan .scan-text-btn .hom-icon { display: none; }
 #contentSpellScan .scan-text-btn.hidden { display: none; }
 
-/* ---- Scan details and the filter lines: one column of lines, no rule between ---- */
+/* ---- Scan details: a section title, the counts at the left, the list previews and the lines at the right ---- */
 #contentSpellScan #scanResultsSection {
+    display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 4px 16px 12px;
 }
 
+#contentSpellScan #scanResultsSection .scan-split {
+    gap: 24px;
+    align-items: flex-start;
+}
+
 #contentSpellScan .scan-split-left,
 #contentSpellScan .scan-split-right {
-    flex: none;
+    flex: 1 1 0;
+    min-width: 0;
     padding: 0;
     border: 0;
 }
+
+#contentSpellScan .scan-split-right { display: flex; flex-direction: column; gap: 10px; }
+
+.scan-lists { display: flex; gap: 16px; }
+.scan-list { flex: 1 1 0; min-width: 0; }
+.scan-list-title { color: var(--text-secondary, #A8A898); font-size: 0.9em; margin-bottom: 4px; }
+
+.scan-list-items {
+    list-style: none;
+    margin: 0;
+    padding: 4px 8px;
+    height: 8.5em;
+    overflow-y: auto;
+    border: 1px solid var(--divider, rgba(255, 255, 255, 0.2));
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.scan-list-items li { padding: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scan-list-items li.scan-list-empty { color: var(--text-muted, #6A6A5A); font-style: italic; }
 
 .scan-row-link {
     display: inline-flex;
@@ -159,12 +186,7 @@
 
 #contentSpellScan .scan-filter-controls { gap: 10px; align-items: flex-start; }
 
-.scan-results-body {
-    padding: 8px 0 4px 16px;
-    max-width: 30em;
-}
-
-.scan-results-body.hidden { display: none; }
+.scan-results-body { max-width: 30em; }
 
 /* ---- The Easy page: presets and the status at the left, the preview at the right, no rule ---- */
 #contentSpellScan .easy-panel-left { border-right: 0; }
@@ -189,3 +211,14 @@
 .tome-sources-content { max-height: none; overflow: visible; }
 #tomeSourcesBlock .setting-row { cursor: pointer; user-select: none; }
 #tomeSourcesBlock .setting-row:hover { background: rgba(255, 255, 255, 0.04); }
+
+/* Each row's count column ("345 spells (2 Whitelisted / 5 Blacklisted)") and the scoped override button
+   (hidden until its menu exists), between the row's text and its switch */
+.tome-source-count-cell { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; margin: 0 12px; }
+.tome-source-count { color: var(--text-secondary, #A8A898); white-space: nowrap; }
+.tome-source-scoped.hidden { display: none; }
+
+/* Unreachable: a warning row, red tinted */
+#tomeSourcesBlock .setting-row.tome-source-warning { background: rgba(170, 40, 40, 0.16); }
+#tomeSourcesBlock .setting-row.tome-source-warning:hover { background: rgba(170, 40, 40, 0.24); }
+.tome-source-warning .setting-desc { color: #D08A80; }

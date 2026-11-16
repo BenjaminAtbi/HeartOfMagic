@@ -3,9 +3,11 @@
  * (tomeSourceSetting.js) and the tree filter that reads it (proceduralTreeBuilder.js
  * isTreeCandidate, run-tests.js).
  *
- * Checks: the defaults (general sale, wide drops and uncommon vendors on, the rest
- * off; review always on, unreachable always off), offTree by the source object, by
- * tomeUnreachable, and by questOnly for a scan without source objects; a toggle
+ * Checks: the defaults (ritual quest, standard sale and standard loot on, the rest
+ * off; review and unknown segments follow Unreachable, off), offTree by the source
+ * object, by tomeUnreachable, and by questOnly for a scan without source objects; the
+ * Unreachable switch taking all three in; the count per category with its Whitelisted
+ * and Blacklisted parts; a toggle
  * that saves and changes the tree's reach at once; load with missing or wrong
  * values, the save -> load round trip into config.tomeSources, Reset; the reason
  * Gate Review shows; the player's Include bringing any one spell back; the spell
@@ -48,6 +50,30 @@ var TomeSourceSettingTest = {
         };
     },
 
+    /** The count per category: found spells only, every category, the lists' parts */
+    _checkCounts: function(g, S, spell) {
+        var oldFold = g.foldPluginName;
+        if (typeof g.foldPluginName !== 'function') g.foldPluginName = function(s) { return String(s).toLowerCase(); };
+        try {
+            g.settings.spellBlacklist = [{ plugin: 'Mod.esp', localFormId: '000822' }];
+            g.settings.gateReviewed = ['mod.esp:000823', 'mod.esp:000824'];
+            var list = [spell('21', 'standardSale'), spell('22', 'standardSale'), spell('23', 'regionalLoot'),
+                spell('24', 'review'), spell('25', 'crafted', { tomeUnreachable: true }), spell('26', 'standardSale', { voiceSlot: true }),
+                spell('27', null, { questOnly: true })];
+            var c = S.counts(list);
+            this.check(c.standardSale.spells === 2 && c.standardSale.blacklisted === 1 && c.standardSale.whitelisted === 0 &&
+                c.regionalLoot.spells === 1 && c.regionalLoot.whitelisted === 1 && c.unreachable.spells === 2 &&
+                c.unreachable.whitelisted === 1 && c.crafted.spells === 0 && Object.keys(c).length === S.SEGMENTS.length,
+                'counts: found spells per category (no voice slot, none without a source), Whitelisted and Blacklisted');
+            this.check(S.countText(c.crafted) === '0 spells' && S.countText(c.standardSale) === '2 spells (0 Whitelisted / 1 Blacklisted)',
+                'count text: "N spells", the lists\' part only when either has any');
+        } finally {
+            g.foldPluginName = oldFold;
+            g.settings.spellBlacklist = [];
+            g.settings.gateReviewed = [];
+        }
+    },
+
     run: function() {
         var g = (typeof global !== 'undefined') ? global : window;
         this.passed = 0;
@@ -75,17 +101,27 @@ var TomeSourceSettingTest = {
             g.settings = {};
             S.loadFrom({});
             var on = S.SEGMENTS.filter(function(k) { return S.onTree(k); }).join(',');
-            this.check(on === 'ritualQuest,standardSale,standardLoot' && S.onTree('review') && !S.onTree('unreachable') &&
-                !S.onTree('somethingNew'), 'defaults: ritual quest, standard sale, standard loot on; review on; unreachable off');
+            this.check(on === 'ritualQuest,standardSale,standardLoot' && !S.onTree('review') && !S.onTree('unreachable') &&
+                !S.onTree('somethingNew') && S.SEGMENTS[S.SEGMENTS.length - 1] === 'unreachable',
+                'defaults: ritual quest, standard sale, standard loot on; Unreachable (last row) off, review and unknown keys with it');
             this.check(!S.offTree(spell('01', 'standardSale')) && S.offTree(spell('02', 'regionalLoot')) &&
-                !S.offTree(spell('03', 'review')) && S.offTree(spell('04', 'unreachable')),
+                S.offTree(spell('03', 'review')) && S.offTree(spell('04', 'unreachable')),
                 'offTree goes by the source segment');
             this.check(S.offTree(spell('05', 'standardSale', { tomeUnreachable: true })) &&
                 !S.offTree(spell('06', 'standardLoot', { questOnly: true })),
-                'tomeUnreachable is always off; with a source, questOnly does not count');
+                'tomeUnreachable goes with Unreachable (off); with a source, questOnly does not count');
             this.check(S.offTree(spell('07', null, { questOnly: true })) && !S.offTree(spell('08')) &&
-                S.offTree(spell('09', 'somethingNew', { questOnly: true })),
-                'a scan without source objects (or an unknown segment) falls back on questOnly');
+                S.offTree(spell('09', 'somethingNew')),
+                'a scan without source objects falls back on questOnly; an unknown segment goes with Unreachable');
+            g.settings.tomeSources.unreachable = true;
+            this.check(!S.offTree(spell('05', 'standardSale', { tomeUnreachable: true })) && !S.offTree(spell('03', 'review')) &&
+                !S.offTree(spell('09', 'somethingNew')) && !S.offTree(spell('04', 'unreachable')),
+                'Unreachable on takes tomeUnreachable, review and unknown segments');
+            g.settings.tomeSources.unreachable = false;
+            this.check(S.categoryOf(spell('05', 'standardSale', { tomeUnreachable: true })) === 'unreachable' &&
+                S.categoryOf(spell('03', 'review')) === 'unreachable' && S.categoryOf(spell('01', 'standardSale')) === 'standardSale' &&
+                S.categoryOf(spell('07', null, { questOnly: true })) === null, 'categoryOf: the row a spell counts in');
+            this._checkCounts(g, S, spell);
 
             S.init();
             var toggle = els[S.toggleId('regionalLoot')];
@@ -111,15 +147,15 @@ var TomeSourceSettingTest = {
             var shop = spell('10', 'spellpackVendor');
             shop.source.shop = 'apocalypse - magic of skyrim.esp';
             this.check(S.reasonText(shop) === 'Spellpack mod vendors (apocalypse - magic of skyrim.esp)' &&
-                S.reasonText(spell('11', 'standardSale', { tomeUnreachable: true })) === 'nothing hands out its tomes' &&
+                S.reasonText(spell('11', 'standardSale', { tomeUnreachable: true })) === 'Unreachable' &&
                 S.reasonText(spell('12', null, { questOnly: true })) === 'only a quest hands out its tomes',
                 'the reason Gate Review shows');
 
             // The tree filter: the source decides, Include brings any one back, the gate only flags
             g.settings = { gateReviewed: [] };
             var loot = spell('13', 'regionalLoot'), lost = spell('14', 'unreachable', { tomeUnreachable: true });
-            this.check(!g.isTreeCandidate(loot) && !g.isTreeCandidate(lost) && g.isTreeCandidate(spell('15', 'review')),
-                'the tree leaves out switched-off and unreachable spells, keeps review ones');
+            this.check(!g.isTreeCandidate(loot) && !g.isTreeCandidate(lost) && !g.isTreeCandidate(spell('15', 'review')),
+                'the tree leaves out switched-off, unreachable and review spells');
             g.settings.gateReviewed = ['mod.esp:000813', 'mod.esp:000814'];
             this.check(g.isTreeCandidate(loot) && g.isTreeCandidate(lost), 'Include brings either back');
             g.settings.gateReviewed = [];

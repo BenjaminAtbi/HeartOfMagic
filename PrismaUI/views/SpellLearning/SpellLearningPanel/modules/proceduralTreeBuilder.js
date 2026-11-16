@@ -31,9 +31,9 @@ function isTaughtByTome(spell) {
 
 /**
  * A spell the tree takes: a tome candidate (isTomeCandidate) whose tomes come from
- * a source the settings put on the tree (TomeSourceSetting.offTree: not
- * tomeUnreachable, its source segment switched on; questOnly in a scan without
- * source objects), unless the player included it (GateReview.isKept,
+ * a source the settings put on the tree (TomeSourceSetting.offTree: its category
+ * switched on - Unreachable, off by default, for tomeUnreachable, review and
+ * unknown segments; questOnly in a scan without source objects), unless the player included it (GateReview.isKept,
  * settings.gateReviewed: Include brings any one spell back, unreachable ones too).
  * The spell gate only flags since 2026-11-14: its "out" and "review" bands and
  * freeSpell stay in, GateReview lists them. GraftCandidates.h IsBuildCandidate

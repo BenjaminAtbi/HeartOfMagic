@@ -257,31 +257,19 @@ var PanelLayoutTest = {
         return box;
     },
 
-    /**
-     * The gap line in every language file: the excluded list as the whole gap reads as that reason alone, and the
-     * lead of two or more ("15 left out:") does not reuse the excluded list's own word ("12개 제외: 제외 목록에 12개")
-     */
-    _checkGapLanguages: function(S) {
+    /** The gap line's keys in English with their number, and the retired ones gone from every language */
+    _checkGapLanguages: function() {
         var fs = require('fs'), path = require('path'), dir = path.join(__dirname, '..', 'lang');
         var files = fs.readdirSync(dir).filter(function(f) { return /^[a-z-]+\.json$/.test(f); });
-        var fill = function(s, p) { for (var k in (p || {})) s = s.split('{{' + k + '}}').join(p[k]); return s; };
-        var alone = [], repeats = [];
-        // The stem each language names the excluded list with (scan.gapExcluded, scan.excludedCount)
-        var EXCLUDED_WORD = { en: 'exclu', de: 'sperr', es: 'exclu', fr: 'exclu', it: 'esclu', ja: '除外', ko: '제외', pl: 'wyklucz',
-            'pt-br': 'exclu', ru: 'исключ', tr: 'dışlan', 'zh-cn': '排除', 'zh-tw': '排除' };
-        // The gap is keys, the same in every language: the excluded list as the whole gap is that one line
-        var one = S.summary('apply', { found: 753, tomeOut: 0, excluded: 12, pluginsOut: 0, inTree: 741 }, 741).gap;
-        this.check(one.length === 1 && one[0][0] === 'scan.gapExcluded', 'Gap line: the excluded list as the whole gap (after a build too) is one line, no lead');
-        files.forEach(function(f) {
+        var en = JSON.parse(fs.readFileSync(path.join(dir, 'en.json'), 'utf8'));
+        this.check(['scan.gapInvalid', 'scan.gapLeftOff', 'scan.gapNotPlaced'].every(function(k) { return String(en[k]).indexOf('{{count}}') !== -1; }),
+            'Gap line: English has its three parts, each with its {{count}}');
+        var RETIRED = ['scan.gapLeftOut', 'scan.gapNotPlayer', 'scan.gapExcluded', 'scan.gapPlugins', 'scan.excludedCount', 'scanner.totalSpells'];
+        var stale = files.filter(function(f) {
             var L = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-            // ...which, standing alone, must carry the number itself
-            if (typeof L['scan.gapExcluded'] !== 'string' || L['scan.gapExcluded'].indexOf('{{count}}') === -1) alone.push(f);
-            var lead = fill(L['scan.gapLeftOut'] || '', { count: 15 }).toLowerCase();
-            var word = EXCLUDED_WORD[f.slice(0, -5)];
-            if (!word || lead.indexOf(word) !== -1) repeats.push(f + ' (' + lead + ')');
+            return RETIRED.some(function(k) { return L.hasOwnProperty(k); });
         });
-        this.check(files.length === 13 && alone.length === 0, 'Gap line, every language: scan.gapExcluded is there and holds its {{count}} (it stands alone)' + (alone.length ? ': ' + alone.join(', ') : ''));
-        this.check(repeats.length === 0, 'Gap line, every language: "N left out:" does not reuse the word of the excluded list' + (repeats.length ? ': ' + repeats.join(', ') : ''));
+        this.check(files.length === 13 && stale.length === 0, 'Gap line, every language: the retired keys are gone' + (stale.length ? ': ' + stale.join(', ') : ''));
     },
 
     _spells: function() {
@@ -309,8 +297,8 @@ var PanelLayoutTest = {
         box.settings.spellBlacklist = [{ plugin: 'Skyrim.esm', localFormId: '010001' }, { formId: '0x00010002' }];
         box.settings.pluginWhitelist = [{ plugin: 'MOD.ESP', enabled: false }, { plugin: 'Skyrim.esm', enabled: true }];
         var c = S.counts(spells);
-        this.check(c.found === 17 && c.tomeOut === 3 && c.excluded === 2 && c.pluginsOut === 4 && c.inTree === 8,
-            'Counts: 17 found, 3 not player spells, 2 excluded (plugin+id and a legacy formId), 4 from the plugin turned off (A-Z folded), 8 in');
+        this.check(c.total === 17 && c.found === 14 && c.invalid === 3 && c.inTree === 8 && c.leftOff === 6,
+            'Counts: 17 scanned, 14 found, 3 invalid (voice slot, no tome, copy), 8 in (2 blacklisted, 4 from the plugin turned off, A-Z folded), 6 left off');
         box.state.lastSpellData = { spells: spells };
         var primed = spells.filter(box.isTaughtByTome);
         primed = box.filterWhitelistedSpells(box.filterBlacklistedSpells(primed));
@@ -318,24 +306,28 @@ var PanelLayoutTest = {
 
         var sum = S.summary('build', c, 0);
         var text = function(list) { return list.map(function(p) { var t = p[2]; for (var k in (p[1] || {})) t = t.split('{{' + k + '}}').join(p[1][k]); return t; }); };
-        this.check(text(sum.parts).join(' | ') === '17 spells found | 8 go in the tree | not built yet', 'Summary before a build: found, in the tree, not built yet');
-        var gap = sum.gap.slice(1).reduce(function(n, p) { return n + p[1].count; }, 0);
-        this.check(sum.gap[0][0] === 'scan.gapLeftOut' && sum.gap[0][1].count === 9 && gap === 9 && sum.gap.length === 4,
-            'Summary: "9 left out" and its three reasons add up to found minus in the tree');
+        this.check(text(sum.parts).join(' | ') === '14 spells found | 8 go in the tree | not built yet', 'Summary before a build: found, in the tree, not built yet');
+        this.check(text(sum.gap).join('; ') === '3 spells invalid (no tome, powers, copies); 6 spells left off the tree',
+            'Summary: the second line says invalid, then left off the tree');
         var built = S.summary('apply', c, 6);
-        this.check(text(built.parts).join(' | ') === '17 spells found | 6 in the new tree | not applied yet' &&
-            built.gap[0][1].count === 11 && built.gap[built.gap.length - 1][0] === 'scan.gapNotPlaced' && built.gap[built.gap.length - 1][1].count === 2,
-            'Summary after a build: the placed count, and the 2 the builder did not place among the 11 left out');
-        this.check(text(S.summary('applied', c, 8).parts).join(' | ') === '17 spells found | 8 in your tree | applied', 'Summary applied: in your tree, applied');
-        var none = S.summary('build', { found: 5, tomeOut: 0, excluded: 0, pluginsOut: 0, inTree: 5 }, 0);
+        this.check(text(built.parts).join(' | ') === '14 spells found | 6 in the new tree | not applied yet' &&
+            built.gap.length === 3 && built.gap[2][0] === 'scan.gapNotPlaced' && built.gap[2][1].count === 2,
+            'Summary after a build: the placed count, and the 2 the builder did not place after the left off');
+        this.check(text(S.summary('applied', c, 8).parts).join(' | ') === '14 spells found | 8 in your tree | applied', 'Summary applied: in your tree, applied');
+        var none = S.summary('build', { total: 5, found: 5, invalid: 0, inTree: 5, leftOff: 0 }, 0);
         this.check(none.gap.length === 0 && S.summary('scan', c, 0).parts[0][0] === 'scan.summaryNoScan', 'Summary: no gap line when nothing is left out; before a scan, one line saying so');
         var saved = S.summary('scan', c, 0, 640);
         this.check(saved.parts.length === 1 && saved.parts[0][0] === 'scan.summaryTreeNoScan' && saved.parts[0][1].count === 640 && saved.gap.length === 0,
             'Summary: a saved tree and no scan this session says the tree is there (640 spells), not "No scan yet"');
-        var one = S.summary('build', { found: 20, tomeOut: 0, excluded: 12, pluginsOut: 0, inTree: 8 }, 0);
-        this.check(one.gap.length === 1 && one.gap[0][0] === 'scan.gapExcluded' && one.gap[0][1].count === 12,
-            'Summary: one reason that is the whole gap says it alone ("12 on your excluded list", no "12 left out:")');
-        this._checkGapLanguages(S);
+        var one = S.summary('build', { total: 20, found: 20, invalid: 0, inTree: 8, leftOff: 12 }, 0);
+        this.check(one.gap.length === 1 && one.gap[0][0] === 'scan.gapLeftOff' && one.gap[0][1].count === 12,
+            'Summary: nothing invalid, only the left off part');
+        this._checkGapLanguages();
+        this.check(['Restoration', 'Mysticism', 'Illusion', 'Conjuration', 'Alteration', 'Arcane', 'Destruction'].sort(box.compareSchools).join() ===
+            'Conjuration,Destruction,Alteration,Illusion,Restoration,Arcane,Mysticism', 'Schools: HoM\'s order, any other after them by name (compareSchools)');
+        var lists = S.listPreview(spells, [{ name: 'Zap' }, { formId: '0x00010002' }], ['skyrim.esm:010001', 'gone.esp:000001']);
+        this.check(lists.blacklisted.join() === '0x00010002,Zap' && lists.whitelisted.join() === 'gone.esp:000001,skyrim.esm:010001',
+            'List previews: the blacklist\'s names (a formId when it has none), the Include keys (named once GateReview is there), sorted');
 
         var p = S.pluginState(spells, box.settings.pluginWhitelist);
         this.check(p.total === 2 && p.off === 1 && S.pluginLine(p)[0] === 'scan.pluginsSome' && S.pluginLine(p)[1].on === 1,
@@ -350,7 +342,8 @@ var PanelLayoutTest = {
     _scanPage: function() {
         var self = this;
         var ids = ['scanStageBtn', 'scanStageLabel', 'scanBtn', 'scanAgainBtn', 'scanClearDraftBtn', 'tgBuildBtn', 'tgApplyBtn', 'tgClearBtn', 'easyBuildBtn',
-            'scannerComplexContent', 'scanSummary', 'scanSummaryGap', 'scanDetailsToggle', 'scanDetailsArrow', 'scanResultsBody', 'blacklistLabel', 'whitelistLabel'];
+            'scannerComplexContent', 'scanSummary', 'scanSummaryGap', 'statTotalSpells', 'scanBlacklistTitle', 'scanBlacklistPreview', 'scanWhitelistTitle',
+            'scanWhitelistPreview', 'whitelistLabel'];
         var els = {};
         ids.forEach(function(id) { els[id] = self.el('div', { id: id }); });
         els.scannerComplexContent.style.display = 'none';
@@ -360,8 +353,8 @@ var PanelLayoutTest = {
         S.init();
         this.check(els.scanStageLabel.getAttribute('data-i18n') === 'buttons.scanSpells' && !els.scanStageBtn.disabled &&
             els.scanAgainBtn.classList.contains('hidden') && els.scanSummary.text().indexOf('No scan yet') === 0 &&
-            els.scanDetailsToggle.classList.contains('hidden'),
-            'Page before a scan: "No scan yet", the main button Scan Spells, no Scan again, no Scan details to unfold');
+            els.statTotalSpells.textContent === '--' && els.scanBlacklistPreview.text() === 'None' && els.scanBlacklistTitle.textContent === 'Blacklisted (0)',
+            'Page before a scan: "No scan yet", the main button Scan Spells, no Scan again; Scan details shown, empty');
         box.state.treeData = { nodes: [{}, {}, {}] };
         S.refresh();
         this.check(els.scanSummary.text() === 'Your tree has 3 spells · scan to build a new one' && els.scanStageLabel.getAttribute('data-i18n') === 'buttons.scanSpells',
@@ -388,11 +381,14 @@ var PanelLayoutTest = {
         box.settings.spellBlacklist = [{ formId: '0x00010003' }];
         S.refresh();
         this.check(els.scanStageLabel.getAttribute('data-i18n') === 'buttons.buildTree' && !els.scanAgainBtn.classList.contains('hidden') &&
-            els.scanSummary.text() === '17 spells found · 13 go in the tree · not built yet' &&
-            !els.scanSummaryGap.classList.contains('hidden') && els.scanSummaryGap.text().indexOf('4 left out:') === 0,
-            'Page scanned: Build Tree, Scan again shown, the summary line, the gap line with 4 left out');
-        this.check(els.blacklistLabel.textContent === 'Excluded spells: 1' && els.whitelistLabel.textContent === 'Plugins: all',
-            'Page: the filter lines say their state (1 excluded, plugins all)');
+            els.scanSummary.text() === '14 spells found · 13 go in the tree · not built yet' &&
+            !els.scanSummaryGap.classList.contains('hidden') &&
+            els.scanSummaryGap.text() === '3 spells invalid (no tome, powers, copies); 1 spells left off the tree.',
+            'Page scanned: Build Tree, Scan again shown, the summary line, the gap line (invalid; left off.)');
+        this.check(els.statTotalSpells.textContent === '14' && els.scanBlacklistTitle.textContent === 'Blacklisted (1)' &&
+            els.scanBlacklistPreview.text() === '0x00010003' && els.scanWhitelistPreview.text() === 'None' &&
+            els.whitelistLabel.textContent === 'Plugins: all',
+            'Page: Spells found, the list previews (1 blacklisted, none whitelisted) and the plugin line');
         els.scanStageBtn.click();
         this.check(els.easyBuildBtn.clicks === 1 && els.tgBuildBtn.clicks === 0, 'Page Easy: Build presses Easy\'s Build (it applies the chosen preset first)');
         els.easyBuildBtn.disabled = true;
@@ -430,14 +426,6 @@ var PanelLayoutTest = {
         els.tgClearBtn.disabled = true;
         S.refresh();
         this.check(els.scanClearDraftBtn.classList.contains('hidden'), 'Page: no Clear draft tree while the real Clear is off');
-
-        this.check(els.scanResultsBody.classList.contains('hidden') && els.scanDetailsToggle.getAttribute('aria-expanded') === 'false',
-            'Details: folded at first');
-        els.scanDetailsToggle.click();
-        this.check(!els.scanResultsBody.classList.contains('hidden') && els.scanDetailsToggle.getAttribute('aria-expanded') === 'true' &&
-            els.scanDetailsArrow.textContent === '▾', 'Details: a click opens them (arrow down)');
-        S.refresh();
-        this.check(!els.scanResultsBody.classList.contains('hidden'), 'Details: a refresh keeps them open');
     },
 
     _scanMarkup: function() {
@@ -460,6 +448,16 @@ var PanelLayoutTest = {
         var css = this._file('../panel-scan.css');
         this.check(/\.scan-relay-target \{ display: none; \}/.test(css) && !/border-right: 1px/.test(css),
             'Scan CSS: relays out of sight, no vertical rule added');
+        var details = scan.substring(scan.indexOf('id="scanResultsSection"'), scan.indexOf('id="scannerComplexContent"'));
+        this.check(/class="tree-preview-title scan-details-title" data-i18n="scan.details"/.test(details) && !/scanDetailsToggle|scan-results-body hidden/.test(details) &&
+            /id="scanBlacklistPreview"/.test(details) && /id="scanWhitelistPreview"/.test(details) &&
+            details.indexOf('id="scanWhitelistPreview"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"'),
+            'Scan markup: Scan details is a section title, always open; the two list previews, then the override button and the plugin line');
+        var sources = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
+        var rows = sources.match(/id="tomeSource\w+Toggle"[^>]*>/g) || [];
+        this.check(rows.length === 9 && /id="tomeSourceUnreachableToggle">$/.test(rows[8]) &&
+            /class="setting-row tome-source-warning">[\s\S]*settings\.tomeSources\.unreachableDesc/.test(sources),
+            'Scan markup: Unreachable is the ninth row, last, off by default, a warning row');
     },
 
     // ======================================================================= item 9

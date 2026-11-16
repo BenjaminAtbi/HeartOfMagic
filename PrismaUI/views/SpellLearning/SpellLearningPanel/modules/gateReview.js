@@ -7,13 +7,14 @@
  * script-only spell, a rule from gate/rules.json), gate.band "out" (free to cast, or
  * one that only dismisses a summon: a free spell can be a real one, Mysticism's
  * Symmetry), or source segment "review" (the distribution model found no clear
- * source). They stay in the tree; Leave out puts one on the spell blacklist, Keep
+ * source; it goes with the Unreachable switch, so it is listed here only while that
+ * is on). They stay in the tree; Leave out puts one on the spell blacklist, Keep
  * takes it off the list. Since 2026-11-14 the gate only flags: where the tomes
  * come from decides the tree.
  *
  * "Specialty sources": tome spells off the tree by where their tomes come from
- * (TomeSourceSetting.offTree: a segment switched off in the Complex tree builder,
- * or nothing hands their tomes out; questOnly in a scan without source objects).
+ * (TomeSourceSetting.offTree: a category switched off in the Complex tree builder,
+ * Unreachable included; questOnly in a scan without source objects).
  * Include puts one in the tree.
  *
  * Keep and Include write the same list, settings.gateReviewed (config.json,

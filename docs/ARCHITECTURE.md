@@ -289,7 +289,8 @@ game the placed references of cells that are not loaded are not in memory:
   marked), and a spell is
   `questOnly` when its segment is switched off (`QuestOnlySpells` reads config.json `tomeSources` on each call;
   defaults in `SegmentSwitches`: ritual quest, standard sale and standard loot on, spellpack vendor, regional
-  loot, unique vendor, unique reward and crafted off; review always on). The scan writes each spell's
+  loot, unique vendor, unique reward, crafted and unreachable off; review has no switch and follows
+  unreachable's). The scan writes each spell's
   `source` object (`SourceJson`: `segment` as `SegmentKey`, `class`, `subtype`, `detail`, `shop` for a
   spellpack vendor's spell). When a plugin is unreadable or the model throws, the pass answers as before,
   with no `source` objects. Archives are read in the game's order (`ArchiveOrder`, TomeReachData.h): the INI
@@ -301,8 +302,8 @@ game the placed references of cells that are not loaded are not in memory:
   spell whatever its DATA says (a non-teaching book Spell Research's Synthesizer pairs, a book a DLL rebinds),
   and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, at the top of the
   Complex tree builder: Where Spells Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
-  `offTree(spell)` is the segment switched off, `tomeUnreachable`, or `questOnly` for a scan without `source`
-  objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).
+  `offTree(spell)` is the spell's category switched off (`categoryOf`: its segment; Unreachable for
+  `tomeUnreachable`, review and unknown segments), or `questOnly` for a scan without `source` objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).
   Gate Review's "Specialty sources" list shows the spells off by their source with the segment and route
   detail as the reason; Include brings any one back, unreachable ones too (also for Spell Research).
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no

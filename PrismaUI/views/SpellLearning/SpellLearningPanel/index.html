@@ -84,16 +84,17 @@
                     <button type="button" id="scanClearDraftBtn" class="btn scan-text-btn hidden" data-i18n="scan.clearDraft">Clear draft tree</button>
                 </div>
 
-                <!-- Section 1: scan details (folded) and the filters, as lines -->
-                <div class="scan-section scan-split" id="scanResultsSection">
-                    <!-- Scan details: totals and spells per school, opened by its line -->
+                <!-- Section 1: Scan details - the counts beside previews of the spell lists, then the plugin line (scanStage.js) -->
+                <div class="scan-section" id="scanResultsSection">
+                    <div class="tree-preview-title scan-details-title" data-i18n="scan.details">Scan details</div>
+                    <div class="scan-split">
+                    <!-- Spells found (could go on the tree), mods, primed, and the primed spells per school -->
                     <div class="scan-split-left">
-                        <button type="button" id="scanDetailsToggle" class="scan-row-link" aria-expanded="false"><span data-i18n="scan.details">Scan details</span> <span id="scanDetailsArrow" class="scan-row-arrow" aria-hidden="true">&#9656;</span></button>
-                        <div class="scan-results-body hidden" id="scanResultsBody">
+                        <div class="scan-results-body" id="scanResultsBody">
                             <div class="scan-stats-grid" id="scanStatsGrid">
                                 <div class="scan-stat">
                                     <span class="scan-stat-value" id="statTotalSpells">--</span>
-                                    <span class="scan-stat-label" data-i18n="scanner.totalSpells">Total Spells</span>
+                                    <span class="scan-stat-label" data-i18n="scan.spellsFound">Spells found</span>
                                 </div>
                                 <div class="scan-stat">
                                     <span class="scan-stat-value" id="statTotalMods">--</span>
@@ -110,16 +111,28 @@
                         </div>
                     </div>
 
-                    <!-- The filters: each line says its state and opens its list (scanStage.js writes the labels) -->
+                    <!-- The Blacklisted and Whitelisted (Include) lists, previewed; the override button opens the blacklist window
+                         until the override menu exists; the plugin line opens the plugin list -->
                     <div class="scan-split-right">
+                        <div class="scan-lists">
+                            <div class="scan-list">
+                                <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
+                                <ul class="scan-list-items" id="scanBlacklistPreview"></ul>
+                            </div>
+                            <div class="scan-list">
+                                <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
+                                <ul class="scan-list-items" id="scanWhitelistPreview"></ul>
+                            </div>
+                        </div>
                         <div class="scan-filter-controls">
                             <button id="blacklistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
-                                <span class="hom-label" id="blacklistLabel" data-i18n="scan.excludedCount" data-i18n-params='{"count":0}'>Excluded spells: 0</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
+                                <span class="hom-label" id="blacklistLabel" data-i18n="scan.override">Override spells</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
                             </button>
                             <button id="whitelistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
                                 <span class="hom-label" id="whitelistLabel" data-i18n="scan.pluginsAll">Plugins: all</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
                             </button>
                         </div>
+                    </div>
                     </div>
                 </div>
 
@@ -177,7 +190,7 @@
                             <span class="prm-collapse-icon" aria-hidden="true"></span>
                         </div>
                         <div class="settings-block-content tome-sources-content" id="tomeSourcesContent">
-                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule their spell tomes match, from top to bottom. Activate a category to include its spells on the tree. Spells whose tomes can't be accessed in-game never appear on the tree.</p>
+                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule their spell tomes match, from top to bottom. Spells whose tomes nothing hands out, or that match no rule, go under Unreachable at the bottom. Activate a category to include its spells on the tree.</p>
                             <div class="setting-row">
                                 <div class="setting-info">
                                     <span class="setting-label" data-i18n="settings.tomeSources.spellpackVendor">Spellpack mod vendors</span>
@@ -255,6 +268,16 @@
                                 </div>
                                 <label class="toggle-switch">
                                     <input type="checkbox" id="tomeSourceCraftedToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row tome-source-warning">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeSources.unreachable">Unreachable</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeSources.unreachableDesc">WARNING: spells not usually accessible in game. May be unfinished or bugged.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="tomeSourceUnreachableToggle">
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
