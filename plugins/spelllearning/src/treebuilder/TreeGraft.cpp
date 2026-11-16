@@ -305,6 +305,16 @@ namespace
         scoring.reserve(scoring.size() + work.news.size());
         for (const auto* spell : work.news) scoring.push_back(*spell);
         const auto sims = ComputeSimilarityMatrix(scoring);
+        // A tree by Magicka cost: no parent dearer than the new spell where one at or under
+        // its cost can take it (the build's rule, FindBestClassicParent). Read here: the
+        // nodes below take the live spells out of `scoring`
+        std::unordered_map<std::string, float> spellCosts;
+        if (config.tiersByCost) {
+            std::vector<const json*> costed;
+            for (const auto& spell : scoring) costed.push_back(&spell);
+            spellCosts = SpellCosts(costed);
+        }
+        const auto* costs = config.tiersByCost ? &spellCosts : nullptr;
 
         std::unordered_map<std::string, TreeNode> nodes;
         std::unordered_map<std::string, std::size_t> jsonIndex;   // node id -> index in nodesJson
@@ -372,7 +382,7 @@ namespace
         for (const auto& [tierIdx, spell] : news) {
             auto& node = nodes.at(Text(*spell, "formId"));
             TreeNode* parent =
-                FindBestClassicParent(node, available, tierIdx, cap, sims, grouping, nullptr, &room.Bonus());
+                FindBestClassicParent(node, available, tierIdx, cap, sims, grouping, nullptr, &room.Bonus(), costs);
             if (!parent) {
                 result.skippedNoSchool.push_back(ListId(*spell));
                 continue;

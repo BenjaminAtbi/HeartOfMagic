@@ -160,6 +160,23 @@ var ClassicRadialOrderTest = {
         this.check(O.key(map.m.skillLevel, 0.5) < O.key(map.n.skillLevel, 0.5),
             'the cheap Master in a cost tree keys inside the dear Novice');
 
+        // A tree by cost: the layout's late placements know a parent dearer than the spell
+        if (typeof require === 'function') {
+            var layoutFile = require('path').join(__dirname, 'classic', 'classicLayout.js');
+            var L = require('vm').runInNewContext(require('fs').readFileSync(layoutFile, 'utf8') + '; ClassicLayout',
+                { console: { log: function() {}, warn: function() {} } }, { filename: layoutFile });
+            var noCost = { m: map.m, z: { formId: 'z', magickaCost: 0 } };
+            this.check(L._costsMore.call({ _treeLevels: lv, _spellMap: map }, 'n', 'm') === true &&
+                L._costsMore.call({ _treeLevels: lv, _spellMap: map }, 'm', 'n') === false &&
+                L._costsMore.call({ _treeLevels: lv, _spellMap: map }, 'm', 'm') === false,
+                'ClassicLayout._costsMore: only a parent that costs more than the spell');
+            this.check(L._costsMore.call({ _treeLevels: lv, _spellMap: noCost }, 'm', 'z') === false &&
+                L._costsMore.call({ _treeLevels: lv, _spellMap: noCost }, 'm', 'gone') === false,
+                '_costsMore: a spell without a cost, or not in the scan, is not held to it');
+            this.check(L._costsMore.call({ _treeLevels: null, _spellMap: map }, 'n', 'm') === false && L.DEARER_PARENT_PENALTY > 0,
+                '_costsMore: never in a tree by level');
+        }
+
         return { passed: this.passed, failed: this.failed };
     }
 };

@@ -321,6 +321,43 @@ var PrereqEditTest = {
             'ClassicTreeOutput: no two lists share an array');
         b.prerequisites.push('Z');
         this.check(this._same(b.softPrereqs, ['R']), 'ClassicTreeOutput: a push to prerequisites leaves softPrereqs alone');
+        this._classicOutputAngles(treeData, layoutData);
+    },
+
+    /**
+     * A school's saved angles are its arc's edges, however many roots it has
+     * (the last root's direction once stood in for the middle, so the school
+     * dividers ran through the schools with Roots / School above 1).
+     */
+    _classicOutputAngles: function(treeData, layoutData) {
+        var deg = Math.PI / 180;
+        var near = function(a, b) { return Math.abs(a - b) < 0.02; };
+        var arc = { name: 'Destruction', arcStart: -126 * deg, arcSize: 90 * deg };
+        var build = function(base) { return ClassicTreeOutput.build(treeData, layoutData, base).output.schools.Destruction; };
+
+        var one = build({ mode: 'sun', schools: [arc], rootNodes: [{ school: 'Destruction', dir: -81 * deg }] });
+        this.check(near(one.startAngle, -126) && near(one.endAngle, -36) && near(one.spokeAngle, -81),
+            'ClassicTreeOutput: one root - the school runs from its arc\'s start to its end');
+
+        var three = build({ mode: 'sun', schools: [arc], rootNodes: [
+            { school: 'Destruction', dir: -111 * deg }, { school: 'Destruction', dir: -81 * deg },
+            { school: 'Destruction', dir: -51 * deg }] });
+        this.check(near(three.startAngle, -126) && near(three.endAngle, -36) && near(three.spokeAngle, -81),
+            'ClassicTreeOutput: three roots - the same edges and middle as one root');
+        this.check(near(three.rootDirection, -51 * deg), 'ClassicTreeOutput: rootDirection stays a root\'s direction');
+
+        // As the sun preview hands them over: starts in 0..360, an arc running past 360
+        var wrap = build({ mode: 'sun', schools: [{ name: 'Destruction', arcStart: 324 * deg, arcSize: 72 * deg }],
+            rootNodes: [{ school: 'Destruction', dir: 342 * deg }, { school: 'Destruction', dir: 378 * deg }] });
+        this.check(near(wrap.startAngle, 324) && near(wrap.endAngle, 396) && near(wrap.spokeAngle, 360),
+            'ClassicTreeOutput: an arc past 360 keeps its edges in order (324 to 396)');
+        var inward = build({ mode: 'sun', schools: [arc], rootNodes: [{ school: 'Destruction', dir: (-81 + 180) * deg }] });
+        this.check(near(inward.startAngle, -126) && near(inward.endAngle, -36) && near(inward.spokeAngle, -81),
+            'ClassicTreeOutput: inward growth - the edges and middle of the arc, not of the growth direction');
+
+        var flat = build({ mode: 'flat', schools: [{ name: 'Destruction' }], rootNodes: [{ school: 'Destruction', dir: -90 * deg }] });
+        this.check(near(flat.spokeAngle, -90) && near(flat.startAngle, -270) && near(flat.endAngle, 90),
+            'ClassicTreeOutput: a base without arcs (flat) keeps the slice round the root direction');
     },
 
     run: function() {

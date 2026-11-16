@@ -1,5 +1,26 @@
 # Changelog
 
+## Heart of Magic Librarian 1.9.3
+
+### Fixed
+
+- **Tiers by Magicka cost: the links go by cost too** (Nexus bug report). The option put each school's spells into
+  five tiers by cost but left the links inside a tier to chance, so Flames could sit behind Frostbite, Ice Spike
+  and two more. The school now starts at its cheapest spell (the cheapest vanilla one when it has any; a root you
+  chose stays), each tier is linked cheapest first, and a spell is not put under one that costs more, in the build
+  and when new spells are added to a tree. A spell cheaper than the school's root still hangs under the root. Trees
+  by level are unchanged. Build the tree again to get the new links. (`TreeBuilder::SpellCosts`, `PickRoot`,
+  `FindBestClassicParent`; docs/TREE_BUILDING_SYSTEM.md, *Links by cost*.)
+- **School dividers with Roots / School above 1** (Nexus bug report). A tree built with more than one root per
+  school drew its divider lines through the schools: the saved tree took each school's edges from its last root's
+  direction, which is the school's middle only with one root. The edges now come from the arc the preview gave the
+  school (`ClassicTreeOutput.build`, `baseData.schools[].arcStart` / `arcSize`), so schools with their own share of
+  the ring or growing inward are right too; flat mode, which has no arcs, is as before. A school's saved
+  `spokeAngle` is now the middle of its arc: with inward growth it was the opposite direction, and with root
+  randomness or clumping it was the root's direction (the camera's turn to a school and the declutter's sector
+  read it). A tree saved before keeps its angles until it is built and applied again. Checked by
+  `modules/prereqEditTest.js`.
+
 ## Heart of Magic Librarian 1.9.2
 
 ### Fixed

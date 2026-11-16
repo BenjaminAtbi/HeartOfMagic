@@ -143,6 +143,11 @@ namespace TreeBuilder
     std::unordered_map<std::string, int> SpellTiers(const std::vector<json>& spells, bool tiersByCost);
     std::unordered_map<std::string, int> SpellTiers(const std::vector<const json*>& spells, bool tiersByCost);
 
+    // formId -> Magicka cost, for the spells that have one above 0. A tree with
+    // tiersByCost keeps a spell's parent from costing more than the spell (the
+    // build's root and tier pass, and the graft). TreeBuilderClassic.cpp.
+    std::unordered_map<std::string, float> SpellCosts(const std::vector<const json*>& spells);
+
     // Author prefixes of editor ids ("aby", "nat", "grim"), found by position.
     std::unordered_set<std::string> FindModTags(const std::vector<json>& spells);
 

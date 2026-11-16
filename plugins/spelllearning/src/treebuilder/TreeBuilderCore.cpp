@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <limits>
 #include <numeric>
 
 // =============================================================================
@@ -139,8 +140,20 @@ const json* TreeBuilder::Internal::PickRoot(
     const std::unordered_map<std::string, std::vector<json>>& byTier,
     const BuildConfig& config,
     const std::string& school,
-    std::mt19937& rng)
+    std::mt19937& rng,
+    const std::unordered_map<std::string, float>* costs)
 {
+    // A tree by Magicka cost starts at the cheapest of the spells a draw would
+    // be made from (the lower formId of equal costs); a spell without a cost last
+    const auto cheapest = [costs](const std::vector<const json*>& pool) {
+        const auto key = [costs](const json* spell) {
+            const auto fid = spell->value("formId", std::string(""));
+            const auto it = costs->find(fid);
+            return std::pair(it != costs->end() ? it->second : std::numeric_limits<float>::infinity(), fid);
+        };
+        return *std::ranges::min_element(pool, {}, key);
+    };
+
     // User override
     auto overrideIt = config.selectedRoots.find(school);
     if (overrideIt != config.selectedRoots.end()) {
@@ -166,11 +179,17 @@ const json* TreeBuilder::Internal::PickRoot(
                 }
             }
             if (!vanilla.empty()) {
+                if (costs) return cheapest(vanilla);
                 std::uniform_int_distribution<int> dist(0, static_cast<int>(vanilla.size()) - 1);
                 return vanilla[dist(rng)];
             }
         }
 
+        if (costs) {
+            std::vector<const json*> pool;
+            for (const auto& s : it->second) pool.push_back(&s);
+            return cheapest(pool);
+        }
         std::uniform_int_distribution<int> dist(0, static_cast<int>(it->second.size()) - 1);
         return &it->second[dist(rng)];
     }

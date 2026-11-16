@@ -4,8 +4,9 @@
  * Turns the C++ Classic result and the layout ClassicLayout placed into the
  * spell tree JSON Apply saves: only placed nodes, their edges and prerequisites
  * from the layout's parents (the C++ builder's are dropped), PreReq Master's
- * locks as hard prerequisites, baked positions, and each school's spoke angles
- * from TreePreview's root directions. Cross-school bridges and the declutter
+ * locks as hard prerequisites, baked positions, and each school's angles from
+ * TreePreview's arc for it (its root direction where the base has no arcs:
+ * flat mode). Cross-school bridges and the declutter
  * pass are applied afterwards by TreeGrowthClassic.applyTree().
  *
  * Usage:
@@ -105,6 +106,19 @@ var ClassicTreeOutput = {
                 }
             }
         }
+        // The arc the preview gave each school (sun mode; radians). The school's
+        // edges come from it: a root's direction is not the school's middle
+        // once a school has several roots, a share of its own or grows inward.
+        var arcBySchool = {};
+        if (baseData && baseData.schools) {
+            for (var asi = 0; asi < baseData.schools.length; asi++) {
+                var bs = baseData.schools[asi];
+                if (bs && bs.name && typeof bs.arcStart === 'number' && typeof bs.arcSize === 'number' &&
+                    isFinite(bs.arcStart) && isFinite(bs.arcSize)) {
+                    arcBySchool[bs.name] = bs;
+                }
+            }
+        }
         var numSchools = Object.keys(treeData.schools || {}).length;
         var sliceAngle = numSchools > 0 ? 360 / numSchools : this.DEFAULT_SLICE_DEG;
 
@@ -190,6 +204,14 @@ var ClassicTreeOutput = {
                 output.schools[schoolName].startAngle = this._round(spokeDeg - sliceAngle / 2);
                 output.schools[schoolName].endAngle = this._round(spokeDeg + sliceAngle / 2);
                 output.schools[schoolName].rootDirection = dirRad;
+            }
+            var arc = arcBySchool[schoolName];
+            if (arc) {
+                var arcStartDeg = arc.arcStart * 180 / Math.PI;
+                var arcSizeDeg = arc.arcSize * 180 / Math.PI;
+                output.schools[schoolName].spokeAngle = this._round(arcStartDeg + arcSizeDeg / 2);
+                output.schools[schoolName].startAngle = this._round(arcStartDeg);
+                output.schools[schoolName].endAngle = this._round(arcStartDeg + arcSizeDeg);
             }
         }
 

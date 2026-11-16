@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <limits>
 #include <optional>
 #include <random>
 
@@ -77,6 +78,15 @@ namespace
     }
 }
 
+std::unordered_map<std::string, float> TreeBuilder::SpellCosts(const std::vector<const json*>& spells)
+{
+    std::unordered_map<std::string, float> costs;
+    for (const auto* spell : spells) {
+        if (const auto cost = SpellMagickaCost(*spell)) costs[spell->value("formId", std::string(""))] = *cost;
+    }
+    return costs;
+}
+
 std::unordered_map<std::string, int> TreeBuilder::SpellTiers(const std::vector<const json*>& spells, bool tiersByCost)
 {
     std::unordered_map<std::string, std::vector<const json*>> bySchool;
@@ -111,52 +121,70 @@ TreeBuilder::TreeNode* TreeBuilder::Internal::FindBestClassicParent(
     const TreeBuilder::SimilarityMatrix& sims,
     const TypeGrouping& grouping,
     std::mt19937* rng,
-    const std::unordered_map<std::string, float>* parentBonus)
+    const std::unordered_map<std::string, float>* parentBonus,
+    const std::unordered_map<std::string, float>* costs)
 {
-    // Collect candidates from lower tiers
+    // A tree by Magicka cost: a parent that costs more than the spell is left out
+    // (a spell or parent without a cost is not held to it)
+    const auto nodeCost = costs ? costs->find(node.formId) : decltype(costs->end()){};
+    const bool costRule = costs && nodeCost != costs->end();
+    const auto dearer = [&](const TreeBuilder::TreeNode* c) {
+        const auto cost = costs->find(c->formId);
+        return cost != costs->end() && cost->second > nodeCost->second;
+    };
+
     std::vector<std::pair<TreeBuilder::TreeNode*, int>> candidates;
+    const auto collect = [&](bool byCost) {
+        const auto fits = [&](const TreeBuilder::TreeNode* c) { return !byCost || !dearer(c); };
 
-    for (int tierDist = 1; tierDist <= tierIdx + 1; ++tierDist) {
-        int targetD = tierIdx - tierDist;
-        if (targetD < 0) break;
+        // Collect candidates from lower tiers
+        for (int tierDist = 1; tierDist <= tierIdx + 1; ++tierDist) {
+            int targetD = tierIdx - tierDist;
+            if (targetD < 0) break;
 
-        auto it = available.find(targetD);
-        if (it != available.end()) {
-            for (auto* c : it->second) {
-                if (static_cast<int>(c->children.size()) < maxChildren) {
-                    candidates.emplace_back(c, tierDist);
+            auto it = available.find(targetD);
+            if (it != available.end()) {
+                for (auto* c : it->second) {
+                    if (static_cast<int>(c->children.size()) < maxChildren && fits(c)) {
+                        candidates.emplace_back(c, tierDist);
+                    }
+                }
+            }
+            if (!candidates.empty()) break;
+        }
+
+        // Same tier for tier 0
+        if (candidates.empty() && tierIdx == 0) {
+            auto it = available.find(0);
+            if (it != available.end()) {
+                for (auto* c : it->second) {
+                    if (static_cast<int>(c->children.size()) < maxChildren &&
+                        c->formId != node.formId && fits(c)) {
+                        candidates.emplace_back(c, 0);
+                    }
                 }
             }
         }
-        if (!candidates.empty()) break;
-    }
 
-    // Same tier for tier 0
-    if (candidates.empty() && tierIdx == 0) {
-        auto it = available.find(0);
-        if (it != available.end()) {
-            for (auto* c : it->second) {
-                if (static_cast<int>(c->children.size()) < maxChildren &&
-                    c->formId != node.formId) {
-                    candidates.emplace_back(c, 0);
+        // Last resort: a parent past the cap (kFallbackExtraChildren over it), never above the
+        // spell's own tier - its tier first, then down to the root's. The build drops a full
+        // parent from `available`, so there it finds nothing the steps above did not; the graft
+        // keeps full parents in it, so a spell whose tier has no room still gets one
+        for (int d = tierIdx; d >= 0 && candidates.empty(); --d) {
+            const auto it = available.find(d);
+            if (it == available.end()) continue;
+            for (auto* p : it->second) {
+                if (static_cast<int>(p->children.size()) < maxChildren + kFallbackExtraChildren &&
+                    p->formId != node.formId && fits(p)) {
+                    candidates.emplace_back(p, std::abs(tierIdx - d) + 5);
                 }
             }
         }
-    }
+    };
 
-    // Last resort: a parent past the cap (kFallbackExtraChildren over it), never above the
-    // spell's own tier - its tier first, then down to the root's. The build drops a full
-    // parent from `available`, so there it finds nothing the steps above did not; the graft
-    // keeps full parents in it, so a spell whose tier has no room still gets one
-    for (int d = tierIdx; d >= 0 && candidates.empty(); --d) {
-        const auto it = available.find(d);
-        if (it == available.end()) continue;
-        for (auto* p : it->second) {
-            if (static_cast<int>(p->children.size()) < maxChildren + kFallbackExtraChildren && p->formId != node.formId) {
-                candidates.emplace_back(p, std::abs(tierIdx - d) + 5);
-            }
-        }
-    }
+    collect(costRule);
+    // No parent at or under the spell's cost (a chosen root dearer than it): any parent
+    if (candidates.empty() && costRule) collect(false);
 
     if (candidates.empty()) return nullptr;
 
@@ -285,6 +313,20 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
         }
         const auto costTiers = config.tiersByCost ? CostTiers(schoolSpellPointers)
                                                   : std::unordered_map<std::string, int>{};
+        // With tiersByCost the links go by cost too: the root is the cheapest
+        // spell PickRoot may take, a tier is placed cheapest first and each spell
+        // may parent the next, so a spell needs a dearer one only when it is
+        // cheaper than the root (costs is null for a tree by level). The orphan
+        // pass below then has nothing to do: every spell finds a parent in the
+        // tier pass, FindBestClassicParent falling back to any parent
+        const auto spellCosts = config.tiersByCost ? SpellCosts(schoolSpellPointers)
+                                                   : std::unordered_map<std::string, float>{};
+        const auto* costs = config.tiersByCost ? &spellCosts : nullptr;
+        // A spell without a cost sorts after the ones with
+        const auto costOf = [&spellCosts](const std::string& fid) {
+            const auto it = spellCosts.find(fid);
+            return it != spellCosts.end() ? it->second : std::numeric_limits<float>::infinity();
+        };
         std::unordered_map<std::string, std::vector<json>> byTier;
         std::unordered_map<std::string, int> tierOf;  // formId -> tier index
         int tierSizes[TIER_COUNT] = {};
@@ -306,7 +348,7 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
         };
 
         // Pick root
-        auto* rootSpell = PickRoot(byTier, config, schoolName, rng);
+        auto* rootSpell = PickRoot(byTier, config, schoolName, rng, costs);
         if (!rootSpell) continue;
 
         auto rootFormId = rootSpell->value("formId", std::string(""));
@@ -341,6 +383,12 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
 
             // Shuffle for variety
             std::shuffle(tierSpells.begin(), tierSpells.end(), rng);
+            if (costs) {
+                // Cheapest first; equal costs stay as shuffled
+                std::ranges::stable_sort(tierSpells, {}, [&costOf](const json& spell) {
+                    return costOf(spell.value("formId", std::string("")));
+                });
+            }
 
             std::vector<TreeNode*> placedThisTier;
 
@@ -352,7 +400,7 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
                 if (nodeIt == nodes.end()) continue;
 
                 auto* parent = FindBestClassicParent(
-                    nodeIt->second, available, tierIdx, maxChildren, sims, grouping, &rng);
+                    nodeIt->second, available, tierIdx, maxChildren, sims, grouping, &rng, nullptr, costs);
 
                 if (parent) {
                     LinkNodes(*parent, nodeIt->second);
@@ -369,12 +417,15 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
                                 plist.end());
                         }
                     }
+                    // By cost a placed spell is a parent for the rest of its tier at
+                    // once (they cost the same or more); by level once the tier is done
+                    if (costs) available[tierIdx].push_back(&nodeIt->second);
                 }
             }
 
             // Add placed nodes as available parents
             for (auto* pn : placedThisTier) {
-                if (static_cast<int>(pn->children.size()) < maxChildren) {
+                if (!costs && static_cast<int>(pn->children.size()) < maxChildren) {
                     available[tierIdx].push_back(pn);
                 }
             }

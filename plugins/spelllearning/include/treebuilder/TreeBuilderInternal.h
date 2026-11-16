@@ -16,11 +16,13 @@ namespace TreeBuilder::Internal
     bool IsVanillaFormId(const std::string& formIdStr);
 
     // Pick root spell for a school (checks user overrides, prefers vanilla)
+    // With costs (a tree with tiersByCost) the cheapest of the spells it would draw from
     const json* PickRoot(
         const std::unordered_map<std::string, std::vector<json>>& byTier,
         const BuildConfig& config,
         const std::string& school,
-        std::mt19937& rng);
+        std::mt19937& rng,
+        const std::unordered_map<std::string, float>* costs = nullptr);
 
     // Rebuild validation node map from serialized JSON
     std::unordered_map<std::string, TreeNode>
@@ -83,7 +85,9 @@ namespace TreeBuilder::Internal
     // still take a child), TreeBuilderClassic.cpp. rng adds the build's random
     // jitter to each score; nullptr = none (the graft, TreeGraft.cpp, which must
     // give the same tree for the same input). parentBonus (formId -> points) adds
-    // a caller's own term per candidate; nullptr = none.
+    // a caller's own term per candidate; nullptr = none. costs (SpellCosts; a
+    // tree with tiersByCost) leaves out a parent that costs more than `node`
+    // when both have a cost; with no such parent the choice is made without it.
     TreeNode* FindBestClassicParent(
         TreeNode& node,
         const std::unordered_map<int, std::vector<TreeNode*>>& available,
@@ -92,6 +96,7 @@ namespace TreeBuilder::Internal
         const SimilarityMatrix& sims,
         const TypeGrouping& grouping,
         std::mt19937* rng,
-        const std::unordered_map<std::string, float>* parentBonus = nullptr);
+        const std::unordered_map<std::string, float>* parentBonus = nullptr,
+        const std::unordered_map<std::string, float>* costs = nullptr);
 
 }  // namespace TreeBuilder::Internal

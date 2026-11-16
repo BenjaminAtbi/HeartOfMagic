@@ -3,6 +3,7 @@
 // never of a higher tier, the room term, the tree's own tier_mode, a new child's point (the
 // school's rootDirection, its tier's ring).
 
+#include <format>
 #include "graft-check.h"
 
 #include <algorithm>
@@ -307,6 +308,59 @@ namespace GraftCheckCases
         const auto level = TreeGraft::Graft(tree, scan, Pointers(news), PlayerRules{}, byLevel);
         node = GraftedNode(level.tree, "Destruction", "0x05000010");
         check.Check(node && (*node)["tier"] == 1, "the tree's tier_mode \"level\": tier 1, its level's");
+
+        // A tree by cost: the new spell's parent does not cost more than it. Two tier 1 nodes, the
+        // dear one its twin by name and element, the cheap one unlike it; by level the twin takes it
+        const auto named = [](const char* formId, const char* local, const char* name, int cost, const char* trait) {
+            Json spell = Spell(formId, "Cost.esp", local, name, "Destruction", "Novice", { trait });
+            spell["magickaCost"] = cost;
+            return spell;
+        };
+        Json pair = { { "globe", { { "x", 0 }, { "y", 0 } } }, { "config", { { "tier_mode", "cost" } } },
+            { "schools", { { "Destruction", { { "root", "0x05000001" }, { "nodes", {
+                Node("0x05000001", "Cost.esp|0x000001", 1, 100, 0, { "0x05000002" }, {}),
+                Node("0x05000002", "Cost.esp|0x000002", 1, 100, 60, {}, { "0x05000001" }) } } } } } } };
+        const std::vector<Json> pairScan = { named("0x05000001", "0x000001", "Stone Skin", 10, "element.earth"),
+            named("0x05000002", "0x000002", "Fire Lance", 60, "element.fire") };
+        const std::vector<Json> pairNews = { named("0x05000010", "0x000010", "Fire Lance Lesser", 30, "element.fire") };
+        const auto parentOf = [&](const Json& graftedTree) {
+            const Json* grafted = GraftedNode(graftedTree, "Destruction", "0x05000010");
+            return grafted && grafted->contains("prerequisites") && !(*grafted)["prerequisites"].empty()
+                ? (*grafted)["prerequisites"][0].template get<std::string>() : std::string();
+        };
+        const auto byCost = TreeGraft::Graft(pair, pairScan, Pointers(pairNews), PlayerRules{}, byLevel);
+        check.Check(parentOf(byCost.tree) == "0x05000001",
+            "a tree by cost: the new spell (30) goes under the cheaper node (10), not its dearer twin (60)");
+        pair["config"]["tier_mode"] = "level";
+        const auto twin = TreeGraft::Graft(pair, pairScan, Pointers(pairNews), PlayerRules{}, byLevel);
+        check.Check(parentOf(twin.tree) == "0x05000002", "the same tree by level: under its twin, whatever it costs");
+
+        // The build by cost: the school starts at its cheapest spell and no spell is under a dearer one.
+        // Twelve spells of one level, costs 10..120 in scan order reversed; by level the root is a draw
+        std::vector<Json> school;
+        for (int i = 12; i >= 1; --i) {
+            const auto id = std::format("0x050001{:02X}", i);
+            school.push_back(named(id.c_str(), id.substr(4).c_str(), std::format("Bolt {}", i).c_str(), i * 10, "element.fire"));
+        }
+        TreeBuilder::BuildConfig build;
+        build.tiersByCost = true;
+        build.seed = 7;
+        const auto built = TreeBuilder::BuildClassic(school, build);
+        std::unordered_map<std::string, int> costOf;
+        for (const auto& spell : school) costOf[spell["formId"].template get<std::string>()] = spell["magickaCost"].template get<int>();
+        int links = 0, dearer = 0;
+        const Json* builtSchool = built.success && built.treeData["schools"].contains("Destruction")
+            ? &built.treeData["schools"]["Destruction"] : nullptr;
+        if (builtSchool) {
+            for (const auto& node : (*builtSchool)["nodes"]) {
+                for (const auto& child : node["children"]) {
+                    ++links;
+                    if (costOf[node["formId"].template get<std::string>()] > costOf[child.template get<std::string>()]) ++dearer;
+                }
+            }
+        }
+        check.Check(builtSchool && (*builtSchool)["root"] == "0x05000101", "a build by cost: the root is the cheapest spell");
+        check.Check(links == 11 && dearer == 0, "a build by cost: 11 links, none from a dearer spell to a cheaper one");
         return check.failed;
     }
 

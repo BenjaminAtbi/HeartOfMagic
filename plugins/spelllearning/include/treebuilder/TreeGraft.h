@@ -18,7 +18,8 @@
 //  - Tier as the build gives it (SpellTiers over the school's live nodes and the
 //    new spells, by level or with tiers_by_cost by cost rank); existing nodes keep
 //    their saved tier.
-//  - Parent: Classic's own scoring (FindBestClassicParent) without its random
+//  - Parent: Classic's own scoring (FindBestClassicParent; in a tree by cost no
+//    parent dearer than the spell where one at or under its cost can take it) without its random
 //    jitter, over the school's live nodes - a node is live when the scan has its
 //    spell: by its persistentId, or by its formId when it has none. A node of a
 //    plugin that is gone is never a parent and stays in the file as it is. The
