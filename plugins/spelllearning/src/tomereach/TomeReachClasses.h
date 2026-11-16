@@ -19,6 +19,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace TomeReach
@@ -49,11 +50,21 @@ namespace TomeReach
         [[nodiscard]] bool operator<(const Route& other) const;
     };
 
+    // A vendor chest's stock of a tome: open, through a gated list a master ritual quest opens, or one another quest
+    // opens. Ordered most open first
+    enum class GatedKind : std::uint8_t { kOpen, kRitual, kQuest };
+
+    // Whether a leveled list is a gated list (a global holds it at 100% chance of nothing), and which kind
+    [[nodiscard]] GatedKind GatedListOf(const SpellStore& store, Key list);
+
     // A vendor chest above a tome, with the entries it holds that lead to the tome (the tome or leveled lists)
     struct VendorEntries
     {
         Key chest = 0;
         std::vector<Key> entries;
+        // Its most open path from an entry down to the tome, each path as closed as the most closed gated list on
+        // it (the entry included), at any depth
+        GatedKind gate = GatedKind::kOpen;
     };
 
     struct TomeSource
@@ -73,6 +84,8 @@ namespace TomeReach
         const std::vector<Route>& FromRoots(const std::vector<Key>& vendors, const std::vector<Key>& containers,
             const std::vector<Key>& npcs);
         [[nodiscard]] const std::string& EditorId(Key form) const;
+        // Each list above `tome` (and the tome): the most open path from it down to the tome (routes.py path_gates)
+        [[nodiscard]] std::unordered_map<Key, GatedKind> PathGates(Key tome) const;
 
         const SpellStore& m_store;
         const ReachGraph& m_graph;

@@ -15,7 +15,7 @@ namespace TomeReach
             "skyrim.esm", "update.esm", "dawnguard.esm", "hearthfires.esm", "dragonborn.esm",
         };
         constexpr std::string_view kTestCell = "testcell";
-        constexpr std::string_view kQaPrefix = "qa";
+        constexpr std::string_view kQaPrefix = "QA";   // as written
         // A hold's location: its editor id ends so (case as written)
         constexpr std::array<std::string_view, 2> kHoldSuffixes = { "Hold", "HoldLocation" };
         constexpr std::string_view kUnknown = "?";
@@ -47,10 +47,10 @@ namespace TomeReach
 
     bool IsTestCellName(std::string_view site)
     {
-        const std::string lower = LowerCopy(site);
-        if (lower.find(kTestCell) != std::string::npos) return true;
-        return lower.size() > kQaPrefix.size() && lower.starts_with(kQaPrefix) &&
-               std::isalpha(static_cast<unsigned char>(lower[kQaPrefix.size()]));
+        if (LowerCopy(site).find(kTestCell) != std::string::npos) return true;
+        if (site.size() <= kQaPrefix.size() || !site.starts_with(kQaPrefix)) return false;
+        const char next = site[kQaPrefix.size()];
+        return (next >= 'A' && next <= 'Z') || next == '_';
     }
 
     void Placements::Add(const Placements& other)
@@ -142,9 +142,59 @@ namespace TomeReach
         return out;
     }
 
-    const Placements& Sites::OfNpc(Key npc)
+    const Placements& Sites::OfNpc(Key npc, bool inventory)
     {
-        if (const auto it = m_ofNpc.find(npc); it != m_ofNpc.end()) return it->second;
-        return m_ofNpc.emplace(npc, Of(m_graph.NpcBases(npc))).first->second;
+        auto& memo = inventory ? m_ofNpcInventory : m_ofNpc;
+        if (const auto it = memo.find(npc); it != memo.end()) return it->second;
+        OfNpc(npc, inventory, {});
+        return memo.at(npc);
+    }
+
+    std::string Sites::StandIn(const Spawner& spawner) const
+    {
+        if (spawner.kind == SpawnKind::kRef) return "REFR " + KeyText(m_names, spawner.creator);
+        return spawner.label;
+    }
+
+    Placements Sites::OfNpc(Key npc, bool inventory, const std::unordered_set<Key>& outer)
+    {
+        auto& memo = inventory ? m_ofNpcInventory : m_ofNpc;
+        if (const auto it = memo.find(npc); it != memo.end()) return it->second;
+        std::unordered_set<Key> seen = outer;
+        seen.insert(npc);
+        const std::vector<Key> bases = m_graph.NpcBases(npc, inventory);   // sorted
+        Placements out = Of(bases);
+        Placements standIn;
+        for (const Key b : bases) {
+            for (const Spawner& spawner : m_graph.SpawnersOf(b)) {
+                Placements found;
+                if (spawner.kind == SpawnKind::kRef) {
+                    const auto r = m_store.scriptedRefs.find(spawner.creator);
+                    if (r != m_store.scriptedRefs.end()) {
+                        RegionSite where = Where(r->second.placed);
+                        if (!IsTestCellName(where.site)) {
+                            found.count = 1;
+                            ++found.sites[std::move(where)];
+                        }
+                    }
+                } else if (spawner.kind == SpawnKind::kExplosion) {
+                    for (const Key user : m_graph.ExplosionUsers(spawner.creator)) {
+                        if (seen.contains(user)) continue;
+                        const auto kind = m_store.kinds.find(user);
+                        const bool npcLike = kind != m_store.kinds.end() &&
+                                             (kind->second == Kind::kNpc || kind->second == Kind::kNpcList);
+                        found.Add(npcLike ? OfNpc(user, false, seen) : OfBase(user));
+                    }
+                }
+                if (found.count) out.Add(found);
+                else {
+                    ++standIn.count;
+                    ++standIn.sites[{ std::string(kSpawnedRegion), StandIn(spawner) }];
+                }
+            }
+        }
+        if (!out.count && standIn.count) out = std::move(standIn);
+        if (outer.empty()) memo.emplace(npc, out);   // only results a cycle did not cut short
+        return out;
     }
 }

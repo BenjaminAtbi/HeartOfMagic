@@ -32,7 +32,10 @@ namespace TomeReach
         constexpr std::size_t kPasses = 3;   // loops: a value tainted late can feed an earlier instruction
 
         constexpr std::array<std::string_view, 3> kAddToList = { "addform", "addforms", "addtolist" };
-        constexpr std::array<std::string_view, 1> kAddItem = { "additem" };
+        // Calls that hand an item out, and calls that create an NPC (reach.py GIVE, SPAWN)
+        constexpr std::array<std::string_view, 2> kGive = { "additem", "placeatme" };
+        constexpr std::array<std::string_view, 2> kSpawn = { "placeatme", "placeactoratme" };
+        constexpr std::string_view kGetAt = "getat";
         // Calls whose result is not the list's form even when an argument is (an index, a size)
         constexpr std::array<std::string_view, 3> kIndexCalls = { "getat", "find", "getsize" };
 
@@ -404,6 +407,60 @@ namespace TomeReach
         }
     }
 
+    namespace
+    {
+        // addform_pairs: per function, each local's property (and whether it holds one of its elements), through
+        // casts, assignments, array elements and GetAt; a call of AddForm with both sides known is a pair
+        std::vector<AddFormPair> AddFormPairs(const std::vector<PexFunction>& functions)
+        {
+            using Source = std::pair<std::string, bool>;
+            std::vector<AddFormPair> out;
+            for (const auto& fn : functions) {
+                std::unordered_map<std::string, Source> came;
+                const auto prop = [&](const std::string& v) -> std::optional<Source> {
+                    if (const auto it = came.find(v); it != came.end()) return it->second;
+                    if (v.size() >= 6 && v.starts_with("::") && v.ends_with("_var")) return Source{ v.substr(2, v.size() - 6), false };
+                    return std::nullopt;
+                };
+                const auto element = [](std::optional<Source> p) {
+                    return p ? std::optional<Source>(Source{ p->first, true }) : std::nullopt;
+                };
+                for (const auto& ins : fn.code) {
+                    const auto& a = ins.args;
+                    std::optional<std::string> dest;
+                    std::optional<Source> src;
+                    if ((ins.op == kCast || ins.op == kAssign) && a.size() >= 2) {
+                        dest = a[0];
+                        src = prop(a[1]);
+                    } else if (ins.op == kArrayGetElement && a.size() >= 2) {
+                        dest = a[0];
+                        src = element(prop(a[1]));
+                    } else if (ins.op == kCallMethod && a.size() >= 3 && a[0] == kGetAt) {
+                        dest = a[2];
+                        src = element(prop(a[1]));
+                    } else if (ins.op == kCallMethod && a.size() >= 4 &&
+                               std::find(kAddToList.begin(), kAddToList.end(), a[0]) != kAddToList.end()) {
+                        const auto r = prop(a[1]);
+                        const auto g = prop(a[3]);
+                        if (r && g) out.push_back({ r->first, r->second, g->first, g->second });
+                    }
+                    if (dest) {
+                        if (src) came[*dest] = *src;
+                        else came.erase(*dest);
+                    } else if (ins.op == kCallMethod || ins.op == kCallStatic) {
+                        if (a.size() >= 3) came.erase(a[2]);   // the call's result overwrites its destination
+                    } else if (!a.empty() && ins.op != kJmp && ins.op != kJmpT && ins.op != kJmpF && ins.op != kReturn &&
+                               ins.op != kNop && ins.op != kPropSet && ins.op != kArraySetElement) {
+                        came.erase(a[0]);   // arithmetic, comparisons...: overwritten
+                    }
+                }
+            }
+            std::sort(out.begin(), out.end());
+            out.erase(std::unique(out.begin(), out.end(), [](const auto& x, const auto& y) { return !(x < y) && !(y < x); }), out.end());
+            return out;
+        }
+    }
+
     bool DisassemblePex(const std::vector<unsigned char>& data, std::vector<PexFunction>& out)
     {
         // Files from archives with embedded names carry the path in front
@@ -428,6 +485,6 @@ namespace TomeReach
         std::sort(properties.begin(), properties.end());
         properties.erase(std::unique(properties.begin(), properties.end()), properties.end());
         const Coded coded(functions);
-        return ScriptGrants{ Granted(coded, kAddToList, properties), Granted(coded, kAddItem, properties) };
+        return ScriptGrants{ Granted(coded, kGive, properties), Granted(coded, kSpawn, properties), AddFormPairs(functions) };
     }
 }

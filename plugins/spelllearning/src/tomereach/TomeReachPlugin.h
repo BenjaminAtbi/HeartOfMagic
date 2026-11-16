@@ -98,6 +98,9 @@ namespace TomeReach
         }
     };
 
+    inline constexpr std::uint32_t kNoGroup = 0xFFFFFFFF;
+    inline constexpr std::uint32_t kWorldChildren = 1;   // group type: a worldspace's children
+
     struct RecordView
     {
         const unsigned char* type;     // four bytes
@@ -107,6 +110,8 @@ namespace TomeReach
         std::size_t size = 0;
         std::uint32_t cell = 0;        // the cell whose children group holds it, as written; 0: none
         std::uint32_t worldspace = 0;      // the worldspace whose group holds it, as written; 0: none
+        std::uint32_t group = kNoGroup;    // the type of the group right around it (kWorldChildren: a world's
+                                           // persistent cell)
     };
 
     inline constexpr std::uint32_t kDeletedRecord = 0x00000020;

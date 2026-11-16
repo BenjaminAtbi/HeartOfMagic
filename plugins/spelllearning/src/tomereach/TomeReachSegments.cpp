@@ -21,25 +21,7 @@ namespace TomeReach
             "dragonborn.esm", "hearthfires.esm" };
         constexpr std::size_t kShopSale = 3;         // open vendors a spellpack vendor's spell may have, at most
         constexpr std::size_t kStandardVendors = 3;  // open vendors that make standard sale
-        constexpr std::uint8_t kAlwaysNone = 100;    // a list's chance of nothing that closes it until a global opens it
-        constexpr std::string_view kRitualGlobal = "mgritual";   // the College's master ritual globals
-        constexpr std::string_view kSkillGlobal = "pc";          // vanilla's skill thresholds: ordinary stock
         const std::string kNoName;
-
-        // A vendor chest's stock of a spell: open, a gated list a master ritual quest opens, or one another quest opens
-        enum class GatedKind : std::uint8_t { kOpen, kRitual, kQuest };
-
-        // Whether one entry a vendor chest holds is a gated list (a global holds it at 100% chance of nothing),
-        // and which kind
-        GatedKind GatedListOf(const SpellStore& store, Key entry)
-        {
-            const auto list = store.gatedLists.find(entry);
-            if (list == store.gatedLists.end() || list->second.chanceNone < kAlwaysNone) return GatedKind::kOpen;
-            const auto global = store.globalIds.find(list->second.global);
-            const std::string id = AsciiText::ToLower(global != store.globalIds.end() ? global->second : kNoName);
-            if (id.starts_with(kSkillGlobal)) return GatedKind::kOpen;
-            return id.starts_with(kRitualGlobal) ? GatedKind::kRitual : GatedKind::kQuest;
-        }
 
         using Chests = std::set<Key>;
 
@@ -174,10 +156,8 @@ namespace TomeReach
             std::map<Key, GatedKind> chests;
             for (const Key tome : s.tomes) {
                 for (const VendorEntries& v : out.tomes[tome].vendors) {
-                    GatedKind g = v.entries.empty() ? GatedKind::kOpen : GatedKind::kQuest;
-                    for (const Key e : v.entries) g = std::min(g, GatedListOf(store, e));
-                    const auto [it, added] = chests.emplace(v.chest, g);
-                    if (!added) it->second = std::min(it->second, g);
+                    const auto [it, added] = chests.emplace(v.chest, v.gate);
+                    if (!added) it->second = std::min(it->second, v.gate);
                 }
             }
             std::size_t open = 0;

@@ -7,7 +7,9 @@ check it and how to change a rule. The details are elsewhere:
 - the in-game flow: `docs/ARCHITECTURE.md`, "Tomes nothing hands out".
 
 Status (2026-11-15): released as `v1.9.2+f1.0.1` on `fork/main`, verified in game. The harness and the game give
-the same counts on the author's load order.
+the same counts on the author's load order. The model changes of 2026-11-16 (spawned NPCs, scripts on placed
+references, effective NPC inventories, path gates) are on `fork/feat/tome-distribution`, checked with the harness,
+not yet in game.
 
 ## What it does
 
@@ -50,14 +52,33 @@ How the rules are measured:
   - `MGRitual*`: ritual;
   - anything else: quest.
 
-  A chest counts by the most open entry it holds for the spell. A tome the chest holds directly is open.
+  A chest's stock of a tome goes by its most open path from an entry the chest holds down to the tome, each path
+  as closed as the most closed gated list on it, at any depth (the entry itself included). A tome the chest holds
+  directly is open.
 - **Sites and regions:** loot is counted by placed references (containers and placed NPCs) per (region, site).
   A site is the location under its hold; its region is the hold, the top location or the worldspace. A mod's own
-  worldspace or location tree is one region (`realm <plugin>`). Developer test cells are dropped.
+  worldspace or location tree is one region (`realm <plugin>`). Developer test cells are dropped (`TestCell`
+  anywhere, or `QA` and a capital or `_` first, as written). A reference in a world's persistent cell counts in the
+  exterior cell at its position.
+- **What the graph reads** (`TomeReachGraph.h` has the details):
+  - an NPC's effective inventory: its inventory and default outfit come from its template when the template flag
+    Use Inventory is set, its death item when Use Traits is; the bases that place an NPC's inventory are leveled
+    NPC lists only (a template child carries its own);
+  - SkyPatcher `addToLLs` and `addOnceToLLs` add list parents, `removeFromLLs` takes them away;
+  - scripts on records (and dialogue, scenes, packages) and on placed references: a `List.AddForm(Item)` call
+    whose two sides come from properties; a property that reaches AddItem or PlaceAtMe is a reward; one that
+    reaches PlaceAtMe or PlaceActorAtMe spawns the NPC it holds;
+  - spawned NPCs (a quest alias that creates one, an explosion that places one, a script) count where their
+    creator is; one placed nowhere known stands in as a site of its own (`spawned`), only when the NPC has no
+    other placement and nothing else in the route has a site;
+  - a container is a vendor chest when a faction names it, or when its editor id says so and it is placed;
+  - records whose editor id marks a test or debug record are left out (`IsNoiseEditorId`);
+  - a SPID class filter makes a faction route (`spid class`).
 
-Counts on the author's load order (1,874 spells in game): 106 unreachable, 292 spellpack vendor, 53 ritual quest,
-839 standard sale, 45 standard loot, 102 regional loot, 34 unique vendor, 302 unique reward, 101 crafted, 0 review;
-16 shops.
+Counts on the author's load order (harness, the spell map's plugins, 1,877 spells, 2026-11-16): 85 unreachable,
+309 spellpack vendor, 69 ritual quest, 816 standard sale, 62 standard loot, 95 regional loot, 25 unique vendor,
+315 unique reward, 101 crafted, 0 review; 16 shops. Before the 2026-11-16 port (in game, 1,874 spells): 106
+unreachable, 292, 53, 839, 45, 102, 34, 302, 101, 0.
 
 ## Where things live
 
@@ -68,7 +89,7 @@ Model (pure C++, shared by the plugin and the tools): `plugins/spelllearning/src
 | `TomeReachPlugin`, `TomeReachReader` | plugin files into the spell store: winning records, placements; gated lists (`gatedLists`), global editor ids (`globalIds`) |
 | `TomeReachData`, `TomeReachArchive` | Data folder files as the game sees them: loose files over BSAs, archives in the game's order (`ArchiveOrder`) |
 | `TomeReachDistr`, `TomeReachConfig` | SPID and SkyPatcher configs |
-| `TomeReachPex`, `TomeReachScripts` | compiled scripts: which properties reach AddItem (rewards, restocks) or AddForm (lists filled at run time) |
+| `TomeReachPex`, `TomeReachScripts` | compiled scripts: which properties reach AddItem / PlaceAtMe (rewards, restocks) or PlaceAtMe / PlaceActorAtMe (spawned NPCs), and the property pairs of AddForm calls (lists filled at run time) |
 | `TomeReachGraph`, `TomeReachSites` | the reach graph (each item up to its roots) and sites and regions |
 | `TomeReachClasses` | routes per tome: class (generic, faction, vendor, encounter, placed, reward, crafted, other, none) and subtype; vendor chests with the entries they hold |
 | `TomeReachSegments` | shops, gated lists, a segment per spell |
@@ -94,7 +115,8 @@ unknown keys (older segment names) are ignored. Not part of the settings presets
 
 ## Checking it
 
-- `build/tools/Release/tome-reach-test.exe --self-test`: the reader on made-up plugins (56 checks);
+- `build/tools/Release/tome-reach-test.exe --self-test`: the reader on made-up plugins and the model's rules on a
+  hand-built store (`tools/tome-reach-modeltest.cpp`; 67 checks);
   `graft-check --self-test`: the switch rules in Tree Graft; `node run-tests.js` in the panel folder:
   `TomeSourceSetting`, Gate Review, the tome filter, and that dev-harness.html matches index.html.
 - The harness on a real load order:
@@ -115,8 +137,9 @@ unknown keys (older segment names) are ignored. Not part of the settings presets
 - In game: `SpellLearning.log` logs a `TomeReach: distribution model:` line, with the same counts as the harness
   on the same plugins. `debug.json` makes the panel's scans write `spell_scan_output.json`.
 - Parity: the author keeps the Python model in their modlist workspace and compares the harness output with it
-  row by row (C, D, V, P and B). On 2026-11-15 every row was equal (3,841 routes, 96,701 vendor entries, 16 shops,
-  1,877 buckets). The route detail text is meant for people and is not compared.
+  row by row (C, D, V, P and B). On 2026-11-16, after porting the model changes of 2026-11-15 and 16, every row
+  was equal (3,776 routes, 80,463 vendor entries, 16 shops, 1,877 buckets), and so were the store, the records-only
+  graph and the graph with configs and scripts. The route detail text is meant for people and is not compared.
 
 ## Changing a rule
 

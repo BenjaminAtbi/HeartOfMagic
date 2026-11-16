@@ -24,7 +24,6 @@ namespace TomeReach
         // worldspace), 6 a cell's children, 8 its persistent and 9 its temporary references
         // (label: the cell)
         constexpr std::uint32_t kTopGroup = 0;
-        constexpr std::uint32_t kWorldChildren = 1;
         constexpr std::uint32_t kCellChildren = 6;
         constexpr std::uint32_t kCellPersistent = 8;
         constexpr std::uint32_t kCellTemporary = 9;
@@ -52,6 +51,7 @@ namespace TomeReach
             std::size_t end;
             std::uint32_t cell;
             std::uint32_t worldspace;
+            std::uint32_t type;
         };
     }
 
@@ -95,8 +95,9 @@ namespace TomeReach
                     pos += size;  // a top group of a type nobody reads
                     continue;
                 }
-                Context context = groups.empty() ? Context{ 0, 0, 0 } : groups.back();
+                Context context = groups.empty() ? Context{ 0, 0, 0, kNoGroup } : groups.back();
                 context.end = pos + size;
+                context.type = type;
                 if (type == kWorldChildren) {
                     context.worldspace = U32(label);
                     context.cell = 0;
@@ -130,6 +131,7 @@ namespace TomeReach
             if (!groups.empty()) {
                 record.cell = groups.back().cell;
                 record.worldspace = groups.back().worldspace;
+                record.group = groups.back().type;
             }
             if (!read(record, resolve)) return damaged();
         }

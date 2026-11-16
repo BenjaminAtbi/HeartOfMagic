@@ -89,9 +89,9 @@ int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::f
                 continue;
             }
             if (expanded.insert(root.form).second) {
-                for (const Key b : graph.NpcBases(root.form)) need.insert(b);
+                for (const Key b : graph.NpcBases(root.form, true)) need.insert(b);
             }
-            const Placements& p = sites.OfNpc(root.form);
+            const Placements& p = sites.OfNpc(root.form, true);
             if (p.count) {
                 ++t.placedNpcs;
                 t.npcPlaces.Add(p);
@@ -136,7 +136,7 @@ int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::f
     const auto ms = [](auto a, auto b) {
         return static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count());
     };
-    std::printf("configs: %zu files, %zu SPID lines, %zu SkyPatcher adds, %zu archives with scripts or strings; "
+    std::printf("configs: %zu files, %zu SPID lines, %zu SkyPatcher list lines, %zu archives with scripts or strings; "
                 "%zu script holders, %zu scripts read, %zu not found\n",
         model.ConfigFiles().files, distribution ? distribution->spid.size() : 0,
         distribution ? distribution->listAdds.size() : 0, model.Data() ? model.Data()->ArchiveCount() : 0,

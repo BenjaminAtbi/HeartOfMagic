@@ -17,6 +17,10 @@ namespace TomeReach
         constexpr std::size_t kStandardRegions = 5;
         constexpr std::uint32_t kUniqueNpc = 0x20;      // ACBS flag
         constexpr std::size_t kDetailItems = 4;         // names listed in a detail
+        constexpr std::uint8_t kAlwaysNone = 100;       // a list's chance of nothing that closes it until a global opens it
+        constexpr std::string_view kRitualGlobal = "mgritual";   // the College's master ritual globals
+        constexpr std::string_view kSkillGlobal = "pc";          // vanilla's skill thresholds: ordinary stock
+        constexpr std::string_view kSpawned = kSpawnedRegion;
         const std::string kNoName;
 
         bool HasBoss(const std::string& editorId) { return AsciiText::ToLower(editorId).find("boss") != std::string::npos; }
@@ -38,6 +42,34 @@ namespace TomeReach
             for (const auto& [where, _n] : p.sites) names.insert(where.site);
             return { names.begin(), names.end() };
         }
+    }
+
+    GatedKind GatedListOf(const SpellStore& store, Key list)
+    {
+        const auto gated = store.gatedLists.find(list);
+        if (gated == store.gatedLists.end() || gated->second.chanceNone < kAlwaysNone) return GatedKind::kOpen;
+        const auto global = store.globalIds.find(gated->second.global);
+        const std::string id = AsciiText::ToLower(global != store.globalIds.end() ? global->second : kNoName);
+        if (id.starts_with(kSkillGlobal)) return GatedKind::kOpen;
+        return id.starts_with(kRitualGlobal) ? GatedKind::kRitual : GatedKind::kQuest;
+    }
+
+    std::unordered_map<Key, GatedKind> Classifier::PathGates(Key tome) const
+    {
+        std::unordered_map<Key, GatedKind> best{ { tome, GatedKind::kOpen } };
+        std::vector<Key> todo{ tome };
+        while (!todo.empty()) {
+            const Key x = todo.back();
+            todo.pop_back();
+            for (const Key list : m_graph.ListsHolding(x)) {
+                const GatedKind cand = std::max(best.at(x), GatedListOf(m_store, list));
+                const auto it = best.find(list);
+                if (it != best.end() && cand >= it->second) continue;
+                best[list] = cand;
+                todo.push_back(list);
+            }
+        }
+        return best;
     }
 
     std::string_view ClassName(SourceClass cls)
@@ -77,13 +109,18 @@ namespace TomeReach
         Placements npcPlaces;
         std::vector<Key> placedNpcs;
         for (const Key n : npcs) {
-            const Placements& p = m_sites.OfNpc(n);
+            const Placements& p = m_sites.OfNpc(n, true);
             if (!p.count) continue;
             placedNpcs.push_back(n);
             npcPlaces.Add(p);
         }
         std::size_t npcRefs = 0;
-        for (const Key n : placedNpcs) npcRefs += m_sites.OfNpc(n).count;
+        for (const Key n : placedNpcs) npcRefs += m_sites.OfNpc(n, true).count;
+        // A spawn's stand-in site only counts when nothing else does
+        const auto real = [](const auto& entry) { return entry.first.region != kSpawned; };
+        if (std::any_of(cont.sites.begin(), cont.sites.end(), real) ||
+            std::any_of(npcPlaces.sites.begin(), npcPlaces.sites.end(), real))
+            std::erase_if(npcPlaces.sites, [&](const auto& entry) { return !real(entry); });
         std::set<RegionSite> sites;
         std::map<std::string, std::size_t> regions;   // region -> placements
         for (const auto& [where, n] : cont.sites) {
@@ -173,7 +210,14 @@ namespace TomeReach
                     via.push_back(EditorId(x));
                 }
             }
-            for (auto& [v, held] : entries) out.vendors.push_back({ v, std::move(held) });
+            const auto gates = PathGates(tome);
+            for (auto& [v, held] : entries) {
+                GatedKind gate = GatedKind::kQuest;   // an entry no path reaches: closed
+                for (const Key e : held) {
+                    if (const auto g = gates.find(e); g != gates.end()) gate = std::min(gate, g->second);
+                }
+                out.vendors.push_back({ v, std::move(held), gate });
+            }
             std::sort(via.begin(), via.end());
             via.erase(std::unique(via.begin(), via.end()), via.end());
             for (Route& route : out.routes) {
@@ -200,7 +244,7 @@ namespace TomeReach
         }
         if (!rewards.empty()) {
             std::vector<std::string> who;
-            for (const Reward& w : rewards) who.push_back(EditorId(w.holder) + (w.alias ? " (alias)" : ""));
+            for (const Reward& w : rewards) who.push_back(m_graph.HolderLabel(w.holder) + (w.alias ? " (alias)" : ""));
             std::sort(who.begin(), who.end());
             out.routes.push_back({ SourceClass::kReward, "script", Join(who, 3, "; ") });
         }

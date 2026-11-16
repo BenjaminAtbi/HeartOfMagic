@@ -97,6 +97,7 @@ target_link_libraries(librarian-test PRIVATE
 add_executable(tome-reach-test
     tome-reach-test.cpp
     tome-reach-selftest.cpp
+    tome-reach-modeltest.cpp
     tome-reach-store.cpp
     tome-reach-graph.cpp
     tome-reach-sources.cpp

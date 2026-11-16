@@ -138,20 +138,26 @@ namespace TomeReach
         {
             for (std::string_view line : Lines(text)) {
                 line = line.substr(0, line.find(';'));
-                const auto adds = Setting(line, "addtolls");
-                if (!adds) continue;
-                RawListAdd add;
-                if (const auto lists = Setting(line, "filterbylls")) {
-                    for (const auto t : Split(*lists, ',')) add.lists.push_back(ParseFormToken(t, names));
+                // addToLLs or addOnceToLLs (whichever the line names first), and removeFromLLs
+                auto adds = Setting(line, "addtolls");
+                const auto once = Setting(line, "addoncetolls");
+                if (once && (!adds || once->data() < adds->data())) adds = once;
+                for (const auto& [values, remove] : { std::pair{ adds, false }, std::pair{ Setting(line, "removefromlls"), true } }) {
+                    if (!values) continue;
+                    RawListAdd add;
+                    add.remove = remove;
+                    if (const auto lists = Setting(line, "filterbylls")) {
+                        for (const auto t : Split(*lists, ',')) add.lists.push_back(ParseFormToken(t, names));
+                    }
+                    for (const auto spec : Split(*values, ',')) {
+                        std::vector<std::string_view> p;
+                        for (const auto s : Split(spec, '~')) p.push_back(Trim(s));
+                        const bool pluginForm = p.size() > 1 && PluginName(p[1]);
+                        const std::string form = pluginForm ? std::string(p[0]) + "~" + std::string(p[1]) : std::string(p[0]);
+                        add.forms.push_back(ParseFormToken(form, names));
+                    }
+                    out.listAdds.push_back(std::move(add));
                 }
-                for (const auto spec : Split(*adds, ',')) {
-                    std::vector<std::string_view> p;
-                    for (const auto s : Split(spec, '~')) p.push_back(Trim(s));
-                    const bool pluginForm = p.size() > 1 && PluginName(p[1]);
-                    const std::string form = pluginForm ? std::string(p[0]) + "~" + std::string(p[1]) : std::string(p[0]);
-                    add.forms.push_back(ParseFormToken(form, names));
-                }
-                out.listAdds.push_back(std::move(add));
             }
         }
 
@@ -221,6 +227,7 @@ namespace TomeReach
             if (!type) return FilterKind::kOther;
             const std::string_view t(type->data(), 4);
             if (t == "FACT") return FilterKind::kFaction;
+            if (t == "CLAS") return FilterKind::kClass;
             if (t == "RACE") return FilterKind::kRace;
             if (t == "KYWD") return FilterKind::kKeyword;
             if (t == "NPC_") return FilterKind::kNpc;
@@ -319,6 +326,7 @@ namespace TomeReach
         }
         for (const auto& raw : configs.listAdds) {
             ListAdd add;
+            add.remove = raw.remove;
             for (const auto& t : raw.lists) {
                 if (const Key k = ResolveToken(t, store)) add.lists.push_back(k);
             }
@@ -342,6 +350,7 @@ namespace TomeReach
         };
         if (!line.judged) return { "other", "spid" };
         if (has(FilterKind::kFaction)) return { "faction", "spid faction" };
+        if (has(FilterKind::kClass)) return { "faction", "spid class" };
         if (!line.filters.empty() && only({ FilterKind::kNpc })) return { "encounter", "spid npc" };
         if (line.filters.empty()) return { "generic", "spid all" };
         return { "generic", only({ FilterKind::kRace }) ? "spid race" : "spid npc type" };
