@@ -117,7 +117,7 @@ namespace TomeReach
                 m_store.kinds.erase(m_key);
                 m_store.bookSpells.erase(m_key);
                 m_store.lists.erase(m_key);
-                m_store.listGates.erase(m_key);
+                m_store.gatedLists.erase(m_key);
                 m_store.globalIds.erase(m_key);
                 m_store.inventories.erase(m_key);
                 m_store.npcs.erase(m_key);
@@ -217,15 +217,15 @@ namespace TomeReach
                 } else if (Is(t, T("LVLI")) || Is(t, T("LVLN"))) {
                     kind = Is(t, T("LVLI")) ? Kind::kItemList : Kind::kNpcList;
                     auto& entries = m_store.lists[m_key];
-                    ListGate gate;
+                    GatedList gated;
                     whole = Each([&](const Subrecord& s) {
                         if (Is(s.type, T("EDID"))) editorId = ZString(s);
                         else if (Is(s.type, T("LVLO"))) {
                             if (const Key e = Form(s, kLevelEntryFormOffset)) entries.push_back(e);
-                        } else if (Is(s.type, T("LVLD")) && s.size >= 1) gate.chanceNone = s.data[0];
-                        else if (Is(s.type, T("LVLG"))) gate.global = Form(s);
+                        } else if (Is(s.type, T("LVLD")) && s.size >= 1) gated.chanceNone = s.data[0];
+                        else if (Is(s.type, T("LVLG"))) gated.global = Form(s);
                     });
-                    if (gate.global && kind == Kind::kItemList) m_store.listGates[m_key] = gate;
+                    if (gated.global && kind == Kind::kItemList) m_store.gatedLists[m_key] = gated;
                 } else if (Is(t, T("CONT")) || Is(t, T("OTFT"))) {
                     const bool outfit = Is(t, T("OTFT"));
                     kind = outfit ? Kind::kOutfit : Kind::kContainer;

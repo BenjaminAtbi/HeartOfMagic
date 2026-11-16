@@ -44,8 +44,8 @@ shared component: the plugin carries its own copy, tuned for the tree builder, w
    | Unique reward | one site's loot, hand-placed, or a quest reward | off |
    | Crafted | only a crafting recipe makes it | off |
 
-   A vendor chest's stock is gated when it comes through a list with 100% chance of nothing (LVLD) and a global
-   (LVLG): `PC*` globals are vanilla's skill thresholds and count as open, `MGRitual*` ones make ritual quest,
+   A vendor chest's stock is gated when it comes through a gated list, one with 100% chance of nothing (LVLD) and a
+   global (LVLG): `PC*` globals are vanilla's skill thresholds and count as open, `MGRitual*` ones make ritual quest,
    any other a quest. A chest counts by its most open entry for the spell.
 
    The first version (2026-11-14), replaced by the table above:

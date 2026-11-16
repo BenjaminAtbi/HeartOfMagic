@@ -43,8 +43,9 @@ How the rules are measured:
   plugin count: the tome itself, or a list at least half of whose spells are that plugin's. A spell that more than
   4 chests sell through dedicated entries counts toward no shop. The 3-open-vendors cap keeps widely sold spells
   out (one mod's spells had 149 vendors).
-- **Gates:** a leveled list a vendor chest holds is gated when its chance of nothing (LVLD) is 100 and it has a
-  global (LVLG). How the global's editor id decides:
+- **Gated lists:** a gated list is a leveled list whose chance of nothing (LVLD) is 100 and that has a global
+  (LVLG): it gives nothing until a script lowers the global, usually when a quest ends. A vendor chest's entry that
+  is a gated list makes that stock gated. How the global's editor id decides:
   - `PC*` (vanilla's skill thresholds): open;
   - `MGRitual*`: ritual;
   - anything else: quest.
@@ -64,13 +65,13 @@ Model (pure C++, shared by the plugin and the tools): `plugins/spelllearning/src
 
 | File | Part |
 |---|---|
-| `TomeReachPlugin`, `TomeReachReader` | plugin files into the spell store: winning records, placements; leveled-list gates (`listGates`), global editor ids (`globalIds`) |
+| `TomeReachPlugin`, `TomeReachReader` | plugin files into the spell store: winning records, placements; gated lists (`gatedLists`), global editor ids (`globalIds`) |
 | `TomeReachData`, `TomeReachArchive` | Data folder files as the game sees them: loose files over BSAs, archives in the game's order (`ArchiveOrder`) |
 | `TomeReachDistr`, `TomeReachConfig` | SPID and SkyPatcher configs |
 | `TomeReachPex`, `TomeReachScripts` | compiled scripts: which properties reach AddItem (rewards, restocks) or AddForm (lists filled at run time) |
 | `TomeReachGraph`, `TomeReachSites` | the reach graph (each item up to its roots) and sites and regions |
 | `TomeReachClasses` | routes per tome: class (generic, faction, vendor, encounter, placed, reward, crafted, other, none) and subtype; vendor chests with the entries they hold |
-| `TomeReachSegments` | shops, gates, a segment per spell |
+| `TomeReachSegments` | shops, gated lists, a segment per spell |
 | `TomeReachSwitches.h` | the segment enum, keys, names, defaults, `OnTree` |
 | `TomeReachModel` | the whole chain, one object |
 | `TomeReachSources` | in game: runs the model, reads config.json `tomeSources`, writes the scan's `source` object (`SourceJson`) |
