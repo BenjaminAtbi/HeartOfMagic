@@ -168,11 +168,12 @@
                     <button type="button" id="scanClearDraftBtn" class="btn scan-text-btn hidden" data-i18n="scan.clearDraft">Clear draft tree</button>
                 </div>
 
-                <!-- Section 1: Scan details - the counts beside previews of the spell lists, then the plugin line (scanStage.js) -->
+                <!-- Section 1: Scan details - the counts, Override spells and the plugin line, beside previews of the spell lists (scanStage.js) -->
                 <div class="scan-section" id="scanResultsSection">
                     <div class="tree-preview-title scan-details-title" data-i18n="scan.details">Scan details</div>
                     <div class="scan-split">
-                    <!-- Spells found (could go on the tree), mods, primed, and the primed spells per school -->
+                    <!-- Spells found (could go on the tree), mods, primed, and the primed spells per school; then the override
+                         button (opens the blacklist window until the override menu exists) and the plugin line (the plugin list) -->
                     <div class="scan-split-left">
                         <div class="scan-results-body" id="scanResultsBody">
                             <div class="scan-stats-grid" id="scanStatsGrid">
@@ -193,11 +194,18 @@
                                 <!-- Populated after scan -->
                             </div>
                         </div>
+                        <div class="scan-filter-controls">
+                            <button id="blacklistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
+                                <span class="hom-label" id="blacklistLabel" data-i18n="scan.override">Override spells</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
+                            </button>
+                            <button id="whitelistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
+                                <span class="hom-label" id="whitelistLabel" data-i18n="scan.pluginsAll">Plugins: all</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- The Blacklisted and Whitelisted (Include) lists, previewed (Complex only: .complex-only, hidden while
-                         #contentSpellScan is in Easy mode); the override button opens the blacklist window until the override
-                         menu exists; the plugin line opens the plugin list -->
+                         #contentSpellScan is in Easy mode); from the left, as tall as the left column (panel-scan.css) -->
                     <div class="scan-split-right">
                         <div class="scan-lists complex-only">
                             <div class="scan-list">
@@ -208,14 +216,6 @@
                                 <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
                                 <ul class="scan-list-items" id="scanWhitelistPreview"></ul>
                             </div>
-                        </div>
-                        <div class="scan-filter-controls">
-                            <button id="blacklistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
-                                <span class="hom-label" id="blacklistLabel" data-i18n="scan.override">Override spells</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
-                            </button>
-                            <button id="whitelistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
-                                <span class="hom-label" id="whitelistLabel" data-i18n="scan.pluginsAll">Plugins: all</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
-                            </button>
                         </div>
                     </div>
                     </div>

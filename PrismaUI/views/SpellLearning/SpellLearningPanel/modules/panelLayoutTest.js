@@ -451,8 +451,9 @@ var PanelLayoutTest = {
         var details = scan.substring(scan.indexOf('id="scanResultsSection"'), scan.indexOf('id="scannerComplexContent"'));
         this.check(/class="tree-preview-title scan-details-title" data-i18n="scan.details"/.test(details) && !/scanDetailsToggle|scan-results-body hidden/.test(details) &&
             /id="scanBlacklistPreview"/.test(details) && /id="scanWhitelistPreview"/.test(details) &&
-            details.indexOf('id="scanWhitelistPreview"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"'),
-            'Scan markup: Scan details is a section title, always open; the two list previews, then the override button and the plugin line');
+            details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"') &&
+            details.indexOf('id="whitelistBtn"') < details.indexOf('class="scan-split-right"') && details.indexOf('class="scan-split-right"') < details.indexOf('id="scanBlacklistPreview"'),
+            'Scan markup: Scan details is a section title, always open; the counts, then the override button and the plugin line, the two list previews at the right');
         this.check(/<div class="scan-lists complex-only">/.test(details) && (details.match(/complex-only/g) || []).length === 2 &&
             /id="contentSpellScan" data-scanner-mode="easy"/.test(scan) &&
             /#contentSpellScan\[data-scanner-mode="easy"\] \.complex-only \{ display: none; \}/.test(css) &&

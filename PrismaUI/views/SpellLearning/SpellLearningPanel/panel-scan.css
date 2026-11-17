@@ -124,33 +124,39 @@
     padding: 4px 16px 12px;
 }
 
+/* The right column starts right after the counts (a gap, not half the page) and is as tall as the left one */
 #contentSpellScan #scanResultsSection .scan-split {
-    gap: 24px;
-    align-items: flex-start;
+    gap: 32px;
+    align-items: stretch;
 }
 
 #contentSpellScan .scan-split-left,
 #contentSpellScan .scan-split-right {
-    flex: 1 1 0;
     min-width: 0;
     padding: 0;
     border: 0;
 }
 
-#contentSpellScan .scan-split-right { display: flex; flex-direction: column; gap: 10px; }
+/* Left: the counts, then (spaced off) Override spells and the plugin line; right: the list boxes */
+#contentSpellScan .scan-split-left { flex: 0 1 30em; display: flex; flex-direction: column; gap: 18px; }
+#contentSpellScan .scan-split-right { flex: 1 1 0; display: flex; flex-direction: column; gap: 10px; }
 
 /* Parts of the shared Scan page shown in Complex mode only (switchScannerMode sets data-scanner-mode) */
 #contentSpellScan[data-scanner-mode="easy"] .complex-only { display: none; }
 
-.scan-lists { display: flex; gap: 16px; }
-.scan-list { flex: 1 1 0; min-width: 0; }
+/* The boxes from the left, each a fixed width; they fill the column's height down to the section's padding
+   (height 0 plus flex: the list's length never makes the row taller, it scrolls) */
+.scan-lists { display: flex; justify-content: flex-start; gap: 16px; flex: 1 1 auto; min-height: 0; }
+.scan-list { flex: 0 1 18em; min-width: 0; display: flex; flex-direction: column; }
 .scan-list-title { color: var(--text-secondary, #A8A898); font-size: 0.9em; margin-bottom: 4px; }
 
 .scan-list-items {
     list-style: none;
     margin: 0;
     padding: 4px 8px;
-    height: 8.5em;
+    flex: 1 1 0;
+    height: 0;
+    min-height: 6em;
     overflow-y: auto;
     border: 1px solid var(--divider, rgba(255, 255, 255, 0.2));
     border-radius: 3px;
