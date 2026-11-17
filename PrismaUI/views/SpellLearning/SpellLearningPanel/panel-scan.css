@@ -244,6 +244,12 @@
 
 /* Each row's count column ("345 spells (2 Whitelisted / 5 Blacklisted)") and the scoped override button
    (hidden until its menu exists), between the row's text and its switch */
+/* Where Spells Come From: the categories' stack in the left half, the Blacklisted and Whitelisted boxes sharing the
+   right half, as tall as the stack (the boxes scroll; a long list never makes the section taller) */
+.tome-sources-split { display: flex; gap: 32px; align-items: stretch; }
+.tome-sources-left, .tome-sources-right { flex: 1 1 0; min-width: 0; }
+.tome-sources-right .scan-list { flex: 1 1 0; }
+
 /* Rows: the switch, the text at a fixed width (so the counts line up in one column), the count */
 #tomeSourcesBlock .setting-row { justify-content: flex-start; }
 #tomeSourcesBlock .setting-row > .toggle-switch { flex: 0 0 auto; margin: 0 24px 0 0; }

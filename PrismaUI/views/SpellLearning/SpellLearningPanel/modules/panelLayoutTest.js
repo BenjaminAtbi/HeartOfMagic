@@ -450,15 +450,19 @@ var PanelLayoutTest = {
             'Scan CSS: relays out of sight, no vertical rule added');
         var details = scan.substring(scan.indexOf('id="scanResultsSection"'), scan.indexOf('id="scannerComplexContent"'));
         this.check(/class="tree-preview-title scan-details-title" data-i18n="scan.details"/.test(details) && !/scanDetailsToggle|scan-results-body hidden/.test(details) &&
-            /id="scanBlacklistPreview"/.test(details) && /id="scanWhitelistPreview"/.test(details) &&
-            details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"') &&
-            details.indexOf('id="whitelistBtn"') < details.indexOf('class="scan-split-right"') && details.indexOf('class="scan-split-right"') < details.indexOf('id="scanBlacklistPreview"'),
-            'Scan markup: Scan details is a section title, always open; the counts, then the override button and the plugin line, the two list previews at the right');
-        this.check(/<div class="scan-lists complex-only">/.test(details) && (details.match(/complex-only/g) || []).length === 2 &&
-            /id="contentSpellScan" data-scanner-mode="easy"/.test(scan) &&
+            !/id="scan(Black|White)listPreview"|scan-split-right/.test(details) &&
+            details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"'),
+            'Scan markup: Scan details is a section title, always open; the counts, then the override button and the plugin line (no list previews)');
+        var sourcesBox = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
+        var left = sourcesBox.indexOf('class="tome-sources-left"'), right = sourcesBox.indexOf('class="tome-sources-right scan-lists"');
+        this.check(left > 0 && right > sourcesBox.indexOf('id="tomeSourceUnreachableToggle"') && sourcesBox.indexOf('settings.tomeSources.note') > left &&
+            sourcesBox.indexOf('id="scanBlacklistPreview"') > right && sourcesBox.indexOf('id="scanWhitelistPreview"') > right &&
+            /\.tome-sources-split \{ display: flex;/.test(css) && /\.tome-sources-left, \.tome-sources-right \{ flex: 1 1 0;/.test(css),
+            'Where Spells Come From: the categories\' stack in the left half, the Blacklisted and Whitelisted previews sharing the right half');
+        this.check(/id="contentSpellScan" data-scanner-mode="easy"/.test(scan) &&
             /#contentSpellScan\[data-scanner-mode="easy"\] \.complex-only \{ display: none; \}/.test(css) &&
             /function switchScannerMode\(mode\) \{[\s\S]{0,700}getElementById\('contentSpellScan'\)[\s\S]{0,80}setAttribute\('data-scanner-mode', mode\)/.test(this._file('easyMode.js')),
-            'Scan markup: the list previews in Complex only (the Scan page carries the mode, Easy hides .complex-only); the stats and both buttons in both');
+            'Scan markup: the Scan page carries its mode (Easy hides any shared part marked .complex-only)');
         var extra = scan.substring(scan.indexOf('id="prereqMasterSection"'), scan.indexOf('<!-- Shared Build/Apply/Clear'));
         this.check(/^id="prereqMasterSection"[^>]*>\s*<div class="tree-preview-header">\s*<span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">/.test(extra) &&
             !/prmToggleHeader|prm-collapse-icon|prm-block/.test(extra) && !/prmToggleHeader/.test(this._file('prereqMaster.js')) &&
