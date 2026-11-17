@@ -116,16 +116,42 @@ function main() {
     var opt = args(process.argv);
     var clients = [];
     var timer = null;
+    // Windows reports a read too (the last-access time), so the first fetch of a theme's files would
+    // reload the page: only a new size or mtime, or a file appearing or going, counts as a change.
+    var stamps = {};
+    function stamp(file) {
+        try { var st = fs.statSync(file); return st.isDirectory() ? 'dir' : st.size + ':' + st.mtimeMs; }
+        catch (e) { return 'gone'; }
+    }
+    function seed(root) {
+        try {
+            fs.readdirSync(root, { recursive: true }).forEach(function(rel) {
+                var file = path.join(root, rel);
+                stamps[file] = stamp(file);
+            });
+        } catch (e) { /* nothing to seed */ }
+    }
+    function watch(root) {
+        seed(root);
+        fs.watch(root, { recursive: true }, function(event, name) {
+            if (!name) return;
+            var file = path.join(root, name);
+            var now = stamp(file);
+            if (stamps[file] === now) return;
+            stamps[file] = now;
+            changed(event, name);
+        });
+    }
     function changed(event, name) {
-        if (!name || /(^|[\\/])(test-data|_tmp)([\\/]|$)|Test\.js$/.test(name)) return;
+        if (/(^|[\\/])(test-data|_tmp)([\\/]|$)|Test\.js$/.test(name)) return;
         clearTimeout(timer);
         timer = setTimeout(function() {
             console.log('changed: ' + name + ' - reloading ' + clients.length + ' page(s)');
             clients.forEach(function(c) { c.write('data: reload\n\n'); });
         }, RELOAD_DEBOUNCE_MS);
     }
-    fs.watch(PANEL, { recursive: true }, changed);
-    if (fs.existsSync(ADDONS)) fs.watch(ADDONS, { recursive: true }, changed);
+    watch(PANEL);
+    if (fs.existsSync(ADDONS)) watch(ADDONS);
 
     var server = http.createServer(function(req, res) {
         var url = req.url.split('?')[0];
