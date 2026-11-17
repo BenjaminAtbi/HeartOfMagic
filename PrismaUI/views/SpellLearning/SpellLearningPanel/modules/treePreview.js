@@ -134,7 +134,7 @@ var TreePreview = {
             '<div class="tree-preview-tabs" id="treePreviewTabs">' +
                 tabsHTML +
             '</div>' +
-            '<div class="tree-preview-split">' +
+            '<div class="tree-preview-split tree-preview-fit">' +
                 '<div class="tree-preview-left" id="treePreviewSettings">' +
                     '<!-- Settings injected by active mode module -->' +
                 '</div>' +
@@ -242,7 +242,13 @@ var TreePreview = {
             return;
         }
 
-        settingsEl.innerHTML = modeModule.buildSettingsHTML();
+        // As tall as the tallest mode's settings (treePreviewFit.js)
+        if (typeof TreePreviewFit !== 'undefined') {
+            settingsEl.innerHTML = TreePreviewFit.page(modeModule.buildSettingsHTML());
+            TreePreviewFit.addGhosts(settingsEl, this.modes, mode);
+        } else {
+            settingsEl.innerHTML = modeModule.buildSettingsHTML();
+        }
         modeModule.bindEvents();
     },
 

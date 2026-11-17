@@ -151,6 +151,15 @@
     letter-spacing: 0.06em;
 }
 
+/* Root Base Preview: the settings as tall as the tallest mode's (treePreviewFit.js lays the other modes' settings,
+   hidden, in the same grid cell), no inner scroll; the preview at least 400px and as tall as the settings (its
+   canvas follows the box, treePreview.js ResizeObserver) */
+.tree-preview-split.tree-preview-fit { height: auto; min-height: 400px; }
+.tree-preview-fit .tree-preview-left { height: auto; overflow: visible; display: grid; align-items: start; }
+.tree-preview-fit .tree-preview-right { height: auto; }
+.tree-preview-fit .tp-page { grid-area: 1 / 1; min-width: 0; }
+.tree-preview-fit .tp-page-ghost { visibility: hidden; pointer-events: none; }
+
 /* Extra Settings: each tab's page as tall as its content, no inner scroll; the preview at least 400px and as tall
    as the page beside it (its canvas follows the box, prereqMaster.js ResizeObserver) */
 #prereqMasterSection .prm-split { height: auto; min-height: 400px; }
