@@ -465,6 +465,13 @@ var PanelLayoutTest = {
             /scan-section-title">' \+ t\('preview\.title'\)/.test(this._file('treePreview.js')) && /scan-section-title">' \+ t\('treeViewer\.treeGrowthPreview'\)/.test(this._file('treeGrowth.js')) &&
             /#prereqMasterSection \.prm-split \{ height: auto;/.test(css) && /#prereqMasterSection \.prm-split-left \{ height: auto; overflow: visible; \}/.test(css),
             'Scan markup: Extra Settings a section title like Root Base Preview and Tree Growth Preview (one title style), no collapsible box, pages as tall as their content');
+        var prm = this._file('prereqMaster.js');
+        this.check(/id="prmTabLocks">/.test(extra) && /class="prm-tab-content prm-page-hidden" id="prmTabCore">/.test(extra) &&
+            /class="prm-tab-content prm-page-hidden" id="prmTabAltPaths">/.test(extra) && !/id="prmTab\w+" style="display:none/.test(extra) &&
+            /classList\.toggle\('prm-page-hidden', key !== tabId\)/.test(prm) && !/prmTab\w+'\)[\s\S]{0,40}style\.display/.test(prm) &&
+            /#prereqMasterSection \.prm-split-left \{ display: grid;/.test(css) && /#prereqMasterSection \.prm-tab-content \{ grid-area: 1 \/ 1;/.test(css) &&
+            /\.prm-tab-content\.prm-page-hidden \{ visibility: hidden;/.test(css),
+            'Extra Settings: the tab pages share one cell, the hidden ones kept in the layout (as tall as the tallest, no movement on a switch)');
         var sources = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
         var rows = sources.match(/id="tomeSource\w+Toggle"[^>]*>/g) || [];
         this.check(rows.length === 9 && /id="tomeSourceUnreachableToggle">$/.test(rows[8]) &&

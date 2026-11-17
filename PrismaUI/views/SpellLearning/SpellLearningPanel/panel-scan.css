@@ -155,6 +155,11 @@
    as the page beside it (its canvas follows the box, prereqMaster.js ResizeObserver) */
 #prereqMasterSection .prm-split { height: auto; min-height: 400px; }
 #prereqMasterSection .prm-split-left { height: auto; overflow: visible; }
+/* The tab pages share one grid cell, the hidden ones kept in the layout: the area is as tall as the tallest
+   page, so switching tabs moves nothing */
+#prereqMasterSection .prm-split-left { display: grid; align-items: start; }
+#prereqMasterSection .prm-tab-content { grid-area: 1 / 1; min-width: 0; }
+#prereqMasterSection .prm-tab-content.prm-page-hidden { visibility: hidden; pointer-events: none; }
 #prereqMasterSection .prm-split-right { height: auto; }
 
 /* Parts of the shared Scan page shown in Complex mode only (switchScannerMode sets data-scanner-mode) */
