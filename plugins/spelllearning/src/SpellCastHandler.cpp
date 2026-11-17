@@ -2,6 +2,7 @@
 #include "HudNotify.h"
 #include "ProgressionManager.h"
 #include "SpellEffectivenessHook.h"
+#include "StaffSpellBridge.h"
 #include "ThreadUtils.h"
 
 SpellCastHandler* SpellCastHandler::GetSingleton()
@@ -118,6 +119,17 @@ void SpellCastHandler::RememberCredited(RE::FormID spellId, bool a_immediate, Cl
 
 void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt)
 {
+    // A staff cast from SCSSoulCharge arrives as a runtime copy of the bound spell:
+    // count it as the original (everything below, the pairing included, is keyed by it)
+    if (const RE::FormID original = StaffSpellBridge::Resolve(spellId); original != spellId) {
+        if (m_staffCopiesLogged.insert(spellId).second) {
+            logger::info("XP: staff cast {:08X} counts as its original spell {:08X} (first cast of this copy; "
+                         "later ones at debug)", spellId, original);
+        } else {
+            logger::debug("XP: staff cast {:08X} counts as its original spell {:08X}", spellId, original);
+        }
+        spellId = original;
+    }
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* spell = RE::TESForm::LookupByID<RE::SpellItem>(spellId);
     if (!player || !spell) {

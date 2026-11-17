@@ -382,7 +382,10 @@ taken up to two past the cap, the spell's own tier first, the room term parting 
   the cases as JSON, kept as the panel's `test-data/treePrereqCases.json`, which `modules/treePrereqParityTest.js` runs
   through the panel's own tree load; exit 1 on a failure, 3 when nothing
   is sent; docs/ARCHITECTURE.md, "Progression state at game start"), `thread-flag-check` (`thread-flag-check --self-test`: `include/GameThreadFlag.h`, the scope half of `IsOnGameThread()` -
-  in inside a task, message or native scope (nested too), out on any other thread and once it closes; exit 1 on a failure), `spell-tomes-check` (`spell-tomes-check --self-test`: `include/SpellTomePairs.h`, the pairs for tomes that teach
+  in inside a task, message or native scope (nested too), out on any other thread and once it closes; exit 1 on a failure),
+  `staff-bridge-check` (`staff-bridge-check --self-test`: `include/StaffSpellBridge.h`'s `ResolveWith` - without the
+  SCSSoulCharge lookup or below index 0xFF a FormID stays itself (never asked), an unknown runtime form stays itself,
+  a staff copy becomes its original spell; exit 1 on a failure), `spell-tomes-check` (`spell-tomes-check --self-test`: `include/SpellTomePairs.h`, the pairs for tomes that teach
   nothing - the SynthesizedPatch.json reader on made-up texts (null `tomeId`, malformed ids, not JSON, ill-formed
   UTF-8) and the pair rule on made-up Spell Research lists (JSON first, unequal parts, record and script parts apart,
   a re-run patch's shifted lists against the JSON, a book whose override is in Synthesis.esp); exit 1 on a failure) and `progression-check`

@@ -1,4 +1,5 @@
 #include "SpellCastHandler.h"
+#include "StaffSpellBridge.h"
 
 #include <atomic>
 
@@ -35,11 +36,20 @@ namespace
                 if (!player || a_this->GetCasterAsActor() != player) {
                     return;
                 }
-                auto* spell = a_spell->As<RE::SpellItem>();
-                if (!spell) {
-                    return;
+                // A spell, or a staff copy from SCSSoulCharge (an EnchantmentItem) passed on as
+                // its original spell; HandlePlayerCast checks the rest on the game thread
+                RE::FormID spellId = a_spell->GetFormID();
+                if (!a_spell->As<RE::SpellItem>()) {
+                    if (a_spell->GetSpellType() != RE::MagicSystem::SpellType::kStaffEnchantment) {
+                        return;
+                    }
+                    const RE::FormID original = StaffSpellBridge::Resolve(spellId);
+                    if (original == spellId) {
+                        return;
+                    }
+                    spellId = original;
                 }
-                SpellCastHandler::GetSingleton()->OnImmediateCast(spell->GetFormID());
+                SpellCastHandler::GetSingleton()->OnImmediateCast(spellId);
             } catch (...) {
                 if (!g_immediateFailureReported.exchange(true)) {
                     logger::error("SpellCastHandler: immediate cast hook threw; further failures are not logged");

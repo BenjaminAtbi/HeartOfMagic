@@ -1,5 +1,6 @@
 #include "SpellEffectivenessHook.h"
 #include "ProgressionManager.h"
+#include "StaffSpellBridge.h"
 
 // =============================================================================
 // SINGLETON
@@ -34,6 +35,8 @@ static std::atomic<RE::PlayerCharacter*> g_cachedPlayer{nullptr};
 // One flag for every hooked vtable: a persistent failure is logged once, not
 // once per effect class it happens to hit first.
 static std::atomic<bool> g_scalingFailureReported{false};
+// The first SCSSoulCharge staff copy weakened as its original spell is logged at info, once
+static std::atomic<bool> g_staffWeakeningReported{false};
 
 template<std::size_t UniqueID>
 struct EffectivenessHook
@@ -200,7 +203,12 @@ void SpellEffectivenessHook::ApplyEffectivenessScalingFast(RE::ActiveEffect* a_e
         return;
     }
 
+    // A staff copy from SCSSoulCharge (a concentration staff keeps the copy on its
+    // effects) is judged as its original spell; only staff enchantments are asked about
     RE::FormID spellId = spell->GetFormID();
+    if (spell->GetSpellType() == RE::MagicSystem::SpellType::kStaffEnchantment) {
+        spellId = StaffSpellBridge::Resolve(spellId);
+    }
 
     // One lock for the early-learned check, the progress, the power step and
     // the binary threshold. This runs for every effect of every player spell
@@ -212,6 +220,10 @@ void SpellEffectivenessHook::ApplyEffectivenessScalingFast(RE::ActiveEffect* a_e
     float threshold = 0.0f;
     if (!ScalingFor(spellId, progressPercent, effectiveness, threshold)) {
         return;
+    }
+    if (spellId != spell->GetFormID() && !g_staffWeakeningReported.exchange(true)) {
+        logger::info("SpellEffectivenessHook: staff copy {:08X} weakened as its original spell {:08X} ({:.0f}%; "
+                     "logged once per session)", spell->GetFormID(), spellId, effectiveness * 100.0f);
     }
 
     // Check for binary effects that need minimum threshold

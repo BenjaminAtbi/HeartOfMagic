@@ -4,6 +4,7 @@
 #include <chrono>
 #include <deque>
 #include <unordered_map>
+#include <unordered_set>
 
 class SpellCastHandler : public RE::BSTEventSink<RE::TESSpellCastEvent>
 {
@@ -85,6 +86,9 @@ private:
     // SpellHotbar 2's 0.5 s cooldown, so its casts each count.
     static constexpr float kImmediateStreamGapSeconds = 0.45f;
     std::unordered_map<RE::FormID, std::chrono::steady_clock::time_point> m_lastImmediateAt;
+    // SCSSoulCharge staff copies already logged at info (game thread only): the first cast of
+    // each copy shows in a release log, the rest at debug
+    std::unordered_set<RE::FormID> m_staffCopiesLogged;
 
     bool m_registered = false;
     
