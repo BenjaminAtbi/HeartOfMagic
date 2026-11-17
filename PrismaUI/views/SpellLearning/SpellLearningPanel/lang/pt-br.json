@@ -467,9 +467,6 @@
     "scan.scanAgain": "Varrer de novo",
     "scan.clearDraft": "Descartar o rascunho da árvore",
     "scan.details": "Detalhes da varredura",
-    "scan.pluginsAll": "Plugins: todos",
-    "scan.pluginsSome": "Plugins: {{on}} de {{total}}",
-    "scan.pluginsNone": "Plugins: nenhum (nenhuma magia entra na árvore)",
 
     "scannerPresets.overwriteConfirm": "Um preset chamado \"{{name}}\" já existe. Sobrescrever?",
 

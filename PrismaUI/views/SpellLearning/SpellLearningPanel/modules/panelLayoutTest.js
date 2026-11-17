@@ -329,21 +329,13 @@ var PanelLayoutTest = {
         this.check(lists.blacklisted.join() === '0x00010002,Zap' && lists.whitelisted.join() === 'gone.esp:000001,skyrim.esm:010001',
             'List previews: the blacklist\'s names (a formId when it has none), the Include keys (named once GateReview is there), sorted');
 
-        var p = S.pluginState(spells, box.settings.pluginWhitelist);
-        this.check(p.total === 2 && p.off === 1 && S.pluginLine(p)[0] === 'scan.pluginsSome' && S.pluginLine(p)[1].on === 1,
-            'Plugins line: 1 of 2 (the list\'s entry matched A-Z folded)');
-        this.check(S.pluginLine(S.pluginState(spells, []))[0] === 'scan.pluginsAll' &&
-            S.pluginLine(S.pluginState(spells, [{ plugin: 'Skyrim.esm', enabled: true }]))[0] === 'scan.pluginsAll',
-            'Plugins line: no list, or nothing turned off, reads "all"');
-        this.check(S.pluginLine(S.pluginState(spells, [{ plugin: 'skyrim.esm', enabled: false }, { plugin: 'Mod.esp', enabled: false }]))[0] === 'scan.pluginsNone',
-            'Plugins line: every plugin turned off says no spell goes in the tree');
     },
 
     _scanPage: function() {
         var self = this;
         var ids = ['scanStageBtn', 'scanStageLabel', 'scanBtn', 'scanAgainBtn', 'scanClearDraftBtn', 'tgBuildBtn', 'tgApplyBtn', 'tgClearBtn', 'easyBuildBtn',
             'scannerComplexContent', 'scanSummary', 'scanSummaryGap', 'statTotalSpells', 'scanBlacklistTitle', 'scanBlacklistPreview', 'scanWhitelistTitle',
-            'scanWhitelistPreview', 'whitelistLabel'];
+            'scanWhitelistPreview'];
         var els = {};
         ids.forEach(function(id) { els[id] = self.el('div', { id: id }); });
         els.scannerComplexContent.style.display = 'none';
@@ -386,9 +378,8 @@ var PanelLayoutTest = {
             els.scanSummaryGap.text() === '3 spells invalid (no tome, powers, copies); 1 spells left off the tree.',
             'Page scanned: Build Tree, Scan again shown, the summary line, the gap line (invalid; left off.)');
         this.check(els.statTotalSpells.textContent === '14' && els.scanBlacklistTitle.textContent === 'Blacklisted (1)' &&
-            els.scanBlacklistPreview.text() === '0x00010003' && els.scanWhitelistPreview.text() === 'None' &&
-            els.whitelistLabel.textContent === 'Plugins: all',
-            'Page: Spells found, the list previews (1 blacklisted, none whitelisted) and the plugin line');
+            els.scanBlacklistPreview.text() === '0x00010003' && els.scanWhitelistPreview.text() === 'None',
+            'Page: Spells found, the list previews (1 blacklisted, none whitelisted)');
         els.scanStageBtn.click();
         this.check(els.easyBuildBtn.clicks === 1 && els.tgBuildBtn.clicks === 0, 'Page Easy: Build presses Easy\'s Build (it applies the chosen preset first)');
         els.easyBuildBtn.disabled = true;
@@ -451,8 +442,8 @@ var PanelLayoutTest = {
         var details = scan.substring(scan.indexOf('id="scanResultsSection"'), scan.indexOf('id="scannerComplexContent"'));
         this.check(/class="tree-preview-title scan-details-title" data-i18n="scan.details"/.test(details) && !/scanDetailsToggle|scan-results-body hidden/.test(details) &&
             !/id="scan(Black|White)listPreview"|scan-split-right/.test(details) &&
-            details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"'),
-            'Scan markup: Scan details is a section title, always open; the counts, then the override button and the plugin line (no list previews)');
+            details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && !/id="whitelistBtn"/.test(details),
+            'Scan markup: Scan details is a section title, always open; the counts, then the override button (no plugin line, no list previews)');
         var sourcesBox = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
         var left = sourcesBox.indexOf('class="tome-sources-left"'), right = sourcesBox.indexOf('class="tome-sources-right"');
         this.check(left > 0 && right > sourcesBox.indexOf('id="tomeSourceUnreachableToggle"') && sourcesBox.indexOf('settings.tomeSources.note') > left &&
@@ -519,9 +510,36 @@ var PanelLayoutTest = {
         this.check(!/whitelist-modal|whitelist-done/.test(html) && !/showWhitelistModal|hideWhitelistModal|#whitelist-modal/.test(panel) &&
             ['sourceListTabs', 'scanBlacklistPreview', 'pluginListPanel', 'whitelist-search', 'whitelist-all', 'whitelist-none', 'whitelist-base-only',
                 'whitelist-base-entries', 'whitelist-mod-entries'].every(function(id) { return right.indexOf('id="' + id + '"') !== -1; }) &&
-            /safeAddListener\('whitelistBtn', 'click', showPluginList\)/.test(this._file('../script.js')) &&
+            !/whitelistBtn|whitelistLabel|showPluginList|pluginLine|pluginState/.test(html + this._file('../script.js') + this._file('scanStage.js') + this._file('sourceListTabs.js')) &&
             (panel.match(/if \(typeof pluginListChanged === 'function'\) pluginListChanged\(\);/g) || []).length === 3,
-            'Source tabs: the plugin list lives on the Plugins tab (the window gone), the plugin line opens it, a click and All / None / Base Only save');
+            'Source tabs: the plugin list lives on the Plugins tab (the window and the plugin line gone), a click and All / None / Base Only save');
+        var css = this._file('../panel-scan.css');
+        this.check(/#tomeSourcesBlock \.source-list-page\.source-list-hidden \{ display: none; \}/.test(css) && /#pluginListPanel \{ display: flex;/.test(css),
+            'Source tabs: a hidden page stays hidden (the class rule outranks #pluginListPanel\'s display: flex)');
+        this._wheelCapture(right);
+    },
+
+    /** The list boxes keep the wheel at their ends (wheelScroll.js wheel-capture), so the page does not scroll under them */
+    _wheelCapture: function(right) {
+        var self = this, listened = 0;
+        var box = this._sandbox(['wheelScroll.js'], {
+            document: { documentElement: {}, readyState: 'complete', addEventListener: function() { listened++; } },
+            window: { getComputedStyle: function(e) { return { overflowY: e.overflowY || 'visible' }; } }
+        });
+        var W = box.WheelScroll;
+        var page = this.el('div'), list = this.el('ul', { 'class': 'wheel-capture' }), plain = this.el('ul'), item = this.el('li');
+        [page, list, plain].forEach(function(e) { e.nodeType = 1; e.overflowY = 'auto'; e.clientHeight = 100; e.scrollHeight = 300; });
+        item.nodeType = 1;
+        page.appendChild(list); page.appendChild(plain); list.appendChild(item);
+        page.scrollTop = 50;
+        list.scrollTop = 200;   // at its end
+        plain.scrollTop = 200;
+        this.check(W._scrollableFrom(item, 10) === list && W._scrollableFrom(plain, 10) === page && W._scrollableFrom(list, -10) === list,
+            'Wheel: a wheel-capture box at its end keeps the wheel (the page does not move); a plain one hands it on');
+        list.scrollHeight = 100;
+        this.check(W._scrollableFrom(item, 10) === page, 'Wheel: a wheel-capture box with nothing to scroll lets the page scroll');
+        var boxes = (right.match(/class="wheel-capture [^"]*"/g) || []).length;
+        this.check(boxes === 4, 'Wheel: the four list boxes (Blacklisted, Whitelisted, Base Game, Mod Plugins) capture the wheel (' + boxes + ')');
     },
 
     // ======================================================================= item 9

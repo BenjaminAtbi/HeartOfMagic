@@ -254,7 +254,7 @@
 .tome-sources-right { display: flex; flex-direction: column; }
 .source-list-tabs { flex: 0 0 auto; margin-bottom: 10px; }
 .source-list-page { flex: 1 1 auto; min-height: 0; }
-.source-list-page.source-list-hidden { display: none; }
+#tomeSourcesBlock .source-list-page.source-list-hidden { display: none; }   /* over #pluginListPanel's flex */
 
 /* Plugins: the note, the filter with All / None / Base Only, Base Game at its size, Mod Plugins taking the rest
    (it scrolls; a long list never makes the section taller) */
@@ -280,3 +280,6 @@
 #tomeSourcesBlock .setting-row.tome-source-warning { background: rgba(170, 40, 40, 0.16); }
 #tomeSourcesBlock .setting-row.tome-source-warning:hover { background: rgba(170, 40, 40, 0.24); }
 .tome-source-warning .setting-desc { color: #D08A80; }
+
+/* List boxes that keep the wheel at their ends (wheelScroll.js does it in game; this for a browser) */
+.wheel-capture { overscroll-behavior: contain; }

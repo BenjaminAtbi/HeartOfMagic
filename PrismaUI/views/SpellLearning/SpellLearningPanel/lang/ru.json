@@ -467,9 +467,6 @@
     "scan.scanAgain": "Сканировать снова",
     "scan.clearDraft": "Сбросить черновик дерева",
     "scan.details": "Подробности сканирования",
-    "scan.pluginsAll": "Плагины: все",
-    "scan.pluginsSome": "Плагины: {{on}} из {{total}}",
-    "scan.pluginsNone": "Плагины: ни одного (в дерево не войдёт ни одно заклинание)",
 
     "scannerPresets.overwriteConfirm": "Пресет с именем «{{name}}» уже существует. Перезаписать?",
 

@@ -168,12 +168,12 @@
                     <button type="button" id="scanClearDraftBtn" class="btn scan-text-btn hidden" data-i18n="scan.clearDraft">Clear draft tree</button>
                 </div>
 
-                <!-- Section 1: Scan details - the counts, Override spells and the plugin line (scanStage.js); the list previews are in Where Spells Come From -->
+                <!-- Section 1: Scan details - the counts and Override spells (scanStage.js); the list previews are in Where Spells Come From -->
                 <div class="scan-section" id="scanResultsSection">
                     <div class="tree-preview-title scan-details-title" data-i18n="scan.details">Scan details</div>
                     <div class="scan-split">
                     <!-- Spells found (could go on the tree), mods, primed, and the primed spells per school; then the override
-                         button (opens the blacklist window until the override menu exists) and the plugin line (the plugin list) -->
+                         button (opens the blacklist window until the override menu exists) -->
                     <div class="scan-split-left">
                         <div class="scan-results-body" id="scanResultsBody">
                             <div class="scan-stats-grid" id="scanStatsGrid">
@@ -197,9 +197,6 @@
                         <div class="scan-filter-controls">
                             <button id="blacklistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
                                 <span class="hom-label" id="blacklistLabel" data-i18n="scan.override">Override spells</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
-                            </button>
-                            <button id="whitelistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
-                                <span class="hom-label" id="whitelistLabel" data-i18n="scan.pluginsAll">Plugins: all</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
                             </button>
                         </div>
                     </div>
@@ -263,7 +260,7 @@
                             <!-- The categories' stack at the left; the right half, as tall as the stack (panel-scan.css), has two
                                  tabs (modules/sourceListTabs.js): Spells, the Blacklisted and Whitelisted (Include) lists previewed,
                                  and Plugins, the plugin list (settingsPanel.js renderWhitelistEntries; it was a window). The
-                                 override button and the plugin line stay in Scan details; the plugin line opens Plugins -->
+                                 override button stays in Scan details. The list boxes keep the wheel (wheel-capture, wheelScroll.js) -->
                             <div class="tome-sources-split">
                             <div class="tome-sources-left">
                                 <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule their spell tomes match, from top to bottom. Spells whose tomes nothing hands out, or that match no rule, go under Unreachable at the bottom. Activate a category to include its spells on the tree.</p>
@@ -366,11 +363,11 @@
                                 <div class="source-list-page scan-lists" id="sourceListSpells">
                                     <div class="scan-list">
                                         <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
-                                        <ul class="scan-list-items" id="scanBlacklistPreview"></ul>
+                                        <ul class="wheel-capture scan-list-items" id="scanBlacklistPreview"></ul>
                                     </div>
                                     <div class="scan-list">
                                         <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
-                                        <ul class="scan-list-items" id="scanWhitelistPreview"></ul>
+                                        <ul class="wheel-capture scan-list-items" id="scanWhitelistPreview"></ul>
                                     </div>
                                 </div>
                                 <div class="source-list-page source-list-hidden" id="pluginListPanel">
@@ -388,14 +385,14 @@
                                             <span data-i18n="modals.whitelist.baseGame">Base Game</span>
                                             <span id="whitelist-base-count" class="whitelist-count">0</span>
                                         </div>
-                                        <div id="whitelist-base-entries" class="whitelist-entries whitelist-base"></div>
+                                        <div id="whitelist-base-entries" class="wheel-capture whitelist-entries whitelist-base"></div>
                                     </div>
                                     <div class="whitelist-section plugin-list-mods">
                                         <div class="whitelist-section-header">
                                             <span data-i18n="modals.whitelist.modPlugins">Mod Plugins</span>
                                             <span id="whitelist-mod-count" class="whitelist-count">0</span>
                                         </div>
-                                        <div id="whitelist-mod-entries" class="whitelist-entries whitelist-mods">
+                                        <div id="whitelist-mod-entries" class="wheel-capture whitelist-entries whitelist-mods">
                                             <div class="whitelist-empty" data-i18n="modals.whitelist.emptyMods">Scan spells first to see plugins</div>
                                         </div>
                                     </div>

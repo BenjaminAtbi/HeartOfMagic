@@ -477,9 +477,6 @@
     "scan.whitelisted": "Whitelisted ({{count}})",
     "scan.listEmpty": "None",
     "scan.override": "Override spells",
-    "scan.pluginsAll": "Plugins: all",
-    "scan.pluginsSome": "Plugins: {{on}} of {{total}}",
-    "scan.pluginsNone": "Plugins: none (no spell goes in the tree)",
 
     "scannerPresets.overwriteConfirm": "A preset named \"{{name}}\" already exists. Overwrite it?",
 

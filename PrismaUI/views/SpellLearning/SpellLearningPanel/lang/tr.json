@@ -467,9 +467,6 @@
     "scan.scanAgain": "Yeniden tara",
     "scan.clearDraft": "Taslak ağacı temizle",
     "scan.details": "Tarama ayrıntıları",
-    "scan.pluginsAll": "Eklentiler: tümü",
-    "scan.pluginsSome": "Eklentiler: {{total}} eklentiden {{on}} tanesi",
-    "scan.pluginsNone": "Eklentiler: hiçbiri (ağaca hiçbir büyü girmeyecek)",
 
     "scannerPresets.overwriteConfirm": "\"{{name}}\" adlı hazır ayar zaten mevcut. Üzerine yazılsın mı?",
 

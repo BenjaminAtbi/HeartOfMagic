@@ -3,8 +3,7 @@
  * Whitelisted previews, written by scanStage.js) and Plugins (the plugin list, once a window:
  * settingsPanel.js renderWhitelistEntries and its helpers fill the same ids).
  *
- * The plugin line in Scan details (whitelistBtn, script.js) opens Plugins (showPluginList). A change
- * on the Plugins page saves at once (pluginListChanged: autoSaveSettings, updatePrimedCount) - there
+ * A change on the Plugins page saves at once (pluginListChanged: autoSaveSettings, updatePrimedCount) - there
  * is no Done button any more. The page is filled when it opens and again after a scan while it shows.
  *
  * Depends on: renderWhitelistEntries, setupWhitelistListeners, autoSaveSettings (settingsPanel.js),
@@ -55,13 +54,6 @@ var SourceListTabs = {
         if (typeof setupWhitelistListeners === 'function') setupWhitelistListeners();
     }
 };
-
-/** The plugin line's button: the Plugins tab, brought into view */
-function showPluginList() {
-    SourceListTabs.show('plugins');
-    var page = document.getElementById('pluginListPanel');
-    if (page && page.scrollIntoView) page.scrollIntoView({ block: 'nearest' });
-}
 
 /** A change the player made on the Plugins page: saved (debounced) and counted at once */
 function pluginListChanged() {

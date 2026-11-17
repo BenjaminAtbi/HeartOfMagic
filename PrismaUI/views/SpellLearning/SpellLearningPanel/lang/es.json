@@ -467,9 +467,6 @@
     "scan.scanAgain": "Volver a escanear",
     "scan.clearDraft": "Descartar el borrador del árbol",
     "scan.details": "Detalles del escaneo",
-    "scan.pluginsAll": "Plugins: todos",
-    "scan.pluginsSome": "Plugins: {{on}} de {{total}}",
-    "scan.pluginsNone": "Plugins: ninguno (ningún hechizo entra en el árbol)",
 
     "scannerPresets.overwriteConfirm": "Ya existe un preset llamado «{{name}}». ¿Sobrescribir?",
 

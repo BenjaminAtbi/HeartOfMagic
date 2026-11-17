@@ -17,7 +17,7 @@
  * buttons: Scan again, Import, Clear draft tree (it clears the built draft, not anyone's
  * progress). "Scan details" is a section: the counts per school, beside previews of the
  * Blacklisted (settings.spellBlacklist) and Whitelisted (settings.gateReviewed, Gate Review's
- * Include) lists, the override button (the blacklist window for now) and the plugin line.
+ * Include) lists (on Where Spells Come From's Spells tab) and the override button (the blacklist window for now).
  *
  * "Applied" is this module's own flag: set when Apply (or the build at game start) saved
  * the draft (TreeGrowthClassic.applyTree calls markApplied), dropped when the draft changes
@@ -128,37 +128,6 @@ var ScanStage = {
             case 'apply': return ['buttons.applyTree', 'Apply Tree', 'apply'];
             default: return ['scan.stageApplied', 'Tree applied', null];
         }
-    },
-
-    /**
-     * The plugin list's state: plugins the scan found, and how many of them are turned off.
-     * @param {Array} spells
-     * @param {Array} whitelist - settings.pluginWhitelist ({plugin, enabled})
-     * @returns {{total:number, off:number}}
-     */
-    pluginState: function(spells, whitelist) {
-        var fold = (typeof foldPluginName === 'function') ? foldPluginName : function(s) { return String(s).toLowerCase(); };
-        var nameOf = (typeof spellPluginName === 'function') ? spellPluginName : function(s) { return s.plugin || ''; };
-        var off = {};
-        (whitelist || []).forEach(function(e) { if (e && e.plugin && e.enabled === false) off[fold(e.plugin)] = true; });
-        var seen = {}, total = 0, offCount = 0;
-        (spells || []).forEach(function(s) {
-            var name = nameOf(s);
-            if (!name) return;
-            var k = fold(name);
-            if (seen[k]) return;
-            seen[k] = true;
-            total++;
-            if (off[k]) offCount++;
-        });
-        return { total: total, off: offCount };
-    },
-
-    /** [key, params, English] for the plugin line */
-    pluginLine: function(p) {
-        if (p.off === 0) return ['scan.pluginsAll', null, 'Plugins: all'];
-        if (p.off >= p.total) return ['scan.pluginsNone', null, 'Plugins: none (no spell goes in the tree)'];
-        return ['scan.pluginsSome', { on: p.total - p.off, total: p.total }, 'Plugins: {{on}} of {{total}}'];
     },
 
     // =========================================================================
@@ -289,15 +258,11 @@ var ScanStage = {
         var foundEl = this._el('statTotalSpells');
         if (foundEl) foundEl.textContent = inputs.scanned ? String(c.found) : '--';
 
-        // The list previews and the plugin line
+        // The list previews
         var opts = (typeof settings !== 'undefined' && settings) ? settings : {};
         var lists = this.listPreview(spells, opts.spellBlacklist, opts.gateReviewed);
         this._writeList('scanBlacklistTitle', 'scanBlacklistPreview', ['scan.blacklisted', 'Blacklisted ({{count}})'], lists.blacklisted);
         this._writeList('scanWhitelistTitle', 'scanWhitelistPreview', ['scan.whitelisted', 'Whitelisted ({{count}})'], lists.whitelisted);
-        // Plugins with player spells only, as the build counts them (the tome filter comes first)
-        var playerSpells = (typeof isTaughtByTome === 'function') ? spells.filter(isTaughtByTome) : spells;
-        var plugins = this.pluginLine(this.pluginState(playerSpells, opts.pluginWhitelist));
-        setI18n(this._el('whitelistLabel'), plugins[0], plugins[1], plugins[2]);
         if (typeof TomeSourceSetting !== 'undefined' && TomeSourceSetting.renderCounts) TomeSourceSetting.renderCounts(spells);
     },
 

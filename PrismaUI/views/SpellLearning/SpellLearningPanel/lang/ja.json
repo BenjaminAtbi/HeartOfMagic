@@ -467,9 +467,6 @@
     "scan.scanAgain": "再スキャン",
     "scan.clearDraft": "下書きツリーを破棄",
     "scan.details": "スキャンの詳細",
-    "scan.pluginsAll": "プラグイン：すべて",
-    "scan.pluginsSome": "プラグイン：{{total}}個中{{on}}個",
-    "scan.pluginsNone": "プラグイン：なし（ツリーに入る呪文はありません）",
 
     "scannerPresets.overwriteConfirm": "「{{name}}」という名前のプリセットが既に存在します。上書きしますか？",
 

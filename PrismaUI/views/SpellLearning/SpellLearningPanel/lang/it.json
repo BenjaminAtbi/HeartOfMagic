@@ -467,9 +467,6 @@
     "scan.scanAgain": "Scansiona di nuovo",
     "scan.clearDraft": "Scarta la bozza dell'albero",
     "scan.details": "Dettagli della scansione",
-    "scan.pluginsAll": "Plugin: tutti",
-    "scan.pluginsSome": "Plugin: {{on}} su {{total}}",
-    "scan.pluginsNone": "Plugin: nessuno (nessun incantesimo entra nell'albero)",
 
     "scannerPresets.overwriteConfirm": "Un preset chiamato «{{name}}» esiste già. Sovrascriverlo?",
 

@@ -219,7 +219,7 @@ window.updateSpellData = function(jsonStr) {
 
         // Enable scan-dependent buttons after successful scan
         if (data.spells && data.spells.length > 0) {
-            var postScanBtns = ['blacklistBtn', 'whitelistBtn', 'saveBtn'];
+            var postScanBtns = ['blacklistBtn', 'saveBtn'];
             postScanBtns.forEach(function(id) {
                 var btn = document.getElementById(id);
                 if (btn) btn.disabled = false;
