@@ -65,8 +65,10 @@ var TomeSourceSettingTest = {
                 c.regionalLoot.spells === 1 && c.regionalLoot.whitelisted === 1 && c.unreachable.spells === 2 &&
                 c.unreachable.whitelisted === 1 && c.crafted.spells === 0 && Object.keys(c).length === S.SEGMENTS.length,
                 'counts: found spells per category (no voice slot, none without a source), Whitelisted and Blacklisted');
-            this.check(S.countText(c.crafted) === '0 spells' && S.countText(c.standardSale) === '2 spells (0 Whitelisted / 1 Blacklisted)',
-                'count text: "N spells", the lists\' part only when either has any');
+            this.check(S.countText(c.crafted) === '0 spells' && S.countText(c.standardSale) === '2 spells (1 Blacklisted)' &&
+                S.countText(c.regionalLoot) === '1 spells (1 Whitelisted)' &&
+                S.countText({ spells: 3, whitelisted: 2, blacklisted: 1 }) === '3 spells (2 Whitelisted / 1 Blacklisted)',
+                'count text: "N spells", then each list only when it has any (Whitelisted, Blacklisted or both)');
         } finally {
             g.foldPluginName = oldFold;
             g.settings.spellBlacklist = [];

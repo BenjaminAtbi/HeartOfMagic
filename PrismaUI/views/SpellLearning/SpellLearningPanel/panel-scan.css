@@ -244,7 +244,11 @@
 
 /* Each row's count column ("345 spells (2 Whitelisted / 5 Blacklisted)") and the scoped override button
    (hidden until its menu exists), between the row's text and its switch */
-.tome-source-count-cell { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; margin: 0 12px; }
+/* Rows: the switch, the text at a fixed width (so the counts line up in one column), the count */
+#tomeSourcesBlock .setting-row { justify-content: flex-start; }
+#tomeSourcesBlock .setting-row > .toggle-switch { flex: 0 0 auto; margin: 0 14px 0 0; }
+#tomeSourcesBlock .setting-row > .setting-info { flex: 0 0 34em; max-width: 34em; }
+.tome-source-count-cell { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; margin: 0 12px 0 20px; }
 .tome-source-count { color: var(--text-secondary, #A8A898); white-space: nowrap; }
 .tome-source-scoped.hidden { display: none; }
 

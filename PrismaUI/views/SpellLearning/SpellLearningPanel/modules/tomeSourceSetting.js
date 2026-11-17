@@ -149,10 +149,11 @@ var TomeSourceSetting = {
             return english;
         };
         var text = t('settings.tomeSources.count', { count: c.spells }, '{{count}} spells');
-        if (c.whitelisted > 0 || c.blacklisted > 0) {
-            text += ' ' + t('settings.tomeSources.countLists', { whitelisted: c.whitelisted, blacklisted: c.blacklisted },
-                '({{whitelisted}} Whitelisted / {{blacklisted}} Blacklisted)');
-        }
+        // Each list only when it has any: "(2 Whitelisted)", "(1 Blacklisted)" or both
+        var lists = [];
+        if (c.whitelisted > 0) lists.push(t('settings.tomeSources.countWhitelisted', { count: c.whitelisted }, '{{count}} Whitelisted'));
+        if (c.blacklisted > 0) lists.push(t('settings.tomeSources.countBlacklisted', { count: c.blacklisted }, '{{count}} Blacklisted'));
+        if (lists.length) text += ' ' + t('settings.tomeSources.countLists', { lists: lists.join(' / ') }, '({{lists}})');
         return text;
     },
 
@@ -166,7 +167,7 @@ var TomeSourceSetting = {
     },
 
     /**
-     * A row's count column, made once between its text and its switch: the count, then the button of
+     * A row's count column, made once after its text (the switch leads the row): the count, then the button of
      * the scoped override menu (hidden until that menu exists)
      */
     _countCell: function(segment) {
@@ -186,8 +187,9 @@ var TomeSourceSetting = {
         scoped.setAttribute('data-segment', segment);
         scoped.textContent = this._t(['settings.tomeSources.scopedOverride', 'Override']);
         cell.appendChild(scoped);
-        var label = toggle.closest('.toggle-switch');
-        row.insertBefore(cell, label && label.parentNode === row ? label : null);
+        // After the row's text: the switch leads the row (index.html), the count follows the fixed-width text
+        var info = row.querySelector('.setting-info');
+        row.insertBefore(cell, info ? info.nextSibling : null);
         return cell;
     },
 
