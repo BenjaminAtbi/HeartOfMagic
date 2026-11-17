@@ -437,6 +437,22 @@ target_link_libraries(graft-run-check PRIVATE
 )
 
 # =============================================================================
+# staff-bridge-check  -  offline check of StaffSpellBridge::ResolveWith
+# =============================================================================
+# The header part of StaffSpellBridge.h: a staff copy from SCSSoulCharge maps to its
+# original spell, everything else (and everything without the DLL) stays as it is.
+
+add_executable(staff-bridge-check
+    staff-bridge-check.cpp
+)
+
+target_compile_features(staff-bridge-check PRIVATE cxx_std_23)
+
+target_include_directories(staff-bridge-check PRIVATE
+    ${SL_INCLUDE_DIR}
+)
+
+# =============================================================================
 # The magic menu's harnesses (magic-menu-*: the core, the Heart of Magic block and
 # the Spell Research block), in their own file; included here, so they share this
 # directory's settings (SL_INCLUDE_DIR, the output folder build/tools/Release)

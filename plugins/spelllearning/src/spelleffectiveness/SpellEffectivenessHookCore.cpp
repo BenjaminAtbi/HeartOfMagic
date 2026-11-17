@@ -1,5 +1,6 @@
 #include "SpellEffectivenessHook.h"
 #include "ProgressionManager.h"
+#include "StaffSpellBridge.h"
 
 // =============================================================================
 // SINGLETON
@@ -200,7 +201,9 @@ void SpellEffectivenessHook::ApplyEffectivenessScalingFast(RE::ActiveEffect* a_e
         return;
     }
 
-    RE::FormID spellId = spell->GetFormID();
+    // A staff copy from SCSSoulCharge (a concentration staff keeps the copy on its
+    // effects) is judged as its original spell
+    RE::FormID spellId = StaffSpellBridge::Resolve(spell->GetFormID());
 
     // One lock for the early-learned check, the progress, the power step and
     // the binary threshold. This runs for every effect of every player spell
