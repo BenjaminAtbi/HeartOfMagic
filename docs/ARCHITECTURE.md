@@ -1253,7 +1253,8 @@ not affected.
   API < 1) nothing changes. A throw from the lookup turns the link off for the session. A staff's own
   enchantment (a plugin form) is never a copy, so it still gives no XP. Spellcasting Staff NG and Elden Catalyst
   cast the real spell with `CastSpellImmediate` and need no bridge (read from their docs and sources, not checked
-  in game). Staff Enchanting Plus staves (runtime enchantments with no link to the spell) are not mapped.
+  in game). Staff Enchanting Plus staves are deliberately not mapped (user decision 2026-11-17): what it imbues
+  is the staff's own enchantment, so like any staff enchantment it gives no XP and is not weakened.
   **One cast, one credit (1.2.1).** Each report is stamped when the engine sends it (`ProcessEvent` /
   `OnImmediateCast`), not when the queued task runs. Per spell, `m_pendingCasts` holds the casts credited
   from each way (event, hook) that the other way may still report; a report of the other way within
