@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Staff casts from SCSSoulCharge count as their spell.** That staff mod casts the spell you bind to a staff
+  as a staff enchantment made from it, so the cast gave no learning XP and a concentration staff's effect was
+  not weakened for an early-learned spell. With SCSSoulCharge.dll installed, Heart of Magic now asks it which
+  spell a staff cast stands for and treats it as that spell: the same XP as casting it by hand (one credit per
+  cast) and the same early-learned weakening. Without SCSSoulCharge nothing changes. A staff's own enchantment
+  gives no XP, as before; that includes vanilla staves and staves imbued with Staff Enchanting Plus.
+  Spellcasting Staff NG and Elden Catalyst already cast the real spell and needed nothing. The log shows the
+  link at startup (`StaffSpellBridge: linked`) and the first cast of each staff copy
+  (`XP: staff cast ... counts as its original spell ...`). (`StaffSpellBridge`; docs/ARCHITECTURE.md,
+  SpellCastHandler.)
+
 ## Heart of Magic Librarian 1.9.3
 
 ### Fixed

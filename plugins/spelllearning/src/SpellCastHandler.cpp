@@ -122,7 +122,12 @@ void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Cl
     // A staff cast from SCSSoulCharge arrives as a runtime copy of the bound spell:
     // count it as the original (everything below, the pairing included, is keyed by it)
     if (const RE::FormID original = StaffSpellBridge::Resolve(spellId); original != spellId) {
-        logger::debug("XP: staff cast {:08X} counts as its original spell {:08X}", spellId, original);
+        if (m_staffCopiesLogged.insert(spellId).second) {
+            logger::info("XP: staff cast {:08X} counts as its original spell {:08X} (first cast of this copy; "
+                         "later ones at debug)", spellId, original);
+        } else {
+            logger::debug("XP: staff cast {:08X} counts as its original spell {:08X}", spellId, original);
+        }
         spellId = original;
     }
     auto* player = RE::PlayerCharacter::GetSingleton();
