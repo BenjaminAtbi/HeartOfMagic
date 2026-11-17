@@ -2632,7 +2632,9 @@ function extractPluginFromSpell(spell) {
 }
 
 /**
- * Analyze cached spells and build plugin spell counts.
+ * Per plugin, the spells that could go on the tree (isTomeCandidate: taught by a tome, not a voice
+ * slot spell, not a copy - Unreachable included, as "Spells found" counts them). A plugin whose spells
+ * are all NPC, creature or quest spells is still listed, with 0.
  * Returns: { 'PluginName.esp': 42, ... }
  */
 function buildPluginSpellCounts() {
@@ -2662,7 +2664,8 @@ function buildPluginSpellCounts() {
     allSpells.forEach(function(spell) {
         var plugin = extractPluginFromSpell(spell);
         if (plugin) {
-            counts[plugin] = (counts[plugin] || 0) + 1;
+            var viable = typeof isTomeCandidate !== 'function' || isTomeCandidate(spell);
+            counts[plugin] = (counts[plugin] || 0) + (viable ? 1 : 0);
         }
     });
 
