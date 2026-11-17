@@ -38,11 +38,10 @@ namespace StaffSpellBridge
         return original != 0 ? original : a_formID;
     }
 
-    // Looks SCSSoulCharge.dll up once every plugin has loaded (kPostPostLoad) and logs
-    // whether the link is on. Without the DLL, or with an older API, it stays off.
-    // SCSSoulCharge broadcasts one SKSE message per released staff cast (sender "SCSSoulCharge",
-    // its src/api.h): the game sends no TESSpellCastEvent for a staff (enchantment) cast, seen in game
-    // 2026-11-18 (probe build: hand casts reported, staff casts never). Layout copied here, not included.
+    // SCSSoulCharge broadcasts one SKSE message per staff cast (sender "SCSSoulCharge", its src/api.h).
+    // A staff (enchantment) cast may send no TESSpellCastEvent: Dynamic Magic Modification Framework 2.0.3
+    // drops it (seen in game 2026-11-18, probe build: hand casts reported, staff casts never), so the message
+    // is the one report HoM counts. Layout copied here, not included.
     inline constexpr const char* kStaffSender = "SCSSoulCharge";
     inline constexpr std::uint32_t kStaffCastMessageType = 'SCST';
     struct StaffCast
@@ -63,6 +62,8 @@ namespace StaffSpellBridge
         return cast;
     }
 
+    // Looks SCSSoulCharge.dll up once every plugin has loaded (kPostPostLoad) and logs
+    // whether the link is on. Without the DLL, or with an older API, it stays off.
     void Init();
     // At kPostLoad: listen for SCSSoulCharge's staff-cast messages (does nothing without the DLL)
     void RegisterCastListener();

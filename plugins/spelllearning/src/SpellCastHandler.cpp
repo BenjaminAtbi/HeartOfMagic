@@ -120,19 +120,26 @@ void SpellCastHandler::RememberCredited(RE::FormID spellId, bool a_immediate, Cl
 void SpellCastHandler::OnStaffCast(RE::FormID a_copy, RE::FormID a_spell)
 {
     const auto castAt = Clock::now();
-    // The copy when the lookup maps it to the message's spell (HandlePlayerCast logs that mapping), else the spell
-    const RE::FormID id = StaffSpellBridge::Resolve(a_copy) == a_spell ? a_copy : a_spell;
-    AddTaskToGameThread("StaffCast", [this, id, castAt]() { HandlePlayerCast(id, false, castAt, "staff cast (SCSSoulCharge message)"); });
+    // The message names the spell: no second lookup when the task runs (the copy may be gone by then)
+    AddTaskToGameThread("StaffCast", [this, a_copy, a_spell, castAt]() {
+        if (m_staffCopiesLogged.insert(a_copy).second) {
+            logger::info("XP: staff cast {:08X} counts as its original spell {:08X} (first cast of this copy; "
+                         "later ones at debug)", a_copy, a_spell);
+        } else {
+            logger::debug("XP: staff cast {:08X} counts as its original spell {:08X}", a_copy, a_spell);
+        }
+        HandlePlayerCast(a_spell, false, castAt, true);
+    });
 }
 
-void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt, const char* a_path)
+void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt, bool a_staffMessage)
 {
     // A staff cast from SCSSoulCharge arrives as a runtime copy of the bound spell:
     // count it as the original (everything below, the pairing included, is keyed by it)
     if (const RE::FormID original = StaffSpellBridge::Resolve(spellId); original != spellId) {
         // Without a mod that swallows staff casts (DMMF 2.0.3 drops them, Hooks.cpp CasterHook::SpellCast) the engine
         // sends a cast event for the copy too: the SCSSoulCharge message is then the one report that counts
-        if (!a_path && StaffSpellBridge::IsListening()) {
+        if (StaffSpellBridge::IsListening()) {
             logger::debug("XP: staff cast {:08X} from the {} skipped - the SCSSoulCharge message counts it", spellId,
                 a_immediate ? "immediate-cast hook" : "cast event");
             return;
@@ -161,7 +168,9 @@ void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Cl
         return;
     }
 
-    const char* path = a_path ? a_path : a_immediate ? "cast hook (immediate cast: SpellHotbar 2, Spell.Cast)" : "cast event";
+    const char* path = a_staffMessage ? "staff cast (SCSSoulCharge message)" :
+                       a_immediate    ? "cast hook (immediate cast: SpellHotbar 2, Spell.Cast)" :
+                                        "cast event";
 
     // An immediate re-cast stream: only its first cast counts (every cast moves the mark)
     bool inStream = false;
@@ -176,7 +185,8 @@ void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Cl
 
     // The same cast seen by both the event and the immediate-cast hook counts once
     float pairGap = 0.0f;
-    if (IsSecondReport(spellId, a_immediate, a_castAt, pairGap)) {
+    // A staff cast arrives only by its message (the event and the hook skip copies): nothing to pair it with
+    if (!a_staffMessage && IsSecondReport(spellId, a_immediate, a_castAt, pairGap)) {
         // Debug: the cast's one info line (OnSpellCast) is already in the log. The
         // gap between the two reports is what the window rests on (see the header):
         // the log shows how far apart they really are in game
@@ -190,7 +200,7 @@ void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Cl
             spell->GetName(), spellId, kImmediateStreamGapSeconds);
         return;
     }
-    RememberCredited(spellId, a_immediate, a_castAt);
+    if (!a_staffMessage) RememberCredited(spellId, a_immediate, a_castAt);
 
     // The cast spell's school, keyed the way learning targets are (the tree node's
     // school: first effect), so "same school" means the same school as on the tree

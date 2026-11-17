@@ -53,8 +53,8 @@ private:
     // The work for one player cast, run on the game thread. a_immediate: seen by the
     // CastSpellImmediate hook rather than the cast event (only known spells count then).
     // a_castAt: when the engine reported it, not when the queued task runs.
-    // a_path: the log label; null for the event's or the hook's own
-    void HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt, const char* a_path = nullptr);
+    // a_staffMessage: an SCSSoulCharge staff cast (spellId is already the original spell; not paired with other reports)
+    void HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt, bool a_staffMessage = false);
 
     // One cast reported both ways (the cast event and the immediate-cast hook) is
     // credited once, whichever way comes first and however the reports interleave:

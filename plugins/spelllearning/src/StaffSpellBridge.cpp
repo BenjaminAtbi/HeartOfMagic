@@ -53,14 +53,22 @@ namespace StaffSpellBridge
         // Sent on the main thread from SCSSoulCharge's frame hook; HandlePlayerCast runs from the task queue as
         // the cast event's casts do
         const bool registered = SKSE::GetMessagingInterface()->RegisterListener(kStaffSender, [](SKSE::MessagingInterface::Message* a_msg) {
-            if (!a_msg) return;
-            if (const auto cast = DecodeStaffCast(a_msg->type, a_msg->dataLen, a_msg->data)) {
-                SpellCastHandler::GetSingleton()->OnStaffCast(cast->copy, cast->spell);
+            // Called inside SCSSoulCharge's frame hook through SKSE's Dispatch: nothing may throw out of here
+            static std::atomic<bool> failureReported{ false };
+            try {
+                if (!a_msg) return;
+                if (const auto cast = DecodeStaffCast(a_msg->type, a_msg->dataLen, a_msg->data)) {
+                    SpellCastHandler::GetSingleton()->OnStaffCast(cast->copy, cast->spell);
+                }
+            } catch (...) {
+                if (!failureReported.exchange(true)) {
+                    logger::error("StaffSpellBridge: handling a staff-cast message threw; further failures are not logged");
+                }
             }
         });
         g_listening.store(registered, std::memory_order_release);
         if (registered) {
-            logger::info("StaffSpellBridge: listening for SCSSoulCharge staff casts (the game sends no cast event for them)");
+            logger::info("StaffSpellBridge: listening for SCSSoulCharge staff casts (a staff cast may send no cast event; the message is counted)");
         } else {
             logger::warn("StaffSpellBridge: could not listen to SCSSoulCharge messages - staff casts give no learning XP");
         }

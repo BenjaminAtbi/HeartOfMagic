@@ -437,7 +437,7 @@ target_link_libraries(graft-run-check PRIVATE
 )
 
 # =============================================================================
-# staff-bridge-check  -  offline check of StaffSpellBridge::ResolveWith
+# staff-bridge-check  -  offline check of StaffSpellBridge::ResolveWith and DecodeStaffCast
 # =============================================================================
 # The header part of StaffSpellBridge.h: a staff copy from SCSSoulCharge maps to its
 # original spell, everything else (and everything without the DLL) stays as it is.
