@@ -1,5 +1,6 @@
 #include "StaffSpellBridge.h"
 #include "Common.h"
+#include "SpellCastHandler.h"
 
 #include <atomic>
 
@@ -16,6 +17,7 @@ namespace StaffSpellBridge
         // Written once at kPostPostLoad, read from the cast event's thread, the game
         // thread and the effect hook's threads.
         std::atomic<GetOriginalSpellFn> g_getOriginal{ nullptr };
+        std::atomic<bool> g_listening{ false };  // set at kPostLoad, read on the game thread
     }
 
     void Init()
@@ -41,6 +43,32 @@ namespace StaffSpellBridge
         g_getOriginal.store(getOriginal, std::memory_order_release);
         logger::info("StaffSpellBridge: linked to SCSSoulCharge.dll (API {}) - a staff cast counts as its original spell "
                      "for learning XP and early-learned effectiveness", version);
+    }
+
+    void RegisterCastListener()
+    {
+        if (!GetModuleHandleW(L"SCSSoulCharge.dll")) {
+            return;  // Init logs the missing DLL
+        }
+        // Sent on the main thread from SCSSoulCharge's frame hook; HandlePlayerCast runs from the task queue as
+        // the cast event's casts do
+        const bool registered = SKSE::GetMessagingInterface()->RegisterListener(kStaffSender, [](SKSE::MessagingInterface::Message* a_msg) {
+            if (!a_msg) return;
+            if (const auto cast = DecodeStaffCast(a_msg->type, a_msg->dataLen, a_msg->data)) {
+                SpellCastHandler::GetSingleton()->OnStaffCast(cast->copy, cast->spell);
+            }
+        });
+        g_listening.store(registered, std::memory_order_release);
+        if (registered) {
+            logger::info("StaffSpellBridge: listening for SCSSoulCharge staff casts (the game sends no cast event for them)");
+        } else {
+            logger::warn("StaffSpellBridge: could not listen to SCSSoulCharge messages - staff casts give no learning XP");
+        }
+    }
+
+    bool IsListening() noexcept
+    {
+        return g_listening.load(std::memory_order_acquire);
     }
 
     std::uint32_t Resolve(std::uint32_t a_formID) noexcept

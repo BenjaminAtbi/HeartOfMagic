@@ -81,6 +81,20 @@ namespace
         }
         Check(passedOut, "DLL: a throw from the lookup reaches the caller");
 
+        // SCSSoulCharge's staff-cast message (its src/api.h: type 'SCST', 12 bytes copy/spell/concentration)
+        using StaffSpellBridge::DecodeStaffCast;
+        using StaffSpellBridge::kStaffCastMessageType;
+        const std::uint32_t message[3] = { kStaffCopy, kOriginal, 1 };
+        const auto cast = DecodeStaffCast(kStaffCastMessageType, sizeof(message), message);
+        Check(cast && cast->copy == kStaffCopy && cast->spell == kOriginal && cast->concentration == 1,
+            "message: a staff cast decodes to its copy, spell and concentration flag");
+        Check(kStaffCastMessageType == 0x53435354u, "message: the type is 'SCST' (0x53435354) as SCSSoulCharge sends it");
+        Check(!DecodeStaffCast(kStaffCastMessageType, 8, message), "message: a wrong size is ignored");
+        Check(!DecodeStaffCast(0x41424344u, sizeof(message), message), "message: another message type is ignored");
+        Check(!DecodeStaffCast(kStaffCastMessageType, sizeof(message), nullptr), "message: no data is ignored");
+        const std::uint32_t noSpell[3] = { kStaffCopy, 0, 0 };
+        Check(!DecodeStaffCast(kStaffCastMessageType, sizeof(noSpell), noSpell), "message: no spell is ignored");
+
         std::printf("staff-bridge-check: %d checks, %d failed\n", g_checks, g_failures);
         return g_failures == 0 ? kExitOk : kExitFailed;
     }

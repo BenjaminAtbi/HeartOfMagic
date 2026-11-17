@@ -44,7 +44,8 @@ namespace
                         return;
                     }
                     const RE::FormID original = StaffSpellBridge::Resolve(spellId);
-                    if (original == spellId) {
+                    // the SCSSoulCharge message reports staff casts: counted there, not twice
+                    if (original == spellId || StaffSpellBridge::IsListening()) {
                         return;
                     }
                     spellId = original;

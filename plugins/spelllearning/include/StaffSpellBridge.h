@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
+#include <optional>
 
 // =============================================================================
 // StaffSpellBridge - staff casts from SCSSoulCharge count as their original spell
@@ -38,7 +40,34 @@ namespace StaffSpellBridge
 
     // Looks SCSSoulCharge.dll up once every plugin has loaded (kPostPostLoad) and logs
     // whether the link is on. Without the DLL, or with an older API, it stays off.
+    // SCSSoulCharge broadcasts one SKSE message per released staff cast (sender "SCSSoulCharge",
+    // its src/api.h): the game sends no TESSpellCastEvent for a staff (enchantment) cast, seen in game
+    // 2026-11-18 (probe build: hand casts reported, staff casts never). Layout copied here, not included.
+    inline constexpr const char* kStaffSender = "SCSSoulCharge";
+    inline constexpr std::uint32_t kStaffCastMessageType = 'SCST';
+    struct StaffCast
+    {
+        std::uint32_t copy{ 0 };           // the runtime enchantment the staff cast (0xFF FormID)
+        std::uint32_t spell{ 0 };          // the spell it was made from
+        std::uint32_t concentration{ 0 };  // 1 for a concentration spell (sent once, when it starts streaming)
+    };
+    static_assert(sizeof(StaffCast) == 12, "SCSSoulCharge's StaffCastMessage is 12 bytes");
+
+    // The cast a message carries, or nothing for another message type, a wrong size or no spell
+    inline std::optional<StaffCast> DecodeStaffCast(std::uint32_t a_type, std::uint32_t a_dataLen, const void* a_data) noexcept
+    {
+        if (a_type != kStaffCastMessageType || a_dataLen != sizeof(StaffCast) || !a_data) return std::nullopt;
+        StaffCast cast;
+        std::memcpy(&cast, a_data, sizeof(cast));
+        if (cast.spell == 0) return std::nullopt;
+        return cast;
+    }
+
     void Init();
+    // At kPostLoad: listen for SCSSoulCharge's staff-cast messages (does nothing without the DLL)
+    void RegisterCastListener();
+    // True once the listener is registered: staff casts are then counted from the message only
+    bool IsListening() noexcept;
 
     // ResolveWith using the DLL's lookup; a_formID unchanged while the link is off. Any thread.
     // A throw from the DLL turns the link off (logged once) instead of ending the game.

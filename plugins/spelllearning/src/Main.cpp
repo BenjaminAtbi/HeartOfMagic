@@ -496,6 +496,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
             SpellEffectivenessHook::InstallDisplayHooks();
             // Casts that send no cast event (SpellHotbar 2, Spell.Cast) still give XP
             SpellCastHandler::InstallImmediateCastHook();
+            // Staff casts send no cast event either: SCSSoulCharge reports them by message
+            StaffSpellBridge::RegisterCastListener();
 
             // Install spell tome hook (intercepts book reading)
             if (SpellTomeHook::Install()) {

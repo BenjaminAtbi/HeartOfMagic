@@ -117,11 +117,26 @@ void SpellCastHandler::RememberCredited(RE::FormID spellId, bool a_immediate, Cl
     while (way.size() > kMaxPendingPerWay) way.pop_front();
 }
 
-void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt)
+void SpellCastHandler::OnStaffCast(RE::FormID a_copy, RE::FormID a_spell)
+{
+    const auto castAt = Clock::now();
+    // The copy when the lookup maps it to the message's spell (HandlePlayerCast logs that mapping), else the spell
+    const RE::FormID id = StaffSpellBridge::Resolve(a_copy) == a_spell ? a_copy : a_spell;
+    AddTaskToGameThread("StaffCast", [this, id, castAt]() { HandlePlayerCast(id, false, castAt, "staff cast (SCSSoulCharge message)"); });
+}
+
+void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt, const char* a_path)
 {
     // A staff cast from SCSSoulCharge arrives as a runtime copy of the bound spell:
     // count it as the original (everything below, the pairing included, is keyed by it)
     if (const RE::FormID original = StaffSpellBridge::Resolve(spellId); original != spellId) {
+        // Without a mod that swallows staff casts (DMMF 2.0.3 drops them, Hooks.cpp CasterHook::SpellCast) the engine
+        // sends a cast event for the copy too: the SCSSoulCharge message is then the one report that counts
+        if (!a_path && StaffSpellBridge::IsListening()) {
+            logger::debug("XP: staff cast {:08X} from the {} skipped - the SCSSoulCharge message counts it", spellId,
+                a_immediate ? "immediate-cast hook" : "cast event");
+            return;
+        }
         if (m_staffCopiesLogged.insert(spellId).second) {
             logger::info("XP: staff cast {:08X} counts as its original spell {:08X} (first cast of this copy; "
                          "later ones at debug)", spellId, original);
@@ -146,7 +161,7 @@ void SpellCastHandler::HandlePlayerCast(RE::FormID spellId, bool a_immediate, Cl
         return;
     }
 
-    const char* path = a_immediate ? "cast hook (immediate cast: SpellHotbar 2, Spell.Cast)" : "cast event";
+    const char* path = a_path ? a_path : a_immediate ? "cast hook (immediate cast: SpellHotbar 2, Spell.Cast)" : "cast event";
 
     // An immediate re-cast stream: only its first cast counts (every cast moves the mark)
     bool inStream = false;
