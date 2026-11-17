@@ -1155,7 +1155,9 @@ Split across: SpellEffectivenessHookCore.cpp, SpellEffectivenessHookDisplay.cpp,
 **Status:** ✅ Implemented
 
 **Responsibilities:**
-- Hook `ActiveEffect::AdjustForPerks()` for runtime magnitude scaling
+- Hook `ActiveEffect::AdjustForPerks()` for runtime magnitude scaling. An effect whose spell is a
+  `kStaffEnchantment` is judged as the spell `StaffSpellBridge::Resolve` maps it to (an SCSSoulCharge staff
+  copy keeps the copy on concentration effects; see SpellCastHandler)
 - Hook `SpellItem::GetFullName()` for display name modification (optional)
 - Track early-learned spells that need nerfing
 - **Stepped power system** - Discrete power levels at XP thresholds
@@ -1243,6 +1245,15 @@ not affected.
   actors' casters pass). SpellHotbar 2 casts every hotbar spell this way and Papyrus `Spell.Cast` does
   too; before, those casts gave no XP. Only the player's casts of a real spell (`kSpell`) the player has
   (`Actor::HasSpell`, so a mod's helper or proc spell does not count) are credited.
+  **Staff casts from SCSSoulCharge (2026-11-17).** That staff mod fires a runtime copy of the bound spell (an
+  `EnchantmentItem`, `kStaffEnchantment`, FormID index 0xFF). `StaffSpellBridge` (`include/StaffSpellBridge.h`)
+  looks up `SCSSoulCharge_ApiVersion` / `SCSSoulCharge_GetOriginalSpell` in SCSSoulCharge.dll at kPostPostLoad
+  and maps such a copy to its original spell before everything else in `HandlePlayerCast` (the pairing is keyed
+  by the original) and in the immediate-cast hook. Only 0xFF forms are asked about; without the DLL (or with
+  API < 1) nothing changes. A throw from the lookup turns the link off for the session. A staff's own
+  enchantment (a plugin form) is never a copy, so it still gives no XP. Spellcasting Staff NG and Elden Catalyst
+  cast the real spell with `CastSpellImmediate` and need no bridge (read from their docs and sources, not checked
+  in game). Staff Enchanting Plus staves (runtime enchantments with no link to the spell) are not mapped.
   **One cast, one credit (1.2.1).** Each report is stamped when the engine sends it (`ProcessEvent` /
   `OnImmediateCast`), not when the queued task runs. Per spell, `m_pendingCasts` holds the casts credited
   from each way (event, hook) that the other way may still report; a report of the other way within

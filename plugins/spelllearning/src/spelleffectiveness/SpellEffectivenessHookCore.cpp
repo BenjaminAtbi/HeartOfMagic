@@ -202,8 +202,11 @@ void SpellEffectivenessHook::ApplyEffectivenessScalingFast(RE::ActiveEffect* a_e
     }
 
     // A staff copy from SCSSoulCharge (a concentration staff keeps the copy on its
-    // effects) is judged as its original spell
-    RE::FormID spellId = StaffSpellBridge::Resolve(spell->GetFormID());
+    // effects) is judged as its original spell; only staff enchantments are asked about
+    RE::FormID spellId = spell->GetFormID();
+    if (spell->GetSpellType() == RE::MagicSystem::SpellType::kStaffEnchantment) {
+        spellId = StaffSpellBridge::Resolve(spellId);
+    }
 
     // One lock for the early-learned check, the progress, the power step and
     // the binary threshold. This runs for every effect of every player spell

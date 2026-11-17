@@ -26,7 +26,8 @@ namespace StaffSpellBridge
 
     // The original spell's FormID when a_formID is a staff copy, else a_formID unchanged.
     // Only runtime forms (index 0xFF) are asked about, so plugin spells cost one shift.
-    inline std::uint32_t ResolveWith(GetOriginalSpellFn a_getOriginal, std::uint32_t a_formID) noexcept
+    // Not noexcept: a throw from the lookup must reach Resolve's catch, not std::terminate.
+    inline std::uint32_t ResolveWith(GetOriginalSpellFn a_getOriginal, std::uint32_t a_formID)
     {
         if (!a_getOriginal || (a_formID >> 24) != kRuntimeFormIndex) {
             return a_formID;
@@ -40,5 +41,6 @@ namespace StaffSpellBridge
     void Init();
 
     // ResolveWith using the DLL's lookup; a_formID unchanged while the link is off. Any thread.
+    // A throw from the DLL turns the link off (logged once) instead of ending the game.
     std::uint32_t Resolve(std::uint32_t a_formID) noexcept;
 }

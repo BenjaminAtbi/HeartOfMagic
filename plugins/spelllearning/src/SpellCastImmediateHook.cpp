@@ -40,6 +40,9 @@ namespace
                 // its original spell; HandlePlayerCast checks the rest on the game thread
                 RE::FormID spellId = a_spell->GetFormID();
                 if (!a_spell->As<RE::SpellItem>()) {
+                    if (a_spell->GetSpellType() != RE::MagicSystem::SpellType::kStaffEnchantment) {
+                        return;
+                    }
                     const RE::FormID original = StaffSpellBridge::Resolve(spellId);
                     if (original == spellId) {
                         return;

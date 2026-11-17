@@ -29,7 +29,7 @@ namespace StaffSpellBridge
         const auto getOriginal = reinterpret_cast<GetOriginalSpellFn>(GetProcAddress(module, "SCSSoulCharge_GetOriginalSpell"));
         if (!apiVersion || !getOriginal) {
             logger::warn("StaffSpellBridge: SCSSoulCharge.dll has no original-spell lookup (an older build?) - "
-                         "staff casts give no learning XP and are not weakened");
+                         "staff casts give no learning XP and concentration staff effects are not weakened");
             return;
         }
         const std::uint32_t version = apiVersion();
@@ -45,6 +45,16 @@ namespace StaffSpellBridge
 
     std::uint32_t Resolve(std::uint32_t a_formID) noexcept
     {
-        return ResolveWith(g_getOriginal.load(std::memory_order_acquire), a_formID);
+        const GetOriginalSpellFn getOriginal = g_getOriginal.load(std::memory_order_acquire);
+        try {
+            return ResolveWith(getOriginal, a_formID);
+        } catch (...) {
+            // Callers sit in engine hooks and on effect threads: drop the link, keep the game
+            if (g_getOriginal.exchange(nullptr, std::memory_order_acq_rel) != nullptr) {
+                logger::error("StaffSpellBridge: SCSSoulCharge_GetOriginalSpell threw for {:08X} - link off for "
+                              "this session, staff casts are handled as before", a_formID);
+            }
+            return a_formID;
+        }
     }
 }

@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <stdexcept>
 #include <string_view>
 
 namespace
@@ -48,6 +49,11 @@ namespace
         return a_formID == kStaffCopy ? kOriginal : 0;
     }
 
+    std::uint32_t ThrowingGetOriginal(std::uint32_t)
+    {
+        throw std::runtime_error("lookup failed");
+    }
+
     int SelfTest()
     {
         using StaffSpellBridge::ResolveWith;
@@ -65,6 +71,15 @@ namespace
             "DLL: a runtime form it does not know (0) stays itself");
         Check(ResolveWith(FakeGetOriginal, kStaffCopy) == kOriginal, "DLL: a staff copy becomes its original spell");
         Check(g_lookups == 2, "DLL: each runtime form asked once");
+
+        // Resolve's catch turns the link off on a throw: ResolveWith must let it out, not terminate
+        bool passedOut = false;
+        try {
+            (void)ResolveWith(ThrowingGetOriginal, kStaffCopy);
+        } catch (const std::runtime_error&) {
+            passedOut = true;
+        }
+        Check(passedOut, "DLL: a throw from the lookup reaches the caller");
 
         std::printf("staff-bridge-check: %d checks, %d failed\n", g_checks, g_failures);
         return g_failures == 0 ? kExitOk : kExitFailed;
