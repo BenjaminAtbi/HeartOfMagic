@@ -160,6 +160,12 @@
 #prereqMasterSection .prm-split-left { display: grid; align-items: start; }
 #prereqMasterSection .prm-tab-content { grid-area: 1 / 1; min-width: 0; }
 #prereqMasterSection .prm-tab-content.prm-page-hidden { visibility: hidden; pointer-events: none; }
+/* Children with "transition: all" (buttons, slider thumbs) would animate the inherited visibility and stay
+   shown for their transition's length: on a page being hidden nothing animates */
+#prereqMasterSection .prm-tab-content.prm-page-hidden *,
+#prereqMasterSection .prm-tab-content.prm-page-hidden *::before,
+#prereqMasterSection .prm-tab-content.prm-page-hidden *::after,
+#prereqMasterSection .prm-tab-content.prm-page-hidden input[type="range"]::-webkit-slider-thumb { transition: none; }
 #prereqMasterSection .prm-split-right { height: auto; }
 
 /* Parts of the shared Scan page shown in Complex mode only (switchScannerMode sets data-scanner-mode) */
