@@ -11,8 +11,12 @@
  *   folder's spell_scan_output.json (debug.json makes the game write it), config.json and
  *   spell_tree.json; 404 when a file is not there. dev-harness-live.js hands them to the panel the
  *   way C++ does. The server never writes the game's files.
+ * - The design add-ons (addons/designs/<Name>/, _shared/<part>/) are laid under the panel: a panel path
+ *   the working tree lacks is looked up in each add-on's PrismaUI/views/SpellLearning/SpellLearningPanel,
+ *   and GET /__live/designs lists every add-on's SKSE/Plugins/SpellLearning/presets/design/*.json as
+ *   [{ key, data }], the answer C++ gives to LoadPresets { type: 'design' }.
  * - GET /__live/events is a server-sent event stream: "reload" after any file under the panel folder
- *   changes (debounced), and the page reloads itself.
+ *   or the add-ons changes (debounced), and the page reloads itself.
  *
  * Plain Node, no packages; binds to 127.0.0.1 only. launch.ps1 starts it with a full-screen browser.
  */
@@ -24,6 +28,9 @@ var path = require('path');
 var harness = require('../make-dev-harness.js');
 
 var PANEL = path.resolve(__dirname, '..', '..', 'PrismaUI', 'views', 'SpellLearning', 'SpellLearningPanel');
+var ADDONS = path.resolve(__dirname, '..', '..', 'addons', 'designs');
+var ADDON_PANEL = path.join('PrismaUI', 'views', 'SpellLearning', 'SpellLearningPanel');
+var ADDON_PRESETS = path.join('SKSE', 'Plugins', 'SpellLearning', 'presets', 'design');
 var DEFAULT_PORT = 5557;
 var RELOAD_DEBOUNCE_MS = 200;
 var LIVE_FILES = { scan: 'spell_scan_output.json', config: 'config.json', tree: 'spell_tree.json' };
@@ -55,6 +62,49 @@ function inside(root, urlPath) {
     return (file === root || file.indexOf(root + path.sep) === 0) ? file : null;
 }
 
+/** Every add-on root: addons/designs/<Name> and addons/designs/_shared/<part> (not _package) */
+function addonRoots() {
+    var roots = [];
+    function dirs(dir) {
+        try { return fs.readdirSync(dir, { withFileTypes: true }).filter(function(d) { return d.isDirectory(); }); }
+        catch (e) { return []; }
+    }
+    dirs(ADDONS).forEach(function(d) {
+        if (d.name === '_package') return;
+        if (d.name === '_shared') {
+            dirs(path.join(ADDONS, d.name)).forEach(function(s) { roots.push(path.join(ADDONS, d.name, s.name)); });
+        } else {
+            roots.push(path.join(ADDONS, d.name));
+        }
+    });
+    return roots;
+}
+
+/** A panel path the working tree lacks, from the first add-on that has it */
+function addonFile(urlPath) {
+    var roots = addonRoots();
+    for (var i = 0; i < roots.length; i++) {
+        var file = inside(path.join(roots[i], ADDON_PANEL), urlPath);
+        if (file && fs.existsSync(file)) return file;
+    }
+    return null;
+}
+
+/** Every add-on's design presets, as OnLoadPresets hands them over */
+function addonDesigns() {
+    var out = [];
+    addonRoots().forEach(function(root) {
+        var dir = path.join(root, ADDON_PRESETS);
+        var names = [];
+        try { names = fs.readdirSync(dir).filter(function(n) { return /\.json$/i.test(n); }); } catch (e) { return; }
+        names.forEach(function(n) {
+            try { out.push({ key: n.replace(/\.json$/i, ''), data: JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8')) }); }
+            catch (e) { console.log('design ' + n + ': ' + e.message); }
+        });
+    });
+    return out;
+}
+
 function serveFile(res, file) {
     fs.readFile(file, function(err, body) {
         if (err) return send(res, 404, 'text/plain', 'not found');
@@ -66,14 +116,16 @@ function main() {
     var opt = args(process.argv);
     var clients = [];
     var timer = null;
-    fs.watch(PANEL, { recursive: true }, function(event, name) {
+    function changed(event, name) {
         if (!name || /(^|[\\/])(test-data|_tmp)([\\/]|$)|Test\.js$/.test(name)) return;
         clearTimeout(timer);
         timer = setTimeout(function() {
             console.log('changed: ' + name + ' - reloading ' + clients.length + ' page(s)');
             clients.forEach(function(c) { c.write('data: reload\n\n'); });
         }, RELOAD_DEBOUNCE_MS);
-    });
+    }
+    fs.watch(PANEL, { recursive: true }, changed);
+    if (fs.existsSync(ADDONS)) fs.watch(ADDONS, { recursive: true }, changed);
 
     var server = http.createServer(function(req, res) {
         var url = req.url.split('?')[0];
@@ -84,6 +136,7 @@ function main() {
             req.on('close', function() { clients = clients.filter(function(c) { return c !== res; }); });
             return;
         }
+        if (url === '/__live/designs') return send(res, 200, TYPES['.json'], JSON.stringify(addonDesigns()));
         var live = /^\/__live\/(\w+)$/.exec(url);
         if (live) {
             if (!opt.data || !LIVE_FILES[live[1]]) return send(res, 404, 'text/plain', 'no live data');
@@ -95,6 +148,7 @@ function main() {
             try { return send(res, 200, TYPES['.html'], harness.make()); }
             catch (e) { return send(res, 500, 'text/plain', 'harness: ' + e.message); }
         }
+        if (!fs.existsSync(file)) file = addonFile(url) || file;
         serveFile(res, file);
     });
     server.listen(opt.port, '127.0.0.1', function() {

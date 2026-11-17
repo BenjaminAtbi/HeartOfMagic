@@ -9,6 +9,8 @@
  *   (/__live/scan, /__live/config, /__live/tree: spell_scan_output.json, config.json,
  *   spell_tree.json), handed to updateSpellData, onUnifiedConfigLoaded and updateTreeData as C++
  *   does. A file the server does not have falls back on the mock.
+ * - LoadPresets { type: 'design' } answers with the design add-ons (addons/designs/, /__live/designs),
+ *   whose stylesheets and icons the server lays under the panel, so they show in Settings > Design.
  * - Saves (the tree, the config) stay in memory: the game's files are never written from here,
  *   and the mock's download of spell_tree.json is skipped.
  * - The page reloads when the server says a panel file changed (/__live/events), and when it comes
@@ -34,6 +36,19 @@
                     if (typeof window[live[1]] === 'function') window[live[1]](text);
                 })
                 .catch(function() { console.log('[DevLive] no game ' + live[0] + ': mock'); mock(method, data); });
+            return;
+        }
+        if (method === 'LoadPresets' && /"design"/.test(data)) {
+            logCppCall('out', method, data);
+            fetch('/__live/designs', { cache: 'no-store' })
+                .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(function(presets) {
+                    logCppCall('in', 'onPresetsLoaded', presets.length + ' design add-ons');
+                    if (typeof window.onPresetsLoaded === 'function') {
+                        window.onPresetsLoaded(JSON.stringify({ type: 'design', presets: presets }));
+                    }
+                })
+                .catch(function() { mock(method, data); });
             return;
         }
         if (IN_MEMORY[method]) {
