@@ -296,13 +296,11 @@
     "modals.whitelist.all": "Wszystkie",
     "modals.whitelist.baseGame": "Gra bazowa",
     "modals.whitelist.baseOnly": "Tylko bazowe",
-    "modals.whitelist.done": "Gotowe",
     "modals.whitelist.emptyMods": "Najpierw zeskanuj zaklęcia, aby zobaczyć wtyczki",
     "modals.whitelist.filterPlaceholder": "Filtruj wtyczki...",
     "modals.whitelist.info": "Zaklęcia z zaznaczonych wtyczek trafiają do drzewa; niezaznaczona wtyczka zostaje pominięta. Wtyczka zainstalowana później jest uwzględniana automatycznie.",
     "modals.whitelist.modPlugins": "Wtyczki modów",
     "modals.whitelist.none": "Żadne",
-    "modals.whitelist.title": "Biała lista wtyczek",
 
     "presets.save": "Zapisz",
     "presets.title": "Szablony",

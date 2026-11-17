@@ -296,13 +296,11 @@
     "modals.whitelist.all": "Todos",
     "modals.whitelist.baseGame": "Jogo Base",
     "modals.whitelist.baseOnly": "Apenas Base",
-    "modals.whitelist.done": "Concluído",
     "modals.whitelist.emptyMods": "Faça a varredura de magias primeiro para ver os plugins",
     "modals.whitelist.filterPlaceholder": "Filtrar plugins...",
     "modals.whitelist.info": "As magias dos plugins marcados entram na árvore; um plugin desmarcado fica de fora. Um plugin instalado depois entra sozinho.",
     "modals.whitelist.modPlugins": "Plugins de Mod",
     "modals.whitelist.none": "Nenhum",
-    "modals.whitelist.title": "Lista Branca de Plugins",
 
     "presets.save": "Salvar",
     "presets.title": "Presets",

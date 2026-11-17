@@ -296,13 +296,11 @@
     "modals.whitelist.all": "全部",
     "modals.whitelist.baseGame": "原版游戏",
     "modals.whitelist.baseOnly": "仅原版",
-    "modals.whitelist.done": "完成",
     "modals.whitelist.emptyMods": "请先扫描法术以查看插件",
     "modals.whitelist.filterPlaceholder": "筛选插件...",
     "modals.whitelist.info": "已勾选插件中的法术会加入法术树，未勾选的插件会被排除。之后安装的插件会自动加入。",
     "modals.whitelist.modPlugins": "Mod插件",
     "modals.whitelist.none": "无",
-    "modals.whitelist.title": "插件白名单",
 
     "presets.save": "保存",
     "presets.title": "预设",

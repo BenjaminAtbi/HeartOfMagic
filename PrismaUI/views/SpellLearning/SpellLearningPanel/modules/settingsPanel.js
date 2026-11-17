@@ -2671,35 +2671,9 @@ function buildPluginSpellCounts() {
 }
 
 /**
- * Show the whitelist modal and populate it with plugins.
- */
-function showWhitelistModal() {
-    var modal = document.getElementById('whitelist-modal');
-    if (!modal) return;
-
-    modal.classList.remove('hidden');
-
-    var searchInput = document.getElementById('whitelist-search');
-    if (searchInput) {
-        searchInput.value = '';
-    }
-
-    renderWhitelistEntries();
-    setupWhitelistListeners();
-}
-
-/**
- * Hide the whitelist modal and save settings.
- */
-function hideWhitelistModal() {
-    var modal = document.getElementById('whitelist-modal');
-    if (modal) modal.classList.add('hidden');
-    autoSaveSettings();
-    if (typeof updatePrimedCount === 'function') updatePrimedCount();
-}
-
-/**
- * Render all plugin entries in the whitelist modal.
+ * Render all plugin entries on the Plugins tab of Where Spells Come From (#pluginListPanel; it was a
+ * window). SourceListTabs (sourceListTabs.js) calls it when the tab opens and after a scan; a change
+ * the player makes saves at once (pluginListChanged).
  */
 function renderWhitelistEntries() {
     var baseContainer = document.getElementById('whitelist-base-entries');
@@ -2854,6 +2828,7 @@ function createWhitelistEntry(plugin, count, isEnabled) {
             checkbox.checked = !checkbox.checked;
         }
         updateWhitelistEntry(plugin, checkbox.checked);
+        if (typeof pluginListChanged === 'function') pluginListChanged();
     });
 
     return div;
@@ -2911,7 +2886,7 @@ function updateWhitelistCounts() {
  * Set all plugins to enabled or disabled.
  */
 function setAllWhitelist(enabled) {
-    var entries = document.querySelectorAll('#whitelist-modal .whitelist-entry');
+    var entries = document.querySelectorAll('#pluginListPanel .whitelist-entry');
     entries.forEach(function(entry) {
         var checkbox = entry.querySelector('.whitelist-checkbox');
         var plugin = entry.dataset.plugin;
@@ -2920,13 +2895,14 @@ function setAllWhitelist(enabled) {
             updateWhitelistEntry(plugin, enabled);
         }
     });
+    if (typeof pluginListChanged === 'function') pluginListChanged();
 }
 
 /**
  * Enable only base game plugins.
  */
 function setBaseOnlyWhitelist() {
-    var entries = document.querySelectorAll('#whitelist-modal .whitelist-entry');
+    var entries = document.querySelectorAll('#pluginListPanel .whitelist-entry');
     entries.forEach(function(entry) {
         var checkbox = entry.querySelector('.whitelist-checkbox');
         var plugin = entry.dataset.plugin;
@@ -2938,13 +2914,14 @@ function setBaseOnlyWhitelist() {
             updateWhitelistEntry(plugin, isBase);
         }
     });
+    if (typeof pluginListChanged === 'function') pluginListChanged();
 }
 
 /**
  * Filter visible entries based on search term.
  */
 function filterWhitelistEntries(searchTerm) {
-    var entries = document.querySelectorAll('#whitelist-modal .whitelist-entry');
+    var entries = document.querySelectorAll('#pluginListPanel .whitelist-entry');
     var term = searchTerm.toLowerCase();
 
     entries.forEach(function(entry) {
@@ -2958,17 +2935,13 @@ function filterWhitelistEntries(searchTerm) {
 }
 
 /**
- * Set up event listeners for the whitelist modal.
+ * Set up event listeners for the Plugins tab (search, All, None, Base Only).
  */
 function setupWhitelistListeners() {
-    var modal = document.getElementById('whitelist-modal');
     var searchInput = document.getElementById('whitelist-search');
-    var closeBtn = document.getElementById('whitelist-modal-close');
-    var doneBtn = document.getElementById('whitelist-done');
     var allBtn = document.getElementById('whitelist-all');
     var noneBtn = document.getElementById('whitelist-none');
     var baseOnlyBtn = document.getElementById('whitelist-base-only');
-    var backdrop = modal ? modal.querySelector('.modal-backdrop') : null;
 
     // Clone search input to remove old listeners
     if (searchInput) {
@@ -2981,15 +2954,10 @@ function setupWhitelistListeners() {
         });
     }
 
-    if (closeBtn) closeBtn.onclick = function() { hideWhitelistModal(); };
-    if (doneBtn) doneBtn.onclick = function() { hideWhitelistModal(); };
     if (allBtn) allBtn.onclick = function() { setAllWhitelist(true); };
     if (noneBtn) noneBtn.onclick = function() { setAllWhitelist(false); };
     if (baseOnlyBtn) baseOnlyBtn.onclick = function() { setBaseOnlyWhitelist(); };
-    if (backdrop) backdrop.onclick = function() { hideWhitelistModal(); };
 }
 
 // Export whitelist functions
-window.showWhitelistModal = showWhitelistModal;
-window.hideWhitelistModal = hideWhitelistModal;
 window.extractPluginFromSpell = extractPluginFromSpell;

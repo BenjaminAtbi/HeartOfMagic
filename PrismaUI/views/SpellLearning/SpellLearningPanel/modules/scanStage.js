@@ -233,6 +233,7 @@ var ScanStage = {
     onScanned: function() {
         this._applied = false;
         this.refresh();
+        if (typeof SourceListTabs !== 'undefined') SourceListTabs.refresh();   // the plugin list, when it shows
     },
 
     /** Write a list of [key, params, English] as spans joined by sep */

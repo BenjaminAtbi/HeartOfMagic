@@ -2049,6 +2049,7 @@ Visual-First builds that used them.
 | `progressionUI.js` | Progression UI (learning targets, XP) |
 | `resetConfirm.js` | A Reset to Defaults button (Settings, Early Learning power steps) asks for a second click (`ResetConfirm`, 1.6) |
 | `settingsCategories.js` | Settings one category at a time (Display, Learning, Spell Tomes, Advanced), each category's scroll kept for the session (`SettingsCategories`, 2.0 layout) |
+| `sourceListTabs.js` | Where Spells Come From's right half: the Spells tab (the Blacklisted and Whitelisted previews) and the Plugins tab (the plugin list, once a window; `settingsPanel.js` fills it, a change saves at once); the plugin line in Scan details opens Plugins (`SourceListTabs`) |
 | `scanStage.js` | The Scan page's summary line, its one stage button (Scan / Build / Apply, pressing the real hidden buttons), the small actions, Scan details and the filter lines (`ScanStage`, 2.0 layout) |
 | `spellCardNeeds.js` | The spell card's state line, "Still needed" / "Met" chips, the reason beside a locked Learn and the folded Unlocks (`SpellCardNeeds`, 2.0 layout) |
 | `spellCardMastery.js` | The spell card's mastery rank row for a mastered spell ("Mastery rank 1/3" and a bar; `SpellCardMastery`) |

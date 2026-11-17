@@ -260,9 +260,10 @@
                             <span class="prm-collapse-icon" aria-hidden="true"></span>
                         </div>
                         <div class="settings-block-content tome-sources-content" id="tomeSourcesContent">
-                            <!-- The categories' stack at the left; the Blacklisted and Whitelisted (Include) lists, previewed, share
-                                 the right half, as tall as the stack (panel-scan.css); the override button and the plugin line stay
-                                 in Scan details -->
+                            <!-- The categories' stack at the left; the right half, as tall as the stack (panel-scan.css), has two
+                                 tabs (modules/sourceListTabs.js): Spells, the Blacklisted and Whitelisted (Include) lists previewed,
+                                 and Plugins, the plugin list (settingsPanel.js renderWhitelistEntries; it was a window). The
+                                 override button and the plugin line stay in Scan details; the plugin line opens Plugins -->
                             <div class="tome-sources-split">
                             <div class="tome-sources-left">
                                 <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule their spell tomes match, from top to bottom. Spells whose tomes nothing hands out, or that match no rule, go under Unreachable at the bottom. Activate a category to include its spells on the tree.</p>
@@ -357,14 +358,47 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="tome-sources-right scan-lists">
-                                <div class="scan-list">
-                                    <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
-                                    <ul class="scan-list-items" id="scanBlacklistPreview"></ul>
+                            <div class="tome-sources-right">
+                                <div class="tree-preview-tabs source-list-tabs" id="sourceListTabs">
+                                    <button type="button" class="tree-preview-tab active" data-source-tab="spells" data-i18n="scan.tabSpells">Spells</button>
+                                    <button type="button" class="tree-preview-tab" data-source-tab="plugins" data-i18n="scan.tabPlugins">Plugins</button>
                                 </div>
-                                <div class="scan-list">
-                                    <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
-                                    <ul class="scan-list-items" id="scanWhitelistPreview"></ul>
+                                <div class="source-list-page scan-lists" id="sourceListSpells">
+                                    <div class="scan-list">
+                                        <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
+                                        <ul class="scan-list-items" id="scanBlacklistPreview"></ul>
+                                    </div>
+                                    <div class="scan-list">
+                                        <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
+                                        <ul class="scan-list-items" id="scanWhitelistPreview"></ul>
+                                    </div>
+                                </div>
+                                <div class="source-list-page source-list-hidden" id="pluginListPanel">
+                                    <div class="whitelist-info">
+                                        <span class="whitelist-info-text" data-i18n="modals.whitelist.info">Select plugins to include in spell scanning. If none selected, all plugins are scanned.</span>
+                                    </div>
+                                    <div class="plugin-list-tools">
+                                        <input type="text" id="whitelist-search" class="spawn-search" placeholder="Filter plugins..." data-i18n-placeholder="modals.whitelist.filterPlaceholder">
+                                        <button type="button" id="whitelist-all" class="btn btn-secondary" data-i18n="modals.whitelist.all">All</button>
+                                        <button type="button" id="whitelist-none" class="btn btn-secondary" data-i18n="modals.whitelist.none">None</button>
+                                        <button type="button" id="whitelist-base-only" class="btn btn-secondary" data-i18n="modals.whitelist.baseOnly">Base Only</button>
+                                    </div>
+                                    <div class="whitelist-section plugin-list-base">
+                                        <div class="whitelist-section-header">
+                                            <span data-i18n="modals.whitelist.baseGame">Base Game</span>
+                                            <span id="whitelist-base-count" class="whitelist-count">0</span>
+                                        </div>
+                                        <div id="whitelist-base-entries" class="whitelist-entries whitelist-base"></div>
+                                    </div>
+                                    <div class="whitelist-section plugin-list-mods">
+                                        <div class="whitelist-section-header">
+                                            <span data-i18n="modals.whitelist.modPlugins">Mod Plugins</span>
+                                            <span id="whitelist-mod-count" class="whitelist-count">0</span>
+                                        </div>
+                                        <div id="whitelist-mod-entries" class="whitelist-entries whitelist-mods">
+                                            <div class="whitelist-empty" data-i18n="modals.whitelist.emptyMods">Scan spells first to see plugins</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             </div>
@@ -2127,51 +2161,6 @@
         </div>
     </div>
 
-    <!-- Whitelist Plugin Modal -->
-    <div id="whitelist-modal" class="modal hidden">
-        <div class="modal-backdrop"></div>
-        <div class="modal-content whitelist-modal">
-            <div class="modal-header">
-                <h3 data-i18n="modals.whitelist.title">Plugin Whitelist</h3>
-                <button class="modal-close" id="whitelist-modal-close"><span class="hom-icon" data-icon="close" aria-hidden="true"></span></button>
-            </div>
-            <div class="modal-body">
-                <div class="whitelist-info">
-                    <span class="whitelist-info-text" data-i18n="modals.whitelist.info">Select plugins to include in spell scanning. If none selected, all plugins are scanned.</span>
-                </div>
-                <div class="whitelist-search-section">
-                    <input type="text" id="whitelist-search" class="spawn-search" placeholder="Filter plugins..." data-i18n-placeholder="modals.whitelist.filterPlaceholder">
-                </div>
-                <div class="whitelist-divider"></div>
-                <div class="whitelist-section">
-                    <div class="whitelist-section-header">
-                        <span data-i18n="modals.whitelist.baseGame">Base Game</span>
-                        <span id="whitelist-base-count" class="whitelist-count">0</span>
-                    </div>
-                    <div id="whitelist-base-entries" class="whitelist-entries whitelist-base">
-                        <!-- Base game plugins rendered here -->
-                    </div>
-                </div>
-                <div class="whitelist-divider"></div>
-                <div class="whitelist-section">
-                    <div class="whitelist-section-header">
-                        <span data-i18n="modals.whitelist.modPlugins">Mod Plugins</span>
-                        <span id="whitelist-mod-count" class="whitelist-count">0</span>
-                    </div>
-                    <div id="whitelist-mod-entries" class="whitelist-entries whitelist-mods">
-                        <div class="whitelist-empty" data-i18n="modals.whitelist.emptyMods">Scan spells first to see plugins</div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="whitelist-all" class="btn btn-secondary" data-i18n="modals.whitelist.all">All</button>
-                <button id="whitelist-none" class="btn btn-secondary" data-i18n="modals.whitelist.none">None</button>
-                <button id="whitelist-base-only" class="btn btn-secondary" data-i18n="modals.whitelist.baseOnly">Base Only</button>
-                <button id="whitelist-done" class="btn btn-primary" data-i18n="modals.whitelist.done">Done</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Build Progress Modal -->
     <div id="build-progress-modal" class="modal hidden">
         <div class="modal-backdrop"></div>
@@ -2326,6 +2315,7 @@
     <script src="modules/settingsPanel.js"></script>
     <script src="modules/settingsCategories.js"></script>
     <script src="modules/gateReview.js"></script>
+    <script src="modules/sourceListTabs.js"></script>
     <script src="modules/spellCard.js"></script>
     <script src="modules/treeViewerUI.js"></script>
     <script src="modules/treeStatusLine.js"></script>

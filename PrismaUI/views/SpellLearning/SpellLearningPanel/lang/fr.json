@@ -296,13 +296,11 @@
     "modals.whitelist.all": "Tous",
     "modals.whitelist.baseGame": "Jeu de base",
     "modals.whitelist.baseOnly": "Jeu de base uniquement",
-    "modals.whitelist.done": "Terminé",
     "modals.whitelist.emptyMods": "Analysez d'abord les sorts pour voir les plugins",
     "modals.whitelist.filterPlaceholder": "Filtrer les plugins...",
     "modals.whitelist.info": "Les sorts des plugins cochés vont dans l'arbre ; un plugin décoché est écarté. Un plugin installé plus tard s'ajoute automatiquement.",
     "modals.whitelist.modPlugins": "Plugins de mods",
     "modals.whitelist.none": "Aucun",
-    "modals.whitelist.title": "Liste blanche des plugins",
 
     "presets.save": "Enregistrer",
     "presets.title": "Préréglages",

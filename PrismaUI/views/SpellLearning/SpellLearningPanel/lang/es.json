@@ -296,13 +296,11 @@
     "modals.whitelist.all": "Todos",
     "modals.whitelist.baseGame": "Juego Base",
     "modals.whitelist.baseOnly": "Solo Base",
-    "modals.whitelist.done": "Hecho",
     "modals.whitelist.emptyMods": "Escanea los hechizos primero para ver los plugins",
     "modals.whitelist.filterPlaceholder": "Filtrar plugins...",
     "modals.whitelist.info": "Los hechizos de los plugins marcados entran en el árbol; un plugin sin marcar queda fuera. Un plugin instalado más tarde entra por sí solo.",
     "modals.whitelist.modPlugins": "Plugins de Mods",
     "modals.whitelist.none": "Ninguno",
-    "modals.whitelist.title": "Lista Blanca de Plugins",
 
     "presets.save": "Guardar",
     "presets.title": "Presets",

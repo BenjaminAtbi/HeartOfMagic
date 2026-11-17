@@ -296,13 +296,11 @@
     "modals.whitelist.all": "Tümü",
     "modals.whitelist.baseGame": "Ana Oyun",
     "modals.whitelist.baseOnly": "Sadece Ana Oyun",
-    "modals.whitelist.done": "Tamam",
     "modals.whitelist.emptyMods": "Eklentileri görmek için önce büyüleri tarayın",
     "modals.whitelist.filterPlaceholder": "Eklentileri filtrele...",
     "modals.whitelist.info": "İşaretli eklentilerin büyüleri ağaca girer; işareti kaldırılan eklenti dışarıda kalır. Sonradan kurulan bir eklenti kendiliğinden dahil olur.",
     "modals.whitelist.modPlugins": "Mod Eklentileri",
     "modals.whitelist.none": "Hiçbiri",
-    "modals.whitelist.title": "Eklenti Beyaz Listesi",
 
     "presets.save": "Kaydet",
     "presets.title": "Hazır ayarlar",

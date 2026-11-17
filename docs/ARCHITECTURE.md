@@ -1822,7 +1822,7 @@ CommonLib's logger flushes on every info line (`flush_on(info)`), which made eac
 | `canvasRendererV2.js` | Canvas 2D tree renderer (`CanvasRenderer`); its methods are split over `canvasRenderer*.js` (colours, input, selection, data, frame and tree layer, moving parts, dividers, edges, nodes, a single spell, labels, learning paths), see `modules/README.md` |
 | `editMode.js` | Tree editing (add/remove nodes, modify links) |
 | **UI & callbacks** | |
-| `settingsPanel.js` | Settings UI, config persistence, plugin whitelist modal |
+| `settingsPanel.js` | Settings UI, config persistence, the plugin list (on the Plugins tab, `sourceListTabs.js`) |
 | `treeViewerUI.js` | Tree viewer setup, node lookup, Import dialog (split 2026-09-30: `treeLoad.js` loading, `spellCardView.js` the card, `spellProgressView.js` its progress part, `findSpell.js` Find Spell) |
 | `progressionUI.js` | How-to-Learn panel, learning status badges |
 | `cppCallbacks.js` | C++ ↔ JS (e.g. ProceduralTreeGenerate, GetProgress); enables Complex/Simple buttons when spells loaded |
@@ -2950,7 +2950,7 @@ patch").
 
 #### Plugin Whitelist
 - Per-plugin opt-in/out filtering for spell tree generation
-- UI modal in Spell Scan tab for managing plugin list
+- The Plugins tab of Where Spells Come From on the Scan page (a window until 2026-11-16; `sourceListTabs.js`)
 - `pluginWhitelist` array in unified config (persistent)
 - Base game plugins auto-detected and always included by default
 

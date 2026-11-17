@@ -117,7 +117,7 @@ var PanelLayoutTest = {
         this.failed = 0;
         if (typeof require !== 'function') return { passed: 0, failed: 0 };
         var parts = [['Settings categories', this._categories], ['Settings markup', this._settingsMarkup],
-            ['Scan stage', this._scanStage], ['Scan page', this._scanPage], ['Scan markup', this._scanMarkup], ['Tree frame', this._treeFrame]];
+            ['Scan stage', this._scanStage], ['Scan page', this._scanPage], ['Scan markup', this._scanMarkup], ['Source tabs', this._sourceTabs], ['Tree frame', this._treeFrame]];
         for (var i = 0; i < parts.length; i++) {
             try { parts[i][1].call(this); } catch (e) { this.check(false, parts[i][0] + ' threw: ' + (e && e.stack ? e.stack : e)); }
         }
@@ -454,7 +454,7 @@ var PanelLayoutTest = {
             details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"'),
             'Scan markup: Scan details is a section title, always open; the counts, then the override button and the plugin line (no list previews)');
         var sourcesBox = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
-        var left = sourcesBox.indexOf('class="tome-sources-left"'), right = sourcesBox.indexOf('class="tome-sources-right scan-lists"');
+        var left = sourcesBox.indexOf('class="tome-sources-left"'), right = sourcesBox.indexOf('class="tome-sources-right"');
         this.check(left > 0 && right > sourcesBox.indexOf('id="tomeSourceUnreachableToggle"') && sourcesBox.indexOf('settings.tomeSources.note') > left &&
             sourcesBox.indexOf('id="scanBlacklistPreview"') > right && sourcesBox.indexOf('id="scanWhitelistPreview"') > right &&
             /\.tome-sources-split \{ display: flex;/.test(css) && /\.tome-sources-left, \.tome-sources-right \{ flex: 1 1 0;/.test(css),
@@ -481,6 +481,47 @@ var PanelLayoutTest = {
         this.check(rows.length === 9 && /id="tomeSourceUnreachableToggle">$/.test(rows[8]) &&
             /class="setting-row tome-source-warning">[\s\S]*settings\.tomeSources\.unreachableDesc/.test(sources),
             'Scan markup: Unreachable is the ninth row, last, off by default, a warning row');
+    },
+
+    /** Where Spells Come From's right half: Spells and Plugins (sourceListTabs.js), the plugin list there, not a window */
+    _sourceTabs: function() {
+        var self = this, filled = 0, wired = 0, saved = 0, counted = 0;
+        var tabs = ['spells', 'plugins'].map(function(t) { return self.el('button', { 'data-source-tab': t, 'class': t === 'spells' ? 'active' : '' }); });
+        var spells = this.el('div', { id: 'sourceListSpells' }), plugins = this.el('div', { id: 'pluginListPanel', 'class': 'source-list-hidden' });
+        var search = this.el('input', { id: 'whitelist-search' });
+        search.value = 'old';
+        var doc = this.doc([spells, plugins, search]);
+        doc.querySelectorAll = function(sel) { return sel === '#sourceListTabs [data-source-tab]' ? tabs : []; };
+        var box = this._sandbox(['sourceListTabs.js'], {
+            renderWhitelistEntries: function() { filled++; }, setupWhitelistListeners: function() { wired++; },
+            autoSaveSettings: function() { saved++; }, updatePrimedCount: function() { counted++; }
+        });
+        var T = box.SourceListTabs;
+        T._doc = function() { return doc; };
+        T.init();
+        T.refresh();
+        this.check(filled === 0 && !spells.classList.contains('source-list-hidden') && plugins.classList.contains('source-list-hidden'),
+            'Source tabs: Spells first, the plugin list not filled while hidden');
+        tabs[1].click();
+        this.check(T.current === 'plugins' && filled === 1 && wired === 1 && search.value === '' && tabs[1].classList.contains('active') &&
+            !tabs[0].classList.contains('active') && spells.classList.contains('source-list-hidden') && !plugins.classList.contains('source-list-hidden'),
+            'Source tabs: Plugins shows the plugin list, filled and wired as it opens, the filter cleared');
+        T.refresh();
+        tabs[0].click();
+        T.refresh();
+        T.show('nope');
+        this.check(filled === 2 && T.current === 'spells' && !spells.classList.contains('source-list-hidden'),
+            'Source tabs: a scan fills the plugin list again only while it shows; an unknown tab changes nothing');
+        box.pluginListChanged();
+        this.check(saved === 1 && counted === 1, 'Source tabs: a change on the plugin list saves and counts at once (no Done button)');
+        var html = this._file('../index.html'), panel = this._file('settingsPanel.js');
+        var right = html.substring(html.indexOf('class="tome-sources-right"'), html.indexOf('id="treeBuildSection"'));
+        this.check(!/whitelist-modal|whitelist-done/.test(html) && !/showWhitelistModal|hideWhitelistModal|#whitelist-modal/.test(panel) &&
+            ['sourceListTabs', 'scanBlacklistPreview', 'pluginListPanel', 'whitelist-search', 'whitelist-all', 'whitelist-none', 'whitelist-base-only',
+                'whitelist-base-entries', 'whitelist-mod-entries'].every(function(id) { return right.indexOf('id="' + id + '"') !== -1; }) &&
+            /safeAddListener\('whitelistBtn', 'click', showPluginList\)/.test(this._file('../script.js')) &&
+            (panel.match(/if \(typeof pluginListChanged === 'function'\) pluginListChanged\(\);/g) || []).length === 3,
+            'Source tabs: the plugin list lives on the Plugins tab (the window gone), the plugin line opens it, a click and All / None / Base Only save');
     },
 
     // ======================================================================= item 9

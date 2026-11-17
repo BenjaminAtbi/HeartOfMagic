@@ -250,6 +250,24 @@
 .tome-sources-left, .tome-sources-right { flex: 1 1 0; min-width: 0; }
 .tome-sources-right .scan-list { flex: 1 1 0; }
 
+/* The right half's tabs (sourceListTabs.js): one page at a time, filling the half's height */
+.tome-sources-right { display: flex; flex-direction: column; }
+.source-list-tabs { flex: 0 0 auto; margin-bottom: 10px; }
+.source-list-page { flex: 1 1 auto; min-height: 0; }
+.source-list-page.source-list-hidden { display: none; }
+
+/* Plugins: the note, the filter with All / None / Base Only, Base Game at its size, Mod Plugins taking the rest
+   (it scrolls; a long list never makes the section taller) */
+#pluginListPanel { display: flex; flex-direction: column; gap: 8px; }
+#pluginListPanel .whitelist-info { margin-bottom: 0; }
+.plugin-list-tools { display: flex; align-items: center; gap: 8px; }
+.plugin-list-tools .spawn-search { flex: 1 1 auto; min-width: 0; }
+.plugin-list-tools .btn { flex: 0 0 auto; }
+#pluginListPanel .whitelist-section { margin: 0; }
+#pluginListPanel .plugin-list-base .whitelist-entries { max-height: 9em; }
+#pluginListPanel .plugin-list-mods { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+#pluginListPanel .plugin-list-mods .whitelist-entries { flex: 1 1 0; height: 0; min-height: 6em; max-height: none; }
+
 /* Rows: the switch, the text at a fixed width (so the counts line up in one column), the count */
 #tomeSourcesBlock .setting-row { justify-content: flex-start; }
 #tomeSourcesBlock .setting-row > .toggle-switch { flex: 0 0 auto; margin: 0 24px 0 0; }

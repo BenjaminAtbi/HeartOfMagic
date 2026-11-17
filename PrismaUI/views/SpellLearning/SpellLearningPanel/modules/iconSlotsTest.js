@@ -30,8 +30,8 @@ var IconSlotsTest = {
             var id = slots[i].replace(/.*data-icon="([^"]+)".*/, '$1');
             if (HomIcons.IDS.indexOf(id) === -1) bad.push(id);
         }
-        // 33 = 9 action buttons + 4 save/reset/import buttons + 9 settings heads + fullscreen + 10 closes
-        this.check(slots.length >= 33 && bad.length === 0, slots.length + ' slots, all known ids' + (bad.length ? ' (unknown: ' + bad.join(', ') + ')' : ''));
+        // 32 = 9 action buttons + 4 save/reset/import buttons + 9 settings heads + fullscreen + 9 closes (the plugin window went to a tab)
+        this.check(slots.length >= 32 && bad.length === 0, slots.length + ' slots, all known ids' + (bad.length ? ' (unknown: ' + bad.join(', ') + ')' : ''));
 
         // [\s\S] crosses the markup's line breaks; any closing tag ends the translated element's own text
         var nested = html.match(/<[^>]+data-i18n(-html)?="[^"]*"[^>]*>(?:(?!<\/[a-z0-9]+>)[\s\S])*hom-icon/);

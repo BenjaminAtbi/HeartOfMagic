@@ -296,13 +296,11 @@
     "modals.whitelist.all": "すべて",
     "modals.whitelist.baseGame": "バニラ",
     "modals.whitelist.baseOnly": "バニラのみ",
-    "modals.whitelist.done": "完了",
     "modals.whitelist.emptyMods": "プラグインを表示するにはまず呪文をスキャン",
     "modals.whitelist.filterPlaceholder": "プラグインを絞り込み...",
     "modals.whitelist.info": "チェックしたプラグインの呪文がツリーに入り、チェックを外したプラグインは除外されます。後から入れたプラグインは自動で含まれます。",
     "modals.whitelist.modPlugins": "Modプラグイン",
     "modals.whitelist.none": "なし",
-    "modals.whitelist.title": "プラグインホワイトリスト",
 
     "presets.save": "保存",
     "presets.title": "プリセット",

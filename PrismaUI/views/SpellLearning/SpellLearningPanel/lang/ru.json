@@ -296,13 +296,11 @@
     "modals.whitelist.all": "Все",
     "modals.whitelist.baseGame": "Базовая игра",
     "modals.whitelist.baseOnly": "Только базовая",
-    "modals.whitelist.done": "Готово",
     "modals.whitelist.emptyMods": "Сначала просканируйте заклинания, чтобы увидеть плагины",
     "modals.whitelist.filterPlaceholder": "Фильтр плагинов...",
     "modals.whitelist.info": "Заклинания из отмеченных плагинов попадают в дерево, а из неотмеченных — исключаются. Плагины, установленные позже, включаются автоматически.",
     "modals.whitelist.modPlugins": "Плагины модов",
     "modals.whitelist.none": "Нет",
-    "modals.whitelist.title": "Белый список плагинов",
 
     "presets.save": "Сохранить",
     "presets.title": "Пресеты",
