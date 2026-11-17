@@ -43,7 +43,7 @@
             <!-- ============================================================ -->
             <!-- PANEL: Spell Scan (toggled from header) -->
             <!-- ============================================================ -->
-            <div class="tab-content" id="contentSpellScan">
+            <div class="tab-content" id="contentSpellScan" data-scanner-mode="easy">
                 <!-- Mode Toggle Bar -->
                 <div class="scanner-mode-bar">
                     <button class="scanner-mode-btn active" data-scanner-mode="easy" data-i18n="scanner.modeEasy">Easy</button>
@@ -111,10 +111,11 @@
                         </div>
                     </div>
 
-                    <!-- The Blacklisted and Whitelisted (Include) lists, previewed; the override button opens the blacklist window
-                         until the override menu exists; the plugin line opens the plugin list -->
+                    <!-- The Blacklisted and Whitelisted (Include) lists, previewed (Complex only: .complex-only, hidden while
+                         #contentSpellScan is in Easy mode); the override button opens the blacklist window until the override
+                         menu exists; the plugin line opens the plugin list -->
                     <div class="scan-split-right">
-                        <div class="scan-lists">
+                        <div class="scan-lists complex-only">
                             <div class="scan-list">
                                 <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
                                 <ul class="scan-list-items" id="scanBlacklistPreview"></ul>

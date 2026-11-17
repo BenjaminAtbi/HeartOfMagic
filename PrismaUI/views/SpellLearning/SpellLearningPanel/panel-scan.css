@@ -139,6 +139,9 @@
 
 #contentSpellScan .scan-split-right { display: flex; flex-direction: column; gap: 10px; }
 
+/* Parts of the shared Scan page shown in Complex mode only (switchScannerMode sets data-scanner-mode) */
+#contentSpellScan[data-scanner-mode="easy"] .complex-only { display: none; }
+
 .scan-lists { display: flex; gap: 16px; }
 .scan-list { flex: 1 1 0; min-width: 0; }
 .scan-list-title { color: var(--text-secondary, #A8A898); font-size: 0.9em; margin-bottom: 4px; }

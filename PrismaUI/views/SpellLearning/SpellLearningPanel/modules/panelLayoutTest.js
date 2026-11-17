@@ -453,6 +453,11 @@ var PanelLayoutTest = {
             /id="scanBlacklistPreview"/.test(details) && /id="scanWhitelistPreview"/.test(details) &&
             details.indexOf('id="scanWhitelistPreview"') < details.indexOf('id="blacklistBtn"') && details.indexOf('id="blacklistBtn"') < details.indexOf('id="whitelistBtn"'),
             'Scan markup: Scan details is a section title, always open; the two list previews, then the override button and the plugin line');
+        this.check(/<div class="scan-lists complex-only">/.test(details) && (details.match(/complex-only/g) || []).length === 2 &&
+            /id="contentSpellScan" data-scanner-mode="easy"/.test(scan) &&
+            /#contentSpellScan\[data-scanner-mode="easy"\] \.complex-only \{ display: none; \}/.test(css) &&
+            /function switchScannerMode\(mode\) \{[\s\S]{0,700}getElementById\('contentSpellScan'\)[\s\S]{0,80}setAttribute\('data-scanner-mode', mode\)/.test(this._file('easyMode.js')),
+            'Scan markup: the list previews in Complex only (the Scan page carries the mode, Easy hides .complex-only); the stats and both buttons in both');
         var sources = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
         var rows = sources.match(/id="tomeSource\w+Toggle"[^>]*>/g) || [];
         this.check(rows.length === 9 && /id="tomeSourceUnreachableToggle">$/.test(rows[8]) &&
