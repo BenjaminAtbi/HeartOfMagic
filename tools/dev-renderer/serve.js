@@ -5,7 +5,8 @@
  *   node tools/dev-renderer/serve.js [--port 5557] [--data <SKSE/Plugins/SpellLearning folder>]
  *
  * - Serves the panel folder (PrismaUI/views/SpellLearning/SpellLearningPanel) from the working tree,
- *   so an edit shows without a build or a deploy. Nothing is cached.
+ *   so an edit shows without a build or a deploy. Nothing is cached. dev-harness.html is built on
+ *   every request (tools/make-dev-harness.js), so an index.html edit shows without regenerating it.
  * - With --data (or HOM_DEV_DATA), GET /__live/scan, /__live/config and /__live/tree answer with that
  *   folder's spell_scan_output.json (debug.json makes the game write it), config.json and
  *   spell_tree.json; 404 when a file is not there. dev-harness-live.js hands them to the panel the
@@ -20,6 +21,7 @@
 var http = require('http');
 var fs = require('fs');
 var path = require('path');
+var harness = require('../make-dev-harness.js');
 
 var PANEL = path.resolve(__dirname, '..', '..', 'PrismaUI', 'views', 'SpellLearning', 'SpellLearningPanel');
 var DEFAULT_PORT = 5557;
@@ -89,6 +91,10 @@ function main() {
         }
         var file = inside(PANEL, url);
         if (!file) return send(res, 403, 'text/plain', 'outside the panel');
+        if (file === path.join(PANEL, 'dev-harness.html')) {
+            try { return send(res, 200, TYPES['.html'], harness.make()); }
+            catch (e) { return send(res, 500, 'text/plain', 'harness: ' + e.message); }
+        }
         serveFile(res, file);
     });
     server.listen(opt.port, '127.0.0.1', function() {

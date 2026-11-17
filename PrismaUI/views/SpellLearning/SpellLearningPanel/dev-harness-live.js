@@ -11,7 +11,8 @@
  *   does. A file the server does not have falls back on the mock.
  * - Saves (the tree, the config) stay in memory: the game's files are never written from here,
  *   and the mock's download of spell_tree.json is skipped.
- * - The page reloads when the server says a panel file changed (/__live/events).
+ * - The page reloads when the server says a panel file changed (/__live/events), and when it comes
+ *   back after a restart (serve.js itself changed).
  */
 (function() {
     if (!/^https?:$/.test(location.protocol) || typeof window.callCpp !== 'function') return;
@@ -46,7 +47,9 @@
 
     if (typeof EventSource === 'function') {
         var events = new EventSource('/__live/events');
-        events.onmessage = function(e) { if (e.data === 'reload') location.reload(); };
+        var lost = false;
+        events.onerror = function() { lost = true; };
+        events.onmessage = function(e) { if (e.data === 'reload' || (e.data === 'hello' && lost)) location.reload(); };
     }
     console.log('[DevLive] live game data and reload on');
 })();
