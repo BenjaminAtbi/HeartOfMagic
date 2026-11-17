@@ -2218,20 +2218,7 @@
     // =========================================================================
 
     function initPreReqMaster() {
-        // Collapsible header
-        var header = document.getElementById('prmToggleHeader');
-        var content = document.getElementById('prmContent');
-        var collapseIcon = header ? header.querySelector('.prm-collapse-icon') : null;
-
-        if (header && content) {
-            header.addEventListener('click', function() {
-                content.classList.toggle('collapsed');
-                if (collapseIcon) {
-                    if (content.classList.contains('collapsed')) collapseIcon.classList.add('collapsed');
-                    else collapseIcon.classList.remove('collapsed');
-                }
-            });
-        }
+        // Extra Settings is always open (a section title, no collapsible box)
 
         // Tab switching
         initTabs();

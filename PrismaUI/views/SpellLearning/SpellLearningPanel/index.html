@@ -304,15 +304,13 @@
                 <!-- ============================================================ -->
                 <!-- Section 4: EXTRA SETTINGS (PRM + Alternate Pathways) -->
                 <!-- ============================================================ -->
+                <!-- Laid out like Root Base Preview and Tree Growth Preview: a title, then the content, no box, always open;
+                     each tab's page as tall as its content (no inner scroll) -->
                 <div class="scan-section" id="prereqMasterSection" style="display:none;">
-                    <div class="settings-block prm-block">
-                        <div class="settings-block-header prm-header" id="prmToggleHeader">
-                            <span class="hom-icon settings-block-icon" data-icon="prereq" aria-hidden="true"></span>
-                            <span class="settings-block-title" data-i18n="prm.extraSettings">Pre Req Master</span>
-                            <span class="prm-collapse-icon" aria-hidden="true"></span>
-                        </div>
-                        <div class="settings-block-content prm-content" id="prmContent">
-
+                    <div class="tree-preview-header">
+                        <span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">Extra Settings</span>
+                    </div>
+                    <div class="prm-content" id="prmContent">
                             <!-- Tab Bar (outside scroll zone) -->
                             <div class="prm-tabs">
                                 <span class="prm-tab active" data-prm-tab="locks">
@@ -510,12 +508,9 @@
                                 <div class="prm-split-right" id="prmPreviewWrap">
                                     <!-- Canvas created dynamically by prereqMaster.js -->
                                 </div>
-
                             </div><!-- /prm-split -->
-
-                        </div>
-                    </div>
-                </div>
+                    </div><!-- /prmContent -->
+                </div><!-- /prereqMasterSection -->
 
                 <!-- Shared Build/Apply/Clear - Sticky at bottom -->
                 <div class="scan-actions-sticky scan-actions-bottom">

@@ -459,6 +459,12 @@ var PanelLayoutTest = {
             /#contentSpellScan\[data-scanner-mode="easy"\] \.complex-only \{ display: none; \}/.test(css) &&
             /function switchScannerMode\(mode\) \{[\s\S]{0,700}getElementById\('contentSpellScan'\)[\s\S]{0,80}setAttribute\('data-scanner-mode', mode\)/.test(this._file('easyMode.js')),
             'Scan markup: the list previews in Complex only (the Scan page carries the mode, Easy hides .complex-only); the stats and both buttons in both');
+        var extra = scan.substring(scan.indexOf('id="prereqMasterSection"'), scan.indexOf('<!-- Shared Build/Apply/Clear'));
+        this.check(/^id="prereqMasterSection"[^>]*>\s*<div class="tree-preview-header">\s*<span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">/.test(extra) &&
+            !/prmToggleHeader|prm-collapse-icon|prm-block/.test(extra) && !/prmToggleHeader/.test(this._file('prereqMaster.js')) &&
+            /scan-section-title">' \+ t\('preview\.title'\)/.test(this._file('treePreview.js')) && /scan-section-title">' \+ t\('treeViewer\.treeGrowthPreview'\)/.test(this._file('treeGrowth.js')) &&
+            /#prereqMasterSection \.prm-split \{ height: auto;/.test(css) && /#prereqMasterSection \.prm-split-left \{ height: auto; overflow: visible; \}/.test(css),
+            'Scan markup: Extra Settings a section title like Root Base Preview and Tree Growth Preview (one title style), no collapsible box, pages as tall as their content');
         var sources = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
         var rows = sources.match(/id="tomeSource\w+Toggle"[^>]*>/g) || [];
         this.check(rows.length === 9 && /id="tomeSourceUnreachableToggle">$/.test(rows[8]) &&

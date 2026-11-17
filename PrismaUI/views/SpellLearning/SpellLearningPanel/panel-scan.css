@@ -141,6 +141,22 @@
 #contentSpellScan .scan-split-left { flex: 0 1 30em; display: flex; flex-direction: column; gap: 18px; }
 #contentSpellScan .scan-split-right { flex: 1 1 0; display: flex; flex-direction: column; gap: 10px; }
 
+/* Section titles (Root Base Preview, Tree Growth Preview, Extra Settings): Extra Settings' former header size */
+#contentSpellScan .scan-section-title {
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--accent-gold);
+    text-transform: none;
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+}
+
+/* Extra Settings: each tab's page as tall as its content, no inner scroll; the preview at least 400px and as tall
+   as the page beside it (its canvas follows the box, prereqMaster.js ResizeObserver) */
+#prereqMasterSection .prm-split { height: auto; min-height: 400px; }
+#prereqMasterSection .prm-split-left { height: auto; overflow: visible; }
+#prereqMasterSection .prm-split-right { height: auto; }
+
 /* Parts of the shared Scan page shown in Complex mode only (switchScannerMode sets data-scanner-mode) */
 #contentSpellScan[data-scanner-mode="easy"] .complex-only { display: none; }
 
