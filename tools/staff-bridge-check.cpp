@@ -97,7 +97,7 @@ namespace
 
         // SCSSoulCharge's held-staff name marker (API 2): HoM's stored names never keep it
         using StaffSpellBridge::StripMarkerWith;
-        constexpr std::string_view kMarker = " \xE2\x97\x88";  // " ◈" (U+25C8) in UTF-8, SCSSoulCharge's default
+        constexpr std::string_view kMarker = " \xE2\x97\x88";  // " ◈" (U+25C8) in UTF-8 (SCSSoulCharge's INI default is U+2605)
         Check(StripMarkerWith(kMarker, "Healing \xE2\x97\x88") == "Healing", "marker: a trailing marker is taken off");
         Check(StripMarkerWith(kMarker, "Healing") == "Healing", "marker: a name without it stays");
         Check(StripMarkerWith(kMarker, "Healing (Learning - 35%) \xE2\x97\x88") == "Healing (Learning - 35%)",

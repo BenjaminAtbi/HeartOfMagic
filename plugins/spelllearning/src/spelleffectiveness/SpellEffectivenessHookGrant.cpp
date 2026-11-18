@@ -1,4 +1,5 @@
 #include "SpellEffectivenessHook.h"
+#include "StaffSpellBridge.h"
 #include "HudNotify.h"
 #include "ISLIntegration.h"
 #include "ProgressionCoSave.h"
@@ -150,9 +151,9 @@ void SpellEffectivenessHook::RegisterISLPendingSpell(RE::SpellItem* spell)
     {
         std::unique_lock<std::shared_mutex> lock(m_mutex);
         if (m_originalSpellNames.find(formId) == m_originalSpellNames.end()) {
-            m_originalSpellNames[formId] = spell->GetName();
+            m_originalSpellNames[formId] = StaffSpellBridge::StripNameMarker(spell->GetName());  // never the staff marker
             logger::info("SpellEffectivenessHook: Stored original name for ISL pending spell {:08X}: '{}'",
-                formId, spell->GetName());
+                formId, m_originalSpellNames[formId]);
         }
     }
 

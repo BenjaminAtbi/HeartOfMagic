@@ -27,6 +27,7 @@ namespace StaffSpellBridge
 
     inline constexpr std::uint32_t kRuntimeFormIndex = 0xFF;
     inline constexpr std::uint32_t kMinApiVersion = 1;
+    inline constexpr std::uint32_t kMessageApiVersion = 2;  // the first SCSSoulCharge API that sends 'SCST'
 
     // The original spell's FormID when a_formID is a staff copy, else a_formID unchanged.
     // Only runtime forms (index 0xFF) are asked about, so plugin spells cost one shift.
@@ -64,7 +65,7 @@ namespace StaffSpellBridge
         return cast;
     }
 
-    // SCSSoulCharge (API 2) appends a marker (" \u25C8" by default, its INI) to the name of the spell bound to the
+    // SCSSoulCharge (API 2) appends a marker (" \u2605" by default, its INI) to the name of the spell bound to the
     // staff in the right hand while it is held, re-adding it every frame. HoM's own names never keep it:
     // a_name without a trailing a_marker; unchanged for an empty marker or a name that does not end with it.
     inline std::string StripMarkerWith(std::string_view a_marker, std::string_view a_name)

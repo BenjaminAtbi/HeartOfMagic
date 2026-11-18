@@ -54,8 +54,18 @@ namespace StaffSpellBridge
 
     void RegisterCastListener()
     {
-        if (!GetModuleHandleW(L"SCSSoulCharge.dll")) {
+        const HMODULE module = GetModuleHandleW(L"SCSSoulCharge.dll");
+        if (!module) {
             return;  // Init logs the missing DLL
+        }
+        // The 'SCST' message comes with API 2. An older build sends none: listening to it would skip the copies'
+        // cast events (the only report such a build gets) and count nothing, so the event path stays on
+        const auto apiVersion = reinterpret_cast<std::uint32_t (*)()>(GetProcAddress(module, "SCSSoulCharge_ApiVersion"));
+        const std::uint32_t version = apiVersion ? apiVersion() : 0;
+        if (version < kMessageApiVersion) {
+            logger::info("StaffSpellBridge: SCSSoulCharge.dll API {} sends no staff-cast message (needs {}) - staff casts "
+                         "are counted from the cast event", version, kMessageApiVersion);
+            return;
         }
         // Sent on the main thread from SCSSoulCharge's frame hook; HandlePlayerCast runs from the task queue as
         // the cast event's casts do

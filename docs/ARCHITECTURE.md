@@ -1259,8 +1259,10 @@ not affected.
   its src/api.h, main thread); `StaffSpellBridge::RegisterCastListener` (kPostLoad) decodes it
   (`DecodeStaffCast`, checked by staff-bridge-check) and calls `SpellCastHandler::OnStaffCast`, which queues
   `HandlePlayerCast` with the message's spell (the copy only names the log line; the message path is not paired by
-  `IsSecondReport`, and the listener callback catches everything). The staff mod sends exactly one message per
-  staff cast, whatever showed the cast (release state, its cast event, magicka paid). While the listener is registered, a staff copy that arrives by the cast
+  `IsSecondReport`, and the listener callback catches everything). The staff mod sends one message per staff
+  cast it sees go off (release state, its cast event, or at least half the cost paid; a summon costing under 1
+  magicka under DMMF sends none). The listener is registered only for SCSSoulCharge API 2+ (the first to send
+  'SCST'); with an older build the cast event path stays on. While the listener is registered, a staff copy that arrives by the cast
   event or the immediate-cast hook (a load order without DMMF) is skipped, so a staff cast counts once. A staff's own
   enchantment (a plugin form) is never a copy, so it still gives no XP. Spellcasting Staff NG and Elden Catalyst
   cast the real spell with `CastSpellImmediate` and need no bridge (read from their docs and sources, not checked
