@@ -19,7 +19,10 @@ namespace StaffSpellBridge
         std::atomic<GetOriginalSpellFn> g_getOriginal{ nullptr };
         std::atomic<bool> g_listening{ false };  // set at kPostLoad, read on the game thread
         using GetNameMarkerFn = const char* (*)();
-        std::atomic<GetNameMarkerFn> g_getNameMarker{ nullptr };  // API 2; written once at kPostPostLoad
+        using GetHeldStaffSpellFn = std::uint32_t (*)();
+        // API 2; written once at kPostPostLoad, both set or both null
+        std::atomic<GetNameMarkerFn> g_getNameMarker{ nullptr };
+        std::atomic<GetHeldStaffSpellFn> g_getHeldSpell{ nullptr };
     }
 
     void Init()
@@ -44,7 +47,10 @@ namespace StaffSpellBridge
         }
         g_getOriginal.store(getOriginal, std::memory_order_release);
         if (version >= 2) {
-            if (const auto getMarker = reinterpret_cast<GetNameMarkerFn>(GetProcAddress(module, "SCSSoulCharge_GetNameMarker"))) {
+            const auto getMarker = reinterpret_cast<GetNameMarkerFn>(GetProcAddress(module, "SCSSoulCharge_GetNameMarker"));
+            const auto getHeld = reinterpret_cast<GetHeldStaffSpellFn>(GetProcAddress(module, "SCSSoulCharge_GetHeldStaffSpell"));
+            if (getMarker && getHeld) {
+                g_getHeldSpell.store(getHeld, std::memory_order_release);
                 g_getNameMarker.store(getMarker, std::memory_order_release);
             }
         }
@@ -91,12 +97,15 @@ namespace StaffSpellBridge
         }
     }
 
-    std::string StripNameMarker(std::string_view a_name)
+    std::string StripNameMarker(std::uint32_t a_spell, std::string_view a_name)
     {
         const GetNameMarkerFn getMarker = g_getNameMarker.load(std::memory_order_acquire);
-        if (!getMarker) return std::string(a_name);
+        const GetHeldStaffSpellFn getHeld = g_getHeldSpell.load(std::memory_order_acquire);
+        if (!getMarker || !getHeld) return std::string(a_name);
+        const std::uint32_t held = getHeld();
+        if (held == 0 || held != a_spell) return std::string(a_name);
         const char* marker = getMarker();  // the DLL's own string: read here, not kept
-        return StripMarkerWith(marker ? std::string_view(marker) : std::string_view(), a_name);
+        return StripHeldMarkerWith(held, a_spell, marker ? std::string_view(marker) : std::string_view(), a_name);
     }
 
     bool IsListening() noexcept

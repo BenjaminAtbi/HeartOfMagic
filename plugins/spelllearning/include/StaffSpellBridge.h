@@ -55,10 +55,11 @@ namespace StaffSpellBridge
     };
     static_assert(sizeof(StaffCast) == 12, "SCSSoulCharge's StaffCastMessage is 12 bytes");
 
-    // The cast a message carries, or nothing for another message type, a wrong size or no spell
+    // The cast a message carries, or nothing for another message type, fewer than 12 bytes or no spell
     inline std::optional<StaffCast> DecodeStaffCast(std::uint32_t a_type, std::uint32_t a_dataLen, const void* a_data) noexcept
     {
-        if (a_type != kStaffCastMessageType || a_dataLen != sizeof(StaffCast) || !a_data) return std::nullopt;
+        // later builds append fields after these 12 bytes only (SCSSoulCharge's contract): the first 12 are read
+        if (a_type != kStaffCastMessageType || a_dataLen < sizeof(StaffCast) || !a_data) return std::nullopt;
         StaffCast cast;
         std::memcpy(&cast, a_data, sizeof(cast));
         if (cast.spell == 0) return std::nullopt;
@@ -74,6 +75,15 @@ namespace StaffSpellBridge
         return std::string(a_name.substr(0, a_name.size() - a_marker.size()));
     }
 
+    // The marker is on one spell only, the one SCSSoulCharge_GetHeldStaffSpell names (0 = none): a_name of any
+    // other spell stays as it is, whatever it ends with.
+    inline std::string StripHeldMarkerWith(std::uint32_t a_heldSpell, std::uint32_t a_spell, std::string_view a_marker,
+        std::string_view a_name)
+    {
+        if (a_heldSpell == 0 || a_spell != a_heldSpell) return std::string(a_name);
+        return StripMarkerWith(a_marker, a_name);
+    }
+
     // Looks SCSSoulCharge.dll up once every plugin has loaded (kPostPostLoad) and logs
     // whether the link is on. Without the DLL, or with an older API, it stays off.
     void Init();
@@ -81,9 +91,10 @@ namespace StaffSpellBridge
     void RegisterCastListener();
     // True once the listener is registered: staff casts are then counted from the message only
     bool IsListening() noexcept;
-    // a_name without SCSSoulCharge's held-staff marker (StripMarkerWith with the DLL's marker; unchanged without
-    // the DLL or with API < 2). Any thread.
-    std::string StripNameMarker(std::string_view a_name);
+    // a_name (spell a_spell's) without SCSSoulCharge's held-staff marker: StripHeldMarkerWith with the DLL's held
+    // spell and marker, both asked on each call (the marker follows its INI). Unchanged without the DLL or with
+    // API < 2. Any thread.
+    std::string StripNameMarker(std::uint32_t a_spell, std::string_view a_name);
 
     // ResolveWith using the DLL's lookup; a_formID unchanged while the link is off. Any thread.
     // A throw from the DLL turns the link off (logged once) instead of ending the game.

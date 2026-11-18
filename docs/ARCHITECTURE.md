@@ -1255,7 +1255,7 @@ not affected.
   Framework 2.0.3 installed, its `CasterHook::SpellCast` returns for an `EnchantmentItem` without calling the
   original, so no `TESSpellCastEvent` is sent for a staff cast (probe build: hand casts reported, staff casts
   never; DMMF's log shows no `SpellCastImpl called` at the staff casts). SCSSoulCharge broadcasts one SKSE
-  message per released staff cast (sender `SCSSoulCharge`, type `'SCST'`, 12 bytes copy/spell/concentration,
+  message per released staff cast (sender `SCSSoulCharge`, type `'SCST'`, 12 bytes copy/spell/concentration, at least 12 read since later builds may append fields,
   its src/api.h, main thread); `StaffSpellBridge::RegisterCastListener` (kPostLoad) decodes it
   (`DecodeStaffCast`, checked by staff-bridge-check) and calls `SpellCastHandler::OnStaffCast`, which queues
   `HandlePlayerCast` with the message's spell (the copy only names the log line; the message path is not paired by

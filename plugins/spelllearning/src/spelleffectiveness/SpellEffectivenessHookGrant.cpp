@@ -151,7 +151,7 @@ void SpellEffectivenessHook::RegisterISLPendingSpell(RE::SpellItem* spell)
     {
         std::unique_lock<std::shared_mutex> lock(m_mutex);
         if (m_originalSpellNames.find(formId) == m_originalSpellNames.end()) {
-            m_originalSpellNames[formId] = StaffSpellBridge::StripNameMarker(spell->GetName());  // never the staff marker
+            m_originalSpellNames[formId] = StaffSpellBridge::StripNameMarker(formId, spell->GetName());  // never the staff marker
             logger::info("SpellEffectivenessHook: Stored original name for ISL pending spell {:08X}: '{}'",
                 formId, m_originalSpellNames[formId]);
         }

@@ -89,7 +89,11 @@ namespace
         Check(cast && cast->copy == kStaffCopy && cast->spell == kOriginal && cast->concentration == 1,
             "message: a staff cast decodes to its copy, spell and concentration flag");
         Check(kStaffCastMessageType == 0x53435354u, "message: the type is 'SCST' (0x53435354) as SCSSoulCharge sends it");
-        Check(!DecodeStaffCast(kStaffCastMessageType, 8, message), "message: a wrong size is ignored");
+        Check(!DecodeStaffCast(kStaffCastMessageType, 8, message), "message: fewer than 12 bytes is ignored");
+        const std::uint32_t longer[5] = { kStaffCopy, kOriginal, 0, 7, 9 };  // a later build with fields appended
+        const auto appended = DecodeStaffCast(kStaffCastMessageType, sizeof(longer), longer);
+        Check(appended && appended->copy == kStaffCopy && appended->spell == kOriginal && appended->concentration == 0,
+            "message: a longer message (fields appended) gives its first 12 bytes");
         Check(!DecodeStaffCast(0x41424344u, sizeof(message), message), "message: another message type is ignored");
         Check(!DecodeStaffCast(kStaffCastMessageType, sizeof(message), nullptr), "message: no data is ignored");
         const std::uint32_t noSpell[3] = { kStaffCopy, 0, 0 };
@@ -105,6 +109,13 @@ namespace
         Check(StripMarkerWith(kMarker, "\xE2\x97\x88 Healing") == "\xE2\x97\x88 Healing", "marker: only at the end");
         Check(StripMarkerWith("", "Healing \xE2\x97\x88") == "Healing \xE2\x97\x88", "marker: an empty marker (off) changes nothing");
         Check(StripMarkerWith(kMarker, "\xE2\x97\x88") == "\xE2\x97\x88", "marker: a name shorter than the marker stays");
+        using StaffSpellBridge::StripHeldMarkerWith;
+        Check(StripHeldMarkerWith(kOriginal, kOriginal, kMarker, "Healing \xE2\x97\x88") == "Healing",
+            "marker: taken off the held staff's spell");
+        Check(StripHeldMarkerWith(kOriginal, kPluginSpell, kMarker, "Star \xE2\x97\x88") == "Star \xE2\x97\x88",
+            "marker: another spell ending with the same characters keeps them");
+        Check(StripHeldMarkerWith(0, kOriginal, kMarker, "Healing \xE2\x97\x88") == "Healing \xE2\x97\x88",
+            "marker: no staff held (0) - nothing taken off");
 
         std::printf("staff-bridge-check: %d checks, %d failed\n", g_checks, g_failures);
         return g_failures == 0 ? kExitOk : kExitFailed;
