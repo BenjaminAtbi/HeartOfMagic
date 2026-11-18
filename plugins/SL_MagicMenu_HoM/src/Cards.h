@@ -45,7 +45,8 @@ namespace HomAddon
 
     /// The next-spell rows in place of the "no learning target" line (ProgressChoices.cpp): a heading, the rows, an "N more" line;
     /// the card's needed height
-    std::optional<double> DrawChoices(RE::GFxMovieView* a_movie, RE::GFxValue& a_card, const ChoicesArea& a_area, const SchoolInfo& a_info);
+    std::optional<double> DrawChoices(RE::GFxMovieView* a_movie, RE::GFxValue& a_card, const ChoicesArea& a_area, const SchoolInfo& a_info,
+        const Spells::Snapshot& a_snapshot);
 
     /// The progress block's frame part of the rows (ProgressChoices.cpp): the column's room (the rows drawn again when it changed), the
     /// hover dropped in the layout mode, a row release judged against the visible part - the node to pick and set, -1 for none

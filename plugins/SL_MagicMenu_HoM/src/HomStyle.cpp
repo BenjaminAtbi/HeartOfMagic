@@ -384,6 +384,7 @@ namespace HomStyle
             a_style.showSelectionPath = notFalse("showSelectionPath");                                        // :1434
             a_style.showBaseConnections = notFalse("showBaseConnections");                                    // :1435
             a_style.focusDimOthers = notFalse("focusDimOthers");                                              // :1447
+            a_style.showRootSpellNames = notFalse("showRootSpellNames");                                      // :1178, default true
             if (const auto* value = Field(a_config, "revealName")) {                                          // :1116, default 0
                 if (value->is_number() && std::isfinite(value->get<double>())) {
                     a_style.revealName = value->get<double>();
@@ -630,10 +631,11 @@ namespace HomStyle
     std::string Style::Summary() const
     {
         return std::format("config {}, design preset '{}' {}, discoveryMode {}, cheatMode {}, showSelectionPath {}, showNodeNames {}, "
-                           "showBaseConnections {}, focusDimOthers {}, revealName {}, learningPathColor {}, hub ring {}, schoolInk {} toward {}, "
+                           "showBaseConnections {}, focusDimOthers {}, revealName {}, showRootSpellNames {}, learningPathColor {}, hub ring {}, schoolInk {} toward {}, "
                            "labelMaxChars {}, {} school colour(s), {} school(s) hidden, {} note(s)",
             configFound ? "found" : "missing", presetId, presetFile.empty() ? "not read - treeStyle.js DEFAULTS" : "from " + presetFile,
-            discoveryMode, cheatMode, showSelectionPath, showNodeNames, showBaseConnections, focusDimOthers, revealName, Text(learning),
+            discoveryMode, cheatMode, showSelectionPath, showNodeNames, showBaseConnections, focusDimOthers, revealName, showRootSpellNames,
+            Text(learning),
             Text(hubRing), tree.schoolInk, Text(tree.schoolInkTone), tree.labelMaxChars, schoolColors.size(),
             std::ranges::count_if(schoolVisibility, [](const auto& a_entry) { return !a_entry.second; }), notes.size());
     }

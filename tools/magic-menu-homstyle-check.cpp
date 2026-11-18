@@ -195,6 +195,11 @@ namespace
         Expect(builtIn.presetFile.empty() && builtIn.tree.nodeFill.rgb == 0x1A1A2E,
             "a built-in id (arcane) is HoM's own: a file cannot replace it (designPresets.js:337), DEFAULTS");
 
+        // Show Root Spell Names (settingsPanel.js:1178: undefined -> true): on without the key, off only for false
+        Expect(HomStyle::Build(std::string(R"({})"), {}).showRootSpellNames, "showRootSpellNames: no key - on (HoM default)");
+        Expect(!HomStyle::Build(std::string(R"({"showRootSpellNames":false})"), {}).showRootSpellNames, "showRootSpellNames false: off");
+        Expect(HomStyle::Build(std::string(R"({"showRootSpellNames":true})"), {}).showRootSpellNames, "showRootSpellNames true: on");
+
         const auto badValues = HomStyle::Build(std::string(R"({"designPreset":"p","revealName":"10","heartRingColor":"gold",
                                                               "schoolColors":{"Destruction":5}})"),
             { { "p", R"({"tree":{"labelMaxChars":0,"focusStroke":"bright","schoolInk":2}})" } });
