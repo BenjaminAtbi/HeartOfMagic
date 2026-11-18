@@ -32,6 +32,8 @@ namespace HomAddon
 
     /// Whether HoM names this spell to the player (review v11 #1, T16): Reveal on its display state, each node by its own;
     /// else "???" wherever the name would show (tooltip, node card title, requirement rows) and no item card or 3D on a click
+    /// A school's root spell: the node's isRoot or its school's spoke root (rootIndex)
+    bool IsRootNode(int a_index);
     bool NameShown(int a_index, const Spells::Snapshot& a_snapshot);
     std::string ShownName(int a_index, const Spells::Snapshot& a_snapshot);
 
