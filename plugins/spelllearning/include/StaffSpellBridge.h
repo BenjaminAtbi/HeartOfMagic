@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <cstring>
 #include <optional>
+#include <string>
+#include <string_view>
 
 // =============================================================================
 // StaffSpellBridge - staff casts from SCSSoulCharge count as their original spell
@@ -62,6 +64,15 @@ namespace StaffSpellBridge
         return cast;
     }
 
+    // SCSSoulCharge (API 2) appends a marker (" \u25C8" by default, its INI) to the name of the spell bound to the
+    // staff in the right hand while it is held, re-adding it every frame. HoM's own names never keep it:
+    // a_name without a trailing a_marker; unchanged for an empty marker or a name that does not end with it.
+    inline std::string StripMarkerWith(std::string_view a_marker, std::string_view a_name)
+    {
+        if (a_marker.empty() || a_name.size() < a_marker.size() || !a_name.ends_with(a_marker)) return std::string(a_name);
+        return std::string(a_name.substr(0, a_name.size() - a_marker.size()));
+    }
+
     // Looks SCSSoulCharge.dll up once every plugin has loaded (kPostPostLoad) and logs
     // whether the link is on. Without the DLL, or with an older API, it stays off.
     void Init();
@@ -69,6 +80,9 @@ namespace StaffSpellBridge
     void RegisterCastListener();
     // True once the listener is registered: staff casts are then counted from the message only
     bool IsListening() noexcept;
+    // a_name without SCSSoulCharge's held-staff marker (StripMarkerWith with the DLL's marker; unchanged without
+    // the DLL or with API < 2). Any thread.
+    std::string StripNameMarker(std::string_view a_name);
 
     // ResolveWith using the DLL's lookup; a_formID unchanged while the link is off. Any thread.
     // A throw from the DLL turns the link off (logged once) instead of ending the game.

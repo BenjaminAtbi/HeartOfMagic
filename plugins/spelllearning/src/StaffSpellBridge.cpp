@@ -18,6 +18,8 @@ namespace StaffSpellBridge
         // thread and the effect hook's threads.
         std::atomic<GetOriginalSpellFn> g_getOriginal{ nullptr };
         std::atomic<bool> g_listening{ false };  // set at kPostLoad, read on the game thread
+        using GetNameMarkerFn = const char* (*)();
+        std::atomic<GetNameMarkerFn> g_getNameMarker{ nullptr };  // API 2; written once at kPostPostLoad
     }
 
     void Init()
@@ -41,6 +43,11 @@ namespace StaffSpellBridge
             return;
         }
         g_getOriginal.store(getOriginal, std::memory_order_release);
+        if (version >= 2) {
+            if (const auto getMarker = reinterpret_cast<GetNameMarkerFn>(GetProcAddress(module, "SCSSoulCharge_GetNameMarker"))) {
+                g_getNameMarker.store(getMarker, std::memory_order_release);
+            }
+        }
         logger::info("StaffSpellBridge: linked to SCSSoulCharge.dll (API {}) - a staff cast counts as its original spell "
                      "for learning XP and early-learned effectiveness", version);
     }
@@ -72,6 +79,14 @@ namespace StaffSpellBridge
         } else {
             logger::warn("StaffSpellBridge: could not listen to SCSSoulCharge messages - staff casts give no learning XP");
         }
+    }
+
+    std::string StripNameMarker(std::string_view a_name)
+    {
+        const GetNameMarkerFn getMarker = g_getNameMarker.load(std::memory_order_acquire);
+        if (!getMarker) return std::string(a_name);
+        const char* marker = getMarker();  // the DLL's own string: read here, not kept
+        return StripMarkerWith(marker ? std::string_view(marker) : std::string_view(), a_name);
     }
 
     bool IsListening() noexcept
