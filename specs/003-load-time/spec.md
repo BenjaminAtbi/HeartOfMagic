@@ -68,6 +68,26 @@ The save load did not change in code; its 8 ms rise is run-to-run spread in Spel
 own step (not checked over several runs). SC-002 (≤ 500 ms) is not met: 881 ms over, most of it
 the spell JSON (767) and the 245 ms outside the adapter's sub-lines.
 
+### After Phase 6 (2026-11-18 10:41, `SpellLearning.log` lines 95, 169, 324, 359; build 125b3826 + staff bridge)
+
+Not the same load order as the baseline: Spell Research is not active now (its parity file lists 0
+registrations) and 441 keywords go on effects (399 before), so the parity files cannot be compared
+with `build/parity-baseline/`; the offline report was byte-identical when Phase 6 was made.
+
+| Step | Baseline ms | After 2c ms | After 6 ms |
+|---|---|---|---|
+| Data loaded, whole handler | 1,862 | 1,381 | 702 |
+| - perk adapters | 1,714 | 1,230 | 536 |
+| -- plan | 1,478 | 985 | 508 |
+| --- spell JSON | 867 | 767 | 311 (effects 276, name 10, evidence 11, keywords 9, tier 3) |
+| --- planner and the rest of plan | about 605 | about 210 | about 197 |
+| - tree | 97 | 103 | 133 (read 5, validate 54, apply 66 in its own line) |
+| Save loaded, whole handler | 111 | 119 | 6 and 67 (two loads; Spell Research 1 and 61) |
+
+SC-002 (≤ 500 ms): 202 ms over; the largest part left is the spell JSON's effects (276 ms). The
+save load is under its 100 ms target. The vampire walk now runs at the main menu off the start path
+(10:41:32-33, its own lines).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Faster game start (Priority: P1)
