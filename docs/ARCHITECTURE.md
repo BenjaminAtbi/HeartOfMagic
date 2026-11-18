@@ -1250,7 +1250,18 @@ not affected.
   looks up `SCSSoulCharge_ApiVersion` / `SCSSoulCharge_GetOriginalSpell` in SCSSoulCharge.dll at kPostPostLoad
   and maps such a copy to its original spell before everything else in `HandlePlayerCast` (the pairing is keyed
   by the original) and in the immediate-cast hook. Only 0xFF forms are asked about; without the DLL (or with
-  API < 1) nothing changes. A throw from the lookup turns the link off for the session. A staff's own
+  API < 1) nothing changes. A throw from the lookup turns the link off for the session.
+  The cast itself reaches HoM by message, not by the cast event (2026-11-18): with Dynamic Magic Modification
+  Framework 2.0.3 installed, its `CasterHook::SpellCast` returns for an `EnchantmentItem` without calling the
+  original, so no `TESSpellCastEvent` is sent for a staff cast (probe build: hand casts reported, staff casts
+  never; DMMF's log shows no `SpellCastImpl called` at the staff casts). SCSSoulCharge broadcasts one SKSE
+  message per released staff cast (sender `SCSSoulCharge`, type `'SCST'`, 12 bytes copy/spell/concentration,
+  its src/api.h, main thread); `StaffSpellBridge::RegisterCastListener` (kPostLoad) decodes it
+  (`DecodeStaffCast`, checked by staff-bridge-check) and calls `SpellCastHandler::OnStaffCast`, which queues
+  `HandlePlayerCast` with the message's spell (the copy only names the log line; the message path is not paired by
+  `IsSecondReport`, and the listener callback catches everything). The staff mod sends exactly one message per
+  staff cast, whatever showed the cast (release state, its cast event, magicka paid). While the listener is registered, a staff copy that arrives by the cast
+  event or the immediate-cast hook (a load order without DMMF) is skipped, so a staff cast counts once. A staff's own
   enchantment (a plugin form) is never a copy, so it still gives no XP. Spellcasting Staff NG and Elden Catalyst
   cast the real spell with `CastSpellImmediate` and need no bridge (read from their docs and sources, not checked
   in game). Staff Enchanting Plus staves are deliberately not mapped (user decision 2026-11-17): what it imbues

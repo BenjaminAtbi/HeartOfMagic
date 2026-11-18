@@ -11,8 +11,11 @@
   cast) and the same early-learned weakening. Without SCSSoulCharge nothing changes. A staff's own enchantment
   gives no XP, as before; that includes vanilla staves and staves imbued with Staff Enchanting Plus.
   Spellcasting Staff NG and Elden Catalyst already cast the real spell and needed nothing. The log shows the
-  link at startup (`StaffSpellBridge: linked`) and the first cast of each staff copy
-  (`XP: staff cast ... counts as its original spell ...`). (`StaffSpellBridge`; docs/ARCHITECTURE.md,
+  link at startup (`StaffSpellBridge: linked`, then `listening for SCSSoulCharge staff casts`) and the first cast
+  of each staff copy (`XP: staff cast ... counts as its original spell ...`). SCSSoulCharge reports each staff
+  cast by an SKSE message, because a staff cast may send no cast event (Dynamic Magic Modification Framework
+  2.0.3 drops it); when the game does send one, it is skipped so the cast counts once. Needs an SCSSoulCharge
+  build that sends the message. (`StaffSpellBridge`; docs/ARCHITECTURE.md,
   SpellCastHandler.)
 
 ## Heart of Magic Librarian 1.9.3

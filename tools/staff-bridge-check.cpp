@@ -81,6 +81,31 @@ namespace
         }
         Check(passedOut, "DLL: a throw from the lookup reaches the caller");
 
+        // SCSSoulCharge's staff-cast message (its src/api.h: type 'SCST', 12 bytes copy/spell/concentration)
+        using StaffSpellBridge::DecodeStaffCast;
+        using StaffSpellBridge::kStaffCastMessageType;
+        const std::uint32_t message[3] = { kStaffCopy, kOriginal, 1 };
+        const auto cast = DecodeStaffCast(kStaffCastMessageType, sizeof(message), message);
+        Check(cast && cast->copy == kStaffCopy && cast->spell == kOriginal && cast->concentration == 1,
+            "message: a staff cast decodes to its copy, spell and concentration flag");
+        Check(kStaffCastMessageType == 0x53435354u, "message: the type is 'SCST' (0x53435354) as SCSSoulCharge sends it");
+        Check(!DecodeStaffCast(kStaffCastMessageType, 8, message), "message: a wrong size is ignored");
+        Check(!DecodeStaffCast(0x41424344u, sizeof(message), message), "message: another message type is ignored");
+        Check(!DecodeStaffCast(kStaffCastMessageType, sizeof(message), nullptr), "message: no data is ignored");
+        const std::uint32_t noSpell[3] = { kStaffCopy, 0, 0 };
+        Check(!DecodeStaffCast(kStaffCastMessageType, sizeof(noSpell), noSpell), "message: no spell is ignored");
+
+        // SCSSoulCharge's held-staff name marker (API 2): HoM's stored names never keep it
+        using StaffSpellBridge::StripMarkerWith;
+        constexpr std::string_view kMarker = " \xE2\x97\x88";  // " ◈" (U+25C8) in UTF-8, SCSSoulCharge's default
+        Check(StripMarkerWith(kMarker, "Healing \xE2\x97\x88") == "Healing", "marker: a trailing marker is taken off");
+        Check(StripMarkerWith(kMarker, "Healing") == "Healing", "marker: a name without it stays");
+        Check(StripMarkerWith(kMarker, "Healing (Learning - 35%) \xE2\x97\x88") == "Healing (Learning - 35%)",
+            "marker: taken off after HoM's learning tag too");
+        Check(StripMarkerWith(kMarker, "\xE2\x97\x88 Healing") == "\xE2\x97\x88 Healing", "marker: only at the end");
+        Check(StripMarkerWith("", "Healing \xE2\x97\x88") == "Healing \xE2\x97\x88", "marker: an empty marker (off) changes nothing");
+        Check(StripMarkerWith(kMarker, "\xE2\x97\x88") == "\xE2\x97\x88", "marker: a name shorter than the marker stays");
+
         std::printf("staff-bridge-check: %d checks, %d failed\n", g_checks, g_failures);
         return g_failures == 0 ? kExitOk : kExitFailed;
     }
