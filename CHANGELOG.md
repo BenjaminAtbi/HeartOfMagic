@@ -17,6 +17,17 @@
   2.0.3 drops it); when the game does send one, it is skipped so the cast counts once. Needs an SCSSoulCharge
   build that sends the message. (`StaffSpellBridge`; docs/ARCHITECTURE.md,
   SpellCastHandler.)
+- **Staff names keep no staff marker.** SCSSoulCharge (API 2) adds a marker to the bound spell's name while its staff
+  is held. The name Heart of Magic stores for a weakened spell, and the name a scan records, now leave that marker
+  out (read from SCSSoulCharge, so a changed or turned-off marker is followed). Without SCSSoulCharge nothing changes.
+
+### Fixed
+
+- **Magic Menu Rewrite block: next-spell rows follow the name settings.** With no learning target in a school, the
+  progress card's next-spell rows showed every spell's real name, while the tree, its tooltip and the node card show
+  "???" below the panel's Reveal Name %. The rows now show "???" the same way. A school's starting spell keeps its
+  name in the tooltip, the node card and the rows while the panel's Show Root Spell Names is on (the default), as the
+  panel's own tooltip does; the tree's name labels are unchanged. (ProgressChoices.cpp, TreeMarks.cpp, HomStyle.cpp)
 
 ## Heart of Magic Librarian 1.9.3
 
