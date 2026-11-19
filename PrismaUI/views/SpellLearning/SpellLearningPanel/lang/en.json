@@ -634,6 +634,8 @@
     "settings.tomeLearning.srMemoryMinutes": "Memory per 15% of practice (research minutes)",
     "settings.tomeLearning.srMemoryToPractice": "Memory guides practice",
     "settings.tomeLearning.srMaxPracticeBoost": "Most practice bonus from memory (%)",
+    "settings.tomeLearning.srReclassify": "Re-judge vanilla spells by their records",
+    "settings.tomeLearning.srReclassifyDesc": "Files the vanilla and DLC spells Spell Research imported under the school and level their records give now, so an overhaul's changes count. Off by default.",
     "settings.tomeLearning.inventoryBoost": "Inventory Boost",
     "settings.tomeLearning.inventoryBoostDesc": "Bonus XP while carrying tome",
     "settings.tomeLearning.learningReqs": "Learning Requirements",

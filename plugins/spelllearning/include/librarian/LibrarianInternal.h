@@ -125,4 +125,16 @@ namespace Librarian::Detail
         const auto enabled = found->find("enabled");
         return !(enabled != found->end() && enabled->is_boolean() && !enabled->get<bool>());
     }
+
+    // An opt-in switch in config.json ("<section>": { "<key>": true }): on only when the
+    // player turned it on; absent, unreadable or not a boolean means off.
+    [[nodiscard]] inline bool ConfigOptIn(const char* section, const char* key)
+    {
+        json config;
+        if (!ReadJsonFile(DataPath("config.json"), config) || !config.is_object()) return false;
+        const auto found = config.find(section);
+        if (found == config.end() || !found->is_object()) return false;
+        const auto value = found->find(key);
+        return value != found->end() && value->is_boolean() && value->get<bool>();
+    }
 }

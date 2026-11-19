@@ -123,14 +123,26 @@ var SpellResearchMemorySettingTest = {
             var ex = config.spellResearch && config.spellResearch.memoryExchange;
             self.check(ex && ex.practiceToMemory === false && ex.memoryMinutes === 40 && ex.memoryToPractice === false &&
                 ex.maxPracticeBoost === 10, 'saved into config.spellResearch.memoryExchange');
-            self.check(config.spellResearch.enabled === false && Object.keys(config.spellResearch).length === 2,
-                'spellResearch.enabled is left as it was, nothing else written beside memoryExchange');
+            self.check(config.spellResearch.enabled === false && Object.keys(config.spellResearch).length === 3,
+                'spellResearch.enabled is left as it was, nothing else written beside memoryExchange and reclassify');
+            self.check(config.spellResearch.reclassify === false, 'reclassify is saved off by default');
             self.check(SM.saveTo({}).spellResearch.memoryExchange.memoryMinutes === 40, 'a config without the section gets one');
             g.settings = {};
             SM.loadFrom(JSON.parse(JSON.stringify(config)));
             self.check(g.settings.spellResearchMemory.memoryMinutes === 40 && g.settings.spellResearchMemory.practiceToMemory === false &&
                 els.srPracticeToMemoryToggle.checked === false && els.srMemoryMinutesInput.value === 40 &&
                 els.srMemoryMinutesInput.disabled, 'loaded back with the controls');
+            // The reclassify switch: opt-in, saved as config.spellResearch.reclassify, read back only when true
+            var saved = { practice: g.settings.spellResearchMemory };
+            SM.reclassify = true;
+            self.check(SM.saveTo({}).spellResearch.reclassify === true, 'reclassify on is saved as true');
+            SM.loadFrom({ spellResearch: { reclassify: 'yes' } });
+            self.check(SM.reclassify === false, 'a reclassify value that is not true reads as off');
+            SM.loadFrom({ spellResearch: { reclassify: true } });
+            self.check(SM.reclassify === true, 'reclassify true reads as on');
+            SM.reset();
+            self.check(SM.reclassify === false, 'reset turns reclassify off');
+            g.settings.spellResearchMemory = saved.practice;
 
             SM.loadFrom({});
             m = g.settings.spellResearchMemory;
