@@ -258,7 +258,7 @@
                         </div>
                         <div class="settings-block-content tome-sources-content" id="tomeSourcesContent">
                             <!-- The categories' stack at the left; the right half, as tall as the stack (panel-scan.css), has two
-                                 tabs (modules/sourceListTabs.js): Spells, the Blacklisted and Whitelisted (Include) lists previewed,
+                                 tabs (modules/sourceListTabs.js): Spells, three columns (modules/spellLists.js: Spell list, Blacklisted, Whitelisted / Include; X B W move a row),
                                  and Plugins, the plugin list (settingsPanel.js renderWhitelistEntries; it was a window). The
                                  override button stays in Scan details. The list boxes keep the wheel (wheel-capture, wheelScroll.js) -->
                             <div class="tome-sources-split">
@@ -361,6 +361,10 @@
                                     <button type="button" class="tree-preview-tab" data-source-tab="plugins" data-i18n="scan.tabPlugins">Plugins</button>
                                 </div>
                                 <div class="source-list-page scan-lists" id="sourceListSpells">
+                                    <div class="scan-list">
+                                        <div class="scan-list-title" id="scanSpellListTitle" data-i18n="scan.spellList" data-i18n-params='{"count":0}'>Spell list (0)</div>
+                                        <ul class="wheel-capture scan-list-items" id="scanSpellListPreview"></ul>
+                                    </div>
                                     <div class="scan-list">
                                         <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
                                         <ul class="wheel-capture scan-list-items" id="scanBlacklistPreview"></ul>
@@ -2333,6 +2337,7 @@
     <script src="modules/settingsPresets.js"></script>
     <script src="modules/scannerPresets.js"></script>
     <script src="modules/easyMode.js"></script>
+    <script src="modules/spellLists.js"></script>
     <script src="modules/scanStage.js"></script>
     <script src="modules/buttonHandlers.js"></script>
     

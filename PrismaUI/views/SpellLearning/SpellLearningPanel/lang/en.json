@@ -475,6 +475,12 @@
     "scan.tabSpells": "Spells",
     "scan.blacklisted": "Blacklisted ({{count}})",
     "scan.whitelisted": "Whitelisted ({{count}})",
+    "scan.spellList": "Spell list ({{count}})",
+    "scan.moveToSpells": "Back to the spell list",
+    "scan.moveToBlacklist": "Blacklist",
+    "scan.moveToWhitelist": "Whitelist",
+    "scan.noCategory": "source not known",
+    "scan.offBySource": "its source is switched off",
     "scan.listEmpty": "None",
     "scan.override": "Override spells",
 

@@ -251,7 +251,7 @@ var PanelLayoutTest = {
     // ======================================================================= item 7
 
     _scanBox: function(extra) {
-        var box = this._sandbox(['constants.js', 'proceduralTreeBuilder.js', 'scanStage.js'],
+        var box = this._sandbox(['constants.js', 'proceduralTreeBuilder.js', 'spellLists.js', 'scanStage.js'],
             Object.assign({ settings: { spellBlacklist: [], pluginWhitelist: [] }, state: { lastSpellData: null },
                 getLocalFormId: function(f) { return String(f).replace(/^0x/i, '').toLowerCase().slice(-6); } }, extra || {}));
         return box;
@@ -325,9 +325,6 @@ var PanelLayoutTest = {
         this._checkGapLanguages();
         this.check(['Restoration', 'Mysticism', 'Illusion', 'Conjuration', 'Alteration', 'Arcane', 'Destruction'].sort(box.compareSchools).join() ===
             'Conjuration,Destruction,Alteration,Illusion,Restoration,Arcane,Mysticism', 'Schools: HoM\'s order, any other after them by name (compareSchools)');
-        var lists = S.listPreview(spells, [{ name: 'Zap' }, { formId: '0x00010002' }], ['skyrim.esm:010001', 'gone.esp:000001']);
-        this.check(lists.blacklisted.join() === '0x00010002,Zap' && lists.whitelisted.join() === 'gone.esp:000001,skyrim.esm:010001',
-            'List previews: the blacklist\'s names (a formId when it has none), the Include keys (named once GateReview is there), sorted');
 
     },
 
@@ -335,13 +332,14 @@ var PanelLayoutTest = {
         var self = this;
         var ids = ['scanStageBtn', 'scanStageLabel', 'scanBtn', 'scanAgainBtn', 'scanClearDraftBtn', 'tgBuildBtn', 'tgApplyBtn', 'tgClearBtn', 'easyBuildBtn',
             'scannerComplexContent', 'scanSummary', 'scanSummaryGap', 'statTotalSpells', 'scanBlacklistTitle', 'scanBlacklistPreview', 'scanWhitelistTitle',
-            'scanWhitelistPreview'];
+            'scanWhitelistPreview', 'scanSpellListTitle', 'scanSpellListPreview'];
         var els = {};
         ids.forEach(function(id) { els[id] = self.el('div', { id: id }); });
         els.scannerComplexContent.style.display = 'none';
         var growth = { _building: false, _treeBuilt: false, _nodeCount: 0 };
         var box = this._scanBox({ TreeGrowth: growth }), S = box.ScanStage, doc = this.doc(ids.map(function(id) { return els[id]; }));
         S._doc = function() { return doc; };
+        box.SpellLists._doc = function() { return doc; };
         S.init();
         this.check(els.scanStageLabel.getAttribute('data-i18n') === 'buttons.scanSpells' && !els.scanStageBtn.disabled &&
             els.scanAgainBtn.classList.contains('hidden') && els.scanSummary.text().indexOf('No scan yet') === 0 &&
@@ -378,8 +376,9 @@ var PanelLayoutTest = {
             els.scanSummaryGap.text() === '3 spells invalid (no tome, powers, copies); 1 spells left off the tree.',
             'Page scanned: Build Tree, Scan again shown, the summary line, the gap line (invalid; left off.)');
         this.check(els.statTotalSpells.textContent === '14' && els.scanBlacklistTitle.textContent === 'Blacklisted (1)' &&
-            els.scanBlacklistPreview.text() === '0x00010003' && els.scanWhitelistPreview.text() === 'None',
-            'Page: Spells found, the list previews (1 blacklisted, none whitelisted)');
+            els.scanBlacklistPreview.text().indexOf('A3Skyrim.esm') === 0 && els.scanWhitelistPreview.text() === 'None' &&
+            els.scanSpellListTitle.textContent === 'Spell list (13)',
+            'Page: Spells found, the Spells tab painted (1 blacklisted, named by the scan; none whitelisted; 13 in the Spell list)');
         els.scanStageBtn.click();
         this.check(els.easyBuildBtn.clicks === 1 && els.tgBuildBtn.clicks === 0, 'Page Easy: Build presses Easy\'s Build (it applies the chosen preset first)');
         els.easyBuildBtn.disabled = true;
@@ -539,7 +538,7 @@ var PanelLayoutTest = {
         list.scrollHeight = 100;
         this.check(W._scrollableFrom(item, 10) === page, 'Wheel: a wheel-capture box with nothing to scroll lets the page scroll');
         var boxes = (right.match(/class="wheel-capture [^"]*"/g) || []).length;
-        this.check(boxes === 4, 'Wheel: the four list boxes (Blacklisted, Whitelisted, Base Game, Mod Plugins) capture the wheel (' + boxes + ')');
+        this.check(boxes === 5, 'Wheel: the five list boxes (Spell list, Blacklisted, Whitelisted, Base Game, Mod Plugins) capture the wheel (' + boxes + ')');
     },
 
     // ======================================================================= item 9

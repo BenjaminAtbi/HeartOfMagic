@@ -202,6 +202,29 @@
 .scan-list-items li { padding: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .scan-list-items li.scan-list-empty { color: var(--text-muted, #6A6A5A); font-style: italic; }
 
+/* The Spells tab's rows (spellLists.js): the name with its description under it, as the blacklist window's rows
+   (.blacklist-entry-name / -school), and the move buttons on the right in the columns' left-to-right order */
+.scan-list-items li.spell-list-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0; white-space: normal; overflow: visible;
+    border-bottom: 1px solid var(--divider, rgba(255, 255, 255, 0.12));
+}
+.scan-list-items li.spell-list-item:last-child { border-bottom: none; }
+.spell-list-info { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.spell-list-name { color: var(--text-primary); }
+.spell-list-desc { font-size: 0.83em; color: var(--text-muted); }
+.spell-list-moves { flex: 0 0 auto; display: flex; gap: 3px; }
+.spell-move {
+    width: 1.5em; height: 1.5em; padding: 0; margin: 0;
+    font-size: 0.8em; font-weight: bold; line-height: 1;
+    border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 2px; cursor: pointer;
+}
+.spell-move:disabled { opacity: 0.35; cursor: default; }
+.spell-move-spells { background: #A02828; color: #FFFFFF; }
+.spell-move-blacklisted { background: #000000; color: #FFFFFF; }
+.spell-move-whitelisted { background: #FFFFFF; color: #000000; border-color: rgba(0, 0, 0, 0.5); }
+.spell-move:not(:disabled):hover { filter: brightness(1.25); }
+
 .scan-row-link {
     display: inline-flex;
     align-items: baseline;

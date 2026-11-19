@@ -15,9 +15,9 @@
  * (#scanBtn, the Easy or Complex Build, #tgApplyBtn), whose handlers, guards and the build
  * at game start (autoBuild.js) stay as they were. The other actions are small text
  * buttons: Scan again, Import, Clear draft tree (it clears the built draft, not anyone's
- * progress). "Scan details" is a section: the counts per school, beside previews of the
- * Blacklisted (settings.spellBlacklist) and Whitelisted (settings.gateReviewed, Gate Review's
- * Include) lists (on Where Spells Come From's Spells tab) and the override button (the blacklist window for now).
+ * progress). "Scan details" is a section: the counts per school and the override button (the blacklist
+ * window for now). Each refresh repaints Where Spells Come From's Spells tab (spellLists.js: the Spell list,
+ * Blacklisted and Whitelisted columns) when what it shows changed.
  *
  * "Applied" is this module's own flag: set when Apply (or the build at game start) saved
  * the draft (TreeGrowthClassic.applyTree calls markApplied), dropped when the draft changes
@@ -258,52 +258,10 @@ var ScanStage = {
         var foundEl = this._el('statTotalSpells');
         if (foundEl) foundEl.textContent = inputs.scanned ? String(c.found) : '--';
 
-        // The list previews
+        // The Spells tab's three columns (spellLists.js: painted only when what they show changed)
         var opts = (typeof settings !== 'undefined' && settings) ? settings : {};
-        var lists = this.listPreview(spells, opts.spellBlacklist, opts.gateReviewed);
-        this._writeList('scanBlacklistTitle', 'scanBlacklistPreview', ['scan.blacklisted', 'Blacklisted ({{count}})'], lists.blacklisted);
-        this._writeList('scanWhitelistTitle', 'scanWhitelistPreview', ['scan.whitelisted', 'Whitelisted ({{count}})'], lists.whitelisted);
+        if (typeof SpellLists !== 'undefined') SpellLists.render(spells, opts);
         if (typeof TomeSourceSetting !== 'undefined' && TomeSourceSetting.renderCounts) TomeSourceSetting.renderCounts(spells);
-    },
-
-    /** A preview list: its title with the count, one item per name (a muted "None" when empty) */
-    _writeList: function(titleId, listId, title, names) {
-        var titleEl = this._el(titleId);
-        if (titleEl) setI18n(titleEl, title[0], { count: names.length }, title[1]);
-        var list = this._el(listId);
-        if (!list) return;
-        var doc = this._doc();
-        list.innerHTML = '';
-        if (!names.length) {
-            var empty = doc.createElement('li');
-            empty.className = 'scan-list-empty';
-            setI18n(empty, 'scan.listEmpty', null, 'None');
-            list.appendChild(empty);
-            return;
-        }
-        for (var i = 0; i < names.length; i++) {
-            var li = doc.createElement('li');
-            li.textContent = names[i];
-            list.appendChild(li);
-        }
-    },
-
-    /**
-     * The names in the two lists, sorted: the blacklist's saved names, and the Include list's keys
-     * named by the scan's spell of that key (GateReview.key), the key itself when the scan has none.
-     * @returns {{blacklisted: string[], whitelisted: string[]}}
-     */
-    listPreview: function(spells, blacklist, kept) {
-        var byKey = {};
-        if (typeof GateReview !== 'undefined' && GateReview.key) {
-            (spells || []).forEach(function(s) { if (s && s.plugin && s.formId) byKey[GateReview.key(s)] = s.name || s.formId; });
-        }
-        var sort = function(a, b) { return String(a).localeCompare(String(b)); };
-        var entryName = function(e) { return e.name || e.formId || ((e.plugin || '') + ':' + (e.localFormId || '')); };
-        return {
-            blacklisted: (blacklist || []).map(entryName).sort(sort),
-            whitelisted: (kept || []).map(function(k) { return byKey[k] || k; }).sort(sort)
-        };
     },
 
     _show: function(id, on) {
