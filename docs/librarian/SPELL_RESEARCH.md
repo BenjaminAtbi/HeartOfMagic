@@ -287,3 +287,26 @@ HoM 의 시전 XP 는 "연습", SR 의 아키타입 XP(아키타입 60개 x 등�
   전역도 세이브에 남는다. 불러온 뒤 "loaded paid boundaries for 1 spells". 지급한 7개 아키타입 모두 지급분 이상을
   가졌다(그 밖의 몫은 같은 세션의 SR 자체 활동). 남은 것: SR MCM 에 보이는 지식(눈으로), 치트 재잠금 뒤
   "all paid before" debug 줄(게임 안 순서는 자가 테스트가 대신 확인).
+
+## 10. 바닐라 주문 다시 분류 (2026-11-20, 선택 기능, 기본 꺼짐 · 게임 확인 전)
+
+`spellResearch.reclassify` (패널: 설정 > 마법서 학습, Spell Research 줄 아래 "바닐라 주문 다시 분류").
+켜면 SR Import 가 넣은 바닐라·DLC 주문(Skyrim/Update/Dawnguard/HearthFires/Dragonborn.esm)의 학파와 등급을
+지금 레코드로 다시 판정한다. 판정은 스캔과 같은 `GetSpellSchool`/`DetermineSpellTier`(살아 있는 레코드, 카탈로그 아님).
+다른 모드 주문은 HoM 등록(이미 레코드대로)이나 패치 제작자의 선택이라 건드리지 않는다(사용자 결정 "바닐라 주문").
+
+- 규칙(`librarian/SpellResearchReclassify.h`, `tools/sr-reclassify-check`): SR 은 학파·등급을 첫 일치로 읽는다
+  (GetSpellSkill 변성부터, GetSpellRank 초급부터). 그래서 맞는 목록에 넣은 뒤 틀린 목록에서 뺀다. 틀린 항목이
+  레코드에 선언돼 있으면(뺄 수 없음) 그 주문은 두 축 모두 그대로 두고 `lockedSpells` 로 보고한다.
+- 목록 구조(1.6.1170 디스어셈블리, Codex 2026-11-20): `forms` = 레코드 항목 다음 스크립트 추가 항목(주문·책),
+  `scriptAddedTempForms` = 스크립트가 넣은 동적(0xFF) 폼, `scriptAddedFormCount` = 두 배열의 스크립트 추가분 합.
+  Papyrus 인덱스는 temp 다음 forms. 빼기는 Papyrus RemoveAddedForm 의 내부 함수(AE ID 20914)와 같은 순서로
+  한다: temp, 그다음 forms 의 스크립트 구간, count 1 감소, `AddChange(0x80000000)`.
+- 마법서 짝: 옮기는 등급 말고 다른 모든 등급의 스크립트 짝을 빼고(같은 Papyrus 인덱스의 책), 목표 등급에 짝이
+  없으면 책 먼저 붙인다. 두 목록의 temp 크기와 전체 크기가 같을 때만 움직이고, 한 단계마다 다시 확인한다.
+- 시점: Reconcile 의 Import 확인 뒤, 개수 비교 앞(같은 개수로 끝나는 재Import 도 본다). 매번 다시 돌려도 같다.
+- 보고: `spell_research_reclassify.json` (moved, partial, same, locked, unknown, 바뀐 주문과 짝 처리).
+- 한계: Spell Research Upgrade and Fixes 의 주문 캐시(`SRCache/SpellResearchRank*.json`, 주문 이름별 아키타입)는
+  옛 분류를 들고 있어, 켠 뒤 그 모드의 캐시를 다시 만들어야 한다. 끄면 SR Import 를 다시 할 때까지 바뀐 분류가
+  세이브에 남는다. 원소·기법·시전·대상 목록은 그대로다. 연구 중인 Papyrus 스택이 옛 인덱스를 쥐고 있을 수 있어
+  짝 이동은 Import 끝이나 불러오기 때만 한다.

@@ -57,7 +57,7 @@ namespace
             "tier changed: drop the old tier, join the new one, school left");
         Check(tierUp.fromTier == kNovice && tierUp.fromSchool == kDestruction, "the decision names SR's reading before");
 
-        // School changed (Restoration -> Alteration): the old school must go or first-match keeps... the new one first
+        // School changed (Restoration -> Alteration): the old school list is left as well as the new one joined
         auto school = R::Decide(Make({ { kAdept }, {} }, { { kRestoration }, {} }, kAdept, kAlteration));
         Check(school.outcome == R::Outcome::kMove && school.school.drop == std::vector<std::size_t>{ kRestoration }
                   && school.school.add == kAlteration && !school.tier.Changes(),
