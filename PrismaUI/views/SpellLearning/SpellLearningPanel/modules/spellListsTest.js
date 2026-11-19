@@ -142,8 +142,8 @@ var SpellListsTest = {
         var kept = els.scanWhitelistPreview.children[1].find(function(c) { return c.getAttribute('data-move') === 'blacklisted'; })[0];
         this.check(gone.disabled && !kept.disabled && /spell-move-blacklisted/.test(gone.cls()),
             'Render: B is off for an Include key the scan has no spell for (no form id to blacklist)');
-        this.check(els.scanSpellListPreview.children[0].text() === 'Call HorseMod.esp - Standard VendorsBW',
-            'Render: the name, then its description under it; no reasons in the All view');
+        this.check(els.scanSpellListPreview.children[0].text() === 'Call Horse?Mod.esp - Standard VendorsBW',
+            'Render: the name with its "?", then its description under it; no reasons in the All view');
         L.setView('flagged');
         var reason = els.scanSpellListPreview.children[0].find(function(c) { return /spell-list-reasons/.test(c.cls()); });
         this.check(els.scanSpellListPreview.children.length === 1 && reason.length === 1 && reason[0].textContent === ' - summons a horse',
@@ -184,11 +184,31 @@ var SpellListsTest = {
         this.check(box.settings.gateReviewed.join() === 'skyrim.esm:012fcc', 'Click: W on a Spell list row whitelists that row\'s spell');
     },
 
+    /** The "?" card's text (spellPeek.js): the effects' descriptions filled in, hidden effects left out */
+    _card: function() {
+        var vm = require('vm'), fs = require('fs'), path = require('path');
+        var box = { window: {} };
+        vm.createContext(box);
+        var file = path.join(__dirname, 'spellPeek.js');
+        vm.runInContext(fs.readFileSync(file, 'utf8'), box, { filename: file });
+        var P = box.SpellPeek;
+        var spell = { effects: [
+            { name: 'Flames', magnitude: 8, duration: 1, area: 0, description: 'A gout of fire that does <mag> points per second.' },
+            { name: 'Burn', magnitude: 2.5, duration: 5, area: 10, description: 'Burns for <dur> seconds in <area> feet, <15> <Global=X>.' },
+            { name: 'Helper', magnitude: 1, duration: 0, flags: { hideInUI: true }, description: 'Hidden <mag>.' },
+            { name: 'Flames', magnitude: 8, duration: 1, area: 0, description: 'A gout of fire that does <mag> points per second.' }
+        ] };
+        this.check(P.description(spell) === 'A gout of fire that does 8 points per second. Burns for 5 seconds in 10 feet, .',
+            'Card: the description is the shown effects\' texts, figures filled in, other tags dropped, each text once');
+        this.check(P.effectLines(spell).join(' | ') === 'Flames (8) 1s | Burn (3) 5s, 10 ft | Flames (8) 1s',
+            'Card: each shown effect with its magnitude, duration and area');
+    },
+
     run: function() {
         this.passed = 0;
         this.failed = 0;
         if (typeof require !== 'function') return { passed: 0, failed: 0 };
-        var parts = [['Model', this._model], ['Render', this._render], ['Moves', this._moves]];
+        var parts = [['Model', this._model], ['Render', this._render], ['Moves', this._moves], ['Card', this._card]];
         for (var i = 0; i < parts.length; i++) {
             try { parts[i][1].call(this, this._box()); } catch (e) { this.check(false, parts[i][0] + ' threw: ' + (e && e.stack ? e.stack : e)); }
         }

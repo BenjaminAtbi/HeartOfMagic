@@ -235,6 +235,7 @@ var SpellLists = {
         if (!list) return;
         this._wire(list, col.name);
         this._items[col.name] = rows;
+        if (typeof SpellPeek !== 'undefined' && SpellPeek.hide) SpellPeek.hide();
         list.innerHTML = '';
         if (!rows.length) {
             var empty = this._el(doc, 'li', 'scan-list-empty');
@@ -249,7 +250,12 @@ var SpellLists = {
             var li = this._el(doc, 'li', 'spell-list-item');
             li.setAttribute('data-index', r);
             var info = this._el(doc, 'div', 'spell-list-info');
-            info.appendChild(this._el(doc, 'div', 'spell-list-name', rows[r].name));
+            var nameEl = info.appendChild(this._el(doc, 'div', 'spell-list-name', rows[r].name));
+            // "?": the spell's card on hover (spellPeek.js); only for a spell the scan has
+            if (rows[r].spell) {
+                var help = nameEl.appendChild(this._el(doc, 'span', 'spell-list-help', '?'));
+                help.setAttribute('aria-label', this._t('scan.spellPeek', "Show the spell's figures and description"));
+            }
             var desc = info.appendChild(this._el(doc, 'div', 'spell-list-desc', rows[r].lines.join(' - ')));
             // The Flagged view: why each is to be looked over, in its own colour
             if (showReasons && rows[r].reasons.length) {
@@ -285,6 +291,20 @@ var SpellLists = {
             var row = li ? (self._items[column] || [])[parseInt(li.getAttribute('data-index'), 10)] : null;
             if (row) self.move(row, btn.getAttribute('data-move'));
         });
+        // The "?" tags: the spell's card while the pointer is on one
+        var helpOf = function(e) { return e && e.target && e.target.closest ? e.target.closest('.spell-list-help') : null; };
+        list.addEventListener('mouseover', function(e) {
+            var help = helpOf(e);
+            if (!help || typeof SpellPeek === 'undefined') return;
+            var li = help.closest('li[data-index]');
+            var row = li ? (self._items[column] || [])[parseInt(li.getAttribute('data-index'), 10)] : null;
+            if (row && row.spell) SpellPeek.show(row.spell, help);
+        });
+        list.addEventListener('mouseout', function(e) {
+            if (helpOf(e) && typeof SpellPeek !== 'undefined') SpellPeek.hide();
+        });
+        // A repaint or a scroll takes the "?" away from under the pointer
+        list.addEventListener('scroll', function() { if (typeof SpellPeek !== 'undefined') SpellPeek.hide(); });
     },
 
     /** The row as a spell addToBlacklist takes: the scan's, else the blacklist entry's fields */

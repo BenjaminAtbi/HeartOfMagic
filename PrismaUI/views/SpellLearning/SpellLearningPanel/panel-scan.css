@@ -236,6 +236,25 @@
 .spell-move:not(:disabled):hover { filter: brightness(1.25); }
 /* The Flagged view's reasons for a look, in their own colour */
 .spell-list-reasons { color: #D0A060; }
+/* The "?" beside a spell's name, and the card it shows on hover (spellPeek.js), like the tree's spell card */
+.spell-list-help {
+    display: inline-block; width: 1.25em; height: 1.25em; margin-left: 6px; vertical-align: middle;
+    font-size: 0.75em; line-height: 1.25em; text-align: center; cursor: help;
+    color: var(--text-secondary, #A8A898); border: 1px solid var(--divider, rgba(255, 255, 255, 0.3)); border-radius: 50%;
+}
+.spell-list-help:hover { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
+.spell-peek {
+    position: fixed; z-index: 10050; max-width: 24em; padding: 10px 12px; pointer-events: none;
+    background: var(--panel-bg-solid, #12110e); border: 1px solid var(--accent-gold, #C8A050); border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6); font-size: 0.85em; color: var(--text-primary);
+}
+.spell-peek.hidden { display: none; }
+.spell-peek-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.spell-peek-name { font-size: 1.1em; font-weight: 600; color: var(--text-bright, var(--text-primary)); }
+.spell-peek-row { display: flex; gap: 8px; }
+.spell-peek-label { color: var(--text-muted); min-width: 4.5em; }
+.spell-peek-effects { margin: 6px 0 0; padding-left: 1.2em; color: var(--text-secondary, #A8A898); }
+.spell-peek-desc { margin-top: 6px; line-height: 1.4; color: var(--text-secondary, #A8A898); }
 
 .scan-row-link {
     display: inline-flex;

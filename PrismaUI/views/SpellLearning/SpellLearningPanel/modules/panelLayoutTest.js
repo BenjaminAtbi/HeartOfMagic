@@ -376,7 +376,7 @@ var PanelLayoutTest = {
             els.scanSummaryGap.text() === '3 spells invalid (no tome, powers, copies); 1 spells left off the tree.',
             'Page scanned: Build Tree, Scan again shown, the summary line, the gap line (invalid; left off.)');
         this.check(els.statTotalSpells.textContent === '14' && els.scanBlacklistTitle.textContent === 'Blacklisted (1)' &&
-            els.scanBlacklistPreview.text().indexOf('A3Skyrim.esm') === 0 && els.scanWhitelistPreview.text() === 'None' &&
+            els.scanBlacklistPreview.text().indexOf('A3?Skyrim.esm') === 0 && els.scanWhitelistPreview.text() === 'None' &&
             els.scanSpellListTitle.textContent === 'Spell list (13)',
             'Page: Spells found, the Spells tab painted (1 blacklisted, named by the scan; none whitelisted; 13 in the Spell list)');
         els.scanStageBtn.click();
