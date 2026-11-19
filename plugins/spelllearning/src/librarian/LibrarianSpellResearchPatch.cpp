@@ -585,10 +585,7 @@ namespace Librarian::SpellResearchPatch
                 const std::string tome = decision.tier.Changes() ? MoveTomePairs(spell, *input.wantTier) : std::string("tier unchanged");
                 // What SR reads now: exactly the wanted tier and school, or a partial change to report
                 const RC::Entries tiersAfter = EntriesOf(tiers, formId), schoolsAfter = EntriesOf(schools, formId);
-                const auto only = [](const RC::Entries& entries, std::size_t want) {
-                    return entries.record.empty() && entries.script == std::vector<std::size_t>{ want };
-                };
-                const bool done = only(tiersAfter, *input.wantTier) && only(schoolsAfter, *input.wantSchool);
+                const bool done = RC::OnlyIn(tiersAfter, *input.wantTier) && RC::OnlyIn(schoolsAfter, *input.wantSchool);
                 ++(done ? moved : partial);
                 changes.push_back({ { "spell", id }, { "name", spell->GetName() }, { "result", done ? "moved" : "partial" },
                     { "from", { { "tier", std::string(SR::kTiers[*decision.fromTier]) },

@@ -49,6 +49,14 @@ namespace Librarian::SpellResearch::Reclassify
         return first;
     }
 
+    // After a move: the spell is in the wanted list and in no other, whichever way each entry got there
+    inline bool OnlyIn(const Entries& a_entries, std::size_t a_want)
+    {
+        const auto right = [a_want](std::size_t index) { return index == a_want; };
+        return (!a_entries.script.empty() || !a_entries.record.empty()) && std::ranges::all_of(a_entries.script, right)
+            && std::ranges::all_of(a_entries.record, right);
+    }
+
     struct AxisChange
     {
         bool locked = false;              // a wrong entry is in a record: nothing can be done on this axis
@@ -139,19 +147,5 @@ namespace Librarian::SpellResearch::Reclassify
         case Outcome::kNotInSR: return "notInSR";
         }
         return "?";
-    }
-
-    // A tier's tome lists pair book i with spell i. Moving a spell's tome pair from tier
-    // a_from to a_to needs both tiers' lists lined up (same count and the same number of
-    // record entries) and the pair to be a script entry in a_from (record pairs stay).
-    struct PairLists
-    {
-        std::size_t bookRecords = 0, bookScripts = 0;
-        std::size_t spellRecords = 0, spellScripts = 0;
-    };
-
-    inline bool Aligned(const PairLists& a_lists)
-    {
-        return a_lists.bookRecords == a_lists.spellRecords && a_lists.bookScripts == a_lists.spellScripts;
     }
 }

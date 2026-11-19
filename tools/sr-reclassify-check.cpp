@@ -93,9 +93,11 @@ namespace
         Check(noSchool.outcome == R::Outcome::kMove && noSchool.school.add == kConjuration && noSchool.school.drop.empty(),
             "in a tier but no school list: join the school");
 
-        // Tome pair lists line up only with equal record and script counts
-        Check(R::Aligned({ 2, 30, 2, 30 }) && !R::Aligned({ 2, 30, 2, 29 }) && !R::Aligned({ 3, 29, 2, 30 }),
-            "tome pairs line up only with the same record and script counts");
+        // The check after a move: only the wanted list, a record entry there counts as done
+        Check(R::OnlyIn({ { kApprentice }, {} }, kApprentice), "after a move: the wanted script entry alone is done");
+        Check(R::OnlyIn({ {}, { kApprentice } }, kApprentice), "after a move: the wanted record entry alone is done");
+        Check(!R::OnlyIn({ { kApprentice, kNovice }, {} }, kApprentice), "after a move: a wrong entry left is not done");
+        Check(!R::OnlyIn({}, kApprentice), "after a move: in no list is not done");
 
         Check(std::string_view(R::OutcomeText(R::Outcome::kLocked)) == "locked", "outcome names for the report");
 
