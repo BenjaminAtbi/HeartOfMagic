@@ -283,12 +283,13 @@
 #pluginListPanel .plugin-list-mods { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 #pluginListPanel .plugin-list-mods .whitelist-entries { flex: 1 1 0; height: 0; min-height: 6em; max-height: none; }
 
-/* Rows: the switch, the text at a fixed width (so the counts line up in one column), the count */
-#tomeSourcesBlock .setting-row { justify-content: flex-start; }
+/* Rows: the switch, then the text and the count sharing the rest evenly at any width or text size (so the counts
+   line up in one column); both wrap rather than overrun */
+#tomeSourcesBlock .setting-row { justify-content: flex-start; flex-wrap: nowrap; }
 #tomeSourcesBlock .setting-row > .toggle-switch { flex: 0 0 auto; margin: 0 24px 0 0; }
-#tomeSourcesBlock .setting-row > .setting-info { flex: 0 0 34em; max-width: 34em; }
-.tome-source-count-cell { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; margin: 0 12px 0 36px; }
-.tome-source-count { color: var(--text-secondary, #A8A898); white-space: nowrap; }
+#tomeSourcesBlock .setting-row > .setting-info { flex: 1 1 0; min-width: 0; max-width: none; }
+.tome-source-count-cell { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 12px 0 24px; }
+.tome-source-count { color: var(--text-secondary, #A8A898); white-space: normal; overflow-wrap: break-word; }
 .tome-source-scoped.hidden { display: none; }
 
 /* Unreachable: a warning row, red tinted */
