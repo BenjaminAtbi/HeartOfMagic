@@ -23,6 +23,10 @@
 
 ### Fixed
 
+- **Panel drop-down lists follow Font Size and the design.** The open list of the language, design, notification
+  language and tree-builder drop-downs was drawn by the panel engine itself, white with a small fixed font, whatever
+  the Font Size setting or the design. The panel now draws that list at the setting's size in the design's colours.
+  Escape with a list open closes the list, not the panel. (modules/selectSkin.js)
 - **Magic Menu Rewrite block: next-spell rows follow the name settings.** With no learning target in a school, the
   progress card's next-spell rows showed every spell's real name, while the tree, its tooltip and the node card show
   "???" below the panel's Reveal Name %. The rows now show "???" the same way. A school's starting spell keeps its
