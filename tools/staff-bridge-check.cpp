@@ -116,6 +116,12 @@ namespace
             "marker: another spell ending with the same characters keeps them");
         Check(StripHeldMarkerWith(0, kOriginal, kMarker, "Healing \xE2\x97\x88") == "Healing \xE2\x97\x88",
             "marker: no staff held (0) - nothing taken off");
+        // API 4: the marker on one spell may carry both hands' marks (" \u2605R \u2605L"); only that exact end goes
+        constexpr std::string_view kBoth = " \xE2\x98\x85R \xE2\x98\x85L";
+        Check(StripMarkerWith(kBoth, "Flames \xE2\x98\x85R \xE2\x98\x85L") == "Flames", "marker: both hands' marks taken off together");
+        Check(StripMarkerWith(" \xE2\x98\x85L", "Flames \xE2\x98\x85L") == "Flames", "marker: a left-hand mark taken off");
+        Check(StripMarkerWith(" \xE2\x98\x85L", "Flames \xE2\x98\x85R") == "Flames \xE2\x98\x85R",
+            "marker: the other hand's mark is not this one - kept");
 
         std::printf("staff-bridge-check: %d checks, %d failed\n", g_checks, g_failures);
         return g_failures == 0 ? kExitOk : kExitFailed;

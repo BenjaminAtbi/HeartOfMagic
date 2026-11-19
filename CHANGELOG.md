@@ -19,7 +19,7 @@
   SpellCastHandler.)
 - **Staff names keep no staff marker.** SCSSoulCharge (API 2) adds a marker to the bound spell's name while its staff
   is held. The name Heart of Magic stores for a weakened spell, and the name a scan records, now leave that marker
-  out, and only on the held staff's spell (both read from SCSSoulCharge each time, so a changed or turned-off marker is followed). Without SCSSoulCharge nothing changes.
+  out, and only the marker SCSSoulCharge put on that spell, for a staff in either hand (read from SCSSoulCharge each time, so a changed or turned-off marker is followed). Without SCSSoulCharge nothing changes.
 
 ### Fixed
 

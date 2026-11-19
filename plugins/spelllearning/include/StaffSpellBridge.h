@@ -28,6 +28,7 @@ namespace StaffSpellBridge
     inline constexpr std::uint32_t kRuntimeFormIndex = 0xFF;
     inline constexpr std::uint32_t kMinApiVersion = 1;
     inline constexpr std::uint32_t kMessageApiVersion = 2;  // the first SCSSoulCharge API that sends 'SCST'
+    inline constexpr std::uint32_t kMarkerOnApiVersion = 4;  // GetNameMarkerOn(spell): left-hand staves too
 
     // The original spell's FormID when a_formID is a staff copy, else a_formID unchanged.
     // Only runtime forms (index 0xFF) are asked about, so plugin spells cost one shift.
@@ -91,9 +92,10 @@ namespace StaffSpellBridge
     void RegisterCastListener();
     // True once the listener is registered: staff casts are then counted from the message only
     bool IsListening() noexcept;
-    // a_name (spell a_spell's) without SCSSoulCharge's held-staff marker: StripHeldMarkerWith with the DLL's held
-    // spell and marker, both asked on each call (the marker follows its INI). Unchanged without the DLL or with
-    // API < 2. Any thread.
+    // a_name (spell a_spell's) without SCSSoulCharge's staff marker. API 4+: the marker GetNameMarkerOn gives for
+    // that spell (either hand, both hands' marks together). API 2-3: StripHeldMarkerWith with the right-hand held
+    // spell and marker. Asked on each call (the marker follows its INI). Unchanged without the DLL or below API 2.
+    // Any thread.
     std::string StripNameMarker(std::uint32_t a_spell, std::string_view a_name);
 
     // ResolveWith using the DLL's lookup; a_formID unchanged while the link is off. Any thread.

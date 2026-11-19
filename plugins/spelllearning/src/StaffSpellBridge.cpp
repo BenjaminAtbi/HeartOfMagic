@@ -23,6 +23,10 @@ namespace StaffSpellBridge
         // API 2; written once at kPostPostLoad, both set or both null
         std::atomic<GetNameMarkerFn> g_getNameMarker{ nullptr };
         std::atomic<GetHeldStaffSpellFn> g_getHeldSpell{ nullptr };
+        // API 4: the exact marker SCSSoulCharge put on one spell's name (" \u2605R", " \u2605L", both), "" for none.
+        // Knows the left-hand staff too, which the held-spell pair above does not.
+        using GetNameMarkerOnFn = const char* (*)(std::uint32_t);
+        std::atomic<GetNameMarkerOnFn> g_getMarkerOn{ nullptr };
     }
 
     void Init()
@@ -46,6 +50,11 @@ namespace StaffSpellBridge
             return;
         }
         g_getOriginal.store(getOriginal, std::memory_order_release);
+        if (version >= kMarkerOnApiVersion) {
+            if (const auto getMarkerOn = reinterpret_cast<GetNameMarkerOnFn>(GetProcAddress(module, "SCSSoulCharge_GetNameMarkerOn"))) {
+                g_getMarkerOn.store(getMarkerOn, std::memory_order_release);
+            }
+        }
         if (version >= 2) {
             const auto getMarker = reinterpret_cast<GetNameMarkerFn>(GetProcAddress(module, "SCSSoulCharge_GetNameMarker"));
             const auto getHeld = reinterpret_cast<GetHeldStaffSpellFn>(GetProcAddress(module, "SCSSoulCharge_GetHeldStaffSpell"));
@@ -99,6 +108,11 @@ namespace StaffSpellBridge
 
     std::string StripNameMarker(std::uint32_t a_spell, std::string_view a_name)
     {
+        // API 4: the marker on this spell, whichever hand's staff holds it
+        if (const GetNameMarkerOnFn getMarkerOn = g_getMarkerOn.load(std::memory_order_acquire)) {
+            const char* marker = getMarkerOn(a_spell);  // valid for the game session; read here, not kept
+            return StripMarkerWith(marker ? std::string_view(marker) : std::string_view(), a_name);
+        }
         const GetNameMarkerFn getMarker = g_getNameMarker.load(std::memory_order_acquire);
         const GetHeldStaffSpellFn getHeld = g_getHeldSpell.load(std::memory_order_acquire);
         if (!getMarker || !getHeld) return std::string(a_name);
