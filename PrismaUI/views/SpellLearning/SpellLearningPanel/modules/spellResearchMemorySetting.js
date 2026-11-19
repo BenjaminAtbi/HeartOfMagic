@@ -31,7 +31,7 @@ var SpellResearchMemorySetting = {
     },
     MAX_MINUTES: 240,
     MAX_BOOST: 100,
-    ROW_IDS: ['srPracticeToMemoryRow', 'srMemoryMinutesRow', 'srMemoryToPracticeRow', 'srMaxPracticeBoostRow', 'srReclassifyRow'],
+    ROW_IDS: ['srPracticeToMemoryRow', 'srMemoryMinutesRow', 'srMemoryToPracticeRow', 'srMaxPracticeBoostRow'],
     // spellResearch.reclassify (opt-in, default off): SR's vanilla spells re-filed by their records
     reclassify: false,
 
@@ -126,12 +126,18 @@ var SpellResearchMemorySetting = {
         if (boostRow && boostRow.classList) boostRow.classList.toggle('disabled-controls', m.memoryToPractice === false);
     },
 
-    /** Show or hide the rows (with the Spell Research line: shown only when the plugin reports SR). */
-    show: function(visible) {
+    /**
+     * Show or hide the rows (with the Spell Research line). The memory rows need the plugin's memory
+     * part (visible); the reclassify row needs only Spell Research (reclassifyVisible, else as visible).
+     */
+    show: function(visible, reclassifyVisible) {
         for (var i = 0; i < this.ROW_IDS.length; i++) {
             var row = document.getElementById(this.ROW_IDS[i]);
             if (row) row.style.display = visible ? '' : 'none';
         }
+        var reclassifyRow = document.getElementById('srReclassifyRow');
+        var showReclassify = reclassifyVisible === undefined ? visible : reclassifyVisible;
+        if (reclassifyRow) reclassifyRow.style.display = showReclassify ? '' : 'none';
     },
 
     /** Read the saved settings from a config, keeping the defaults for what is missing or wrong. */
