@@ -97,7 +97,7 @@ var TreeGrowth = {
     _buildHTML: function() {
         // Classic is the only builder (2026-09-27): no tab row to pick one
         return '' +
-            '<div class="tree-preview-header">' +
+            '<div class="tree-preview-header settings-block-header">' +
                 '<span class="tree-preview-title scan-section-title">' + t('treeViewer.treeGrowthPreview') + '</span>' +
             '</div>' +
             // Shared action buttons now live in index.html scan-actions-bottom

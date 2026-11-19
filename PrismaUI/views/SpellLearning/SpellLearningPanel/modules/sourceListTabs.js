@@ -1,5 +1,5 @@
 /**
- * SourceListTabs - the right half of Where Spells Come From: two tabs, Spells (the Blacklisted and
+ * SourceListTabs - the right half of Spell Inclusion: two tabs, Spells (the Blacklisted and
  * Whitelisted previews, written by scanStage.js) and Plugins (the plugin list, once a window:
  * settingsPanel.js renderWhitelistEntries and its helpers fill the same ids).
  *

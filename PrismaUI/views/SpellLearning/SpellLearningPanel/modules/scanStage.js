@@ -6,7 +6,7 @@
  * it, not a voice slot spell, not another plugin's copy), whatever the player's choices;
  * the scan's other spells are invalid (no whitelist brings them in). A second line says
  * "X spells invalid (no tome, powers, copies); X spells left off the tree." Left off is
- * found minus in the tree: off by a source switch (Where Spells Come From), the
+ * found minus in the tree: off by a source switch (Spell Inclusion), the
  * blacklist or a plugin turned off; once built, the ones the builder did not place follow.
  *
  * The main button follows the stage: Scan Spells, Build Tree, Apply Tree (Build and Apply
@@ -16,7 +16,7 @@
  * at game start (autoBuild.js) stay as they were. The other actions are small text
  * buttons: Scan again, Import, Clear draft tree (it clears the built draft, not anyone's
  * progress). "Scan details" is a section: the counts per school and the override button (the blacklist
- * window for now). Each refresh repaints Where Spells Come From's Spells tab (spellLists.js: the Spell list,
+ * window for now). Each refresh repaints Spell Inclusion's Spells tab (spellLists.js: the Spell list,
  * Blacklisted and Whitelisted columns) when what it shows changed.
  *
  * "Applied" is this module's own flag: set when Apply (or the build at game start) saved

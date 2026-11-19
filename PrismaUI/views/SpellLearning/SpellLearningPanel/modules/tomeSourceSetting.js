@@ -246,21 +246,8 @@ var TomeSourceSetting = {
                 });
             }
         });
-        this._initFold();
+        // The section folds by its header bar like every Scan page section (scanSections.js)
         this.sync();
-    },
-
-    /** The box folds by its header, open by default */
-    _initFold: function() {
-        var header = document.getElementById('tomeSourcesHeader');
-        var content = document.getElementById('tomeSourcesContent');
-        if (!header || !content || !header.addEventListener) return;
-        var icon = header.querySelector ? header.querySelector('.prm-collapse-icon') : null;
-        header.addEventListener('click', function() {
-            var folded = content.classList.toggle('collapsed');
-            if (icon) icon.classList.toggle('collapsed', folded);
-            header.setAttribute('aria-expanded', folded ? 'false' : 'true');
-        });
     },
 
     /** Put the saved switches on the toggles */

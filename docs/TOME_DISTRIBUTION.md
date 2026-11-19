@@ -111,7 +111,7 @@ Consumers:
   - `modules/tomeSourceSetting.js`: the switches, `offTree`, Gate Review's reason text;
   - `modules/gateReview.js`;
   - `isTreeCandidate` in `modules/proceduralTreeBuilder.js`;
-- panel UI: "Where Spells Come From", at the top of the Complex tree builder in `index.html`. It is mirrored in
+- panel UI: "Spell Inclusion", at the top of the Complex tree builder in `index.html`. It is mirrored in
   `dev-harness.html`, shown after a scan (`cppCallbacks.js`), and folds by its header. Nine rows, Unreachable last
   (red tinted, off by default). Each row shows a count column made by `TomeSourceSetting.renderCounts`
   (ScanStage.refresh calls it): the found spells (`isTomeCandidate`) of that category whether it is on or not,

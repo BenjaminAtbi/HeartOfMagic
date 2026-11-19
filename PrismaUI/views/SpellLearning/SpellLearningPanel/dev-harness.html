@@ -168,9 +168,12 @@
                     <button type="button" id="scanClearDraftBtn" class="btn scan-text-btn hidden" data-i18n="scan.clearDraft">Clear draft tree</button>
                 </div>
 
-                <!-- Section 1: Scan details - the counts and Override spells (scanStage.js); the list previews are in Where Spells Come From -->
+                <!-- Section 1: Scan details - the counts and Override spells (scanStage.js); the list previews are in Spell Inclusion.
+                     Every section folds by its header bar (modules/scanSections.js) -->
                 <div class="scan-section" id="scanResultsSection">
-                    <div class="tree-preview-title scan-details-title" data-i18n="scan.details">Scan details</div>
+                    <div class="tree-preview-header settings-block-header">
+                        <span class="tree-preview-title scan-section-title scan-details-title" data-i18n="scan.details">Scan details</span>
+                    </div>
                     <div class="scan-split">
                     <!-- Spells found (could go on the tree), mods, primed, and the primed spells per school; then the override
                          button (opens the blacklist window until the override menu exists) -->
@@ -247,16 +250,14 @@
                 <!-- ============================================================ -->
                 <div class="scanner-mode-content" id="scannerComplexContent" style="display:none;">
 
-                <!-- Where spells come from: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
-                <!-- Shown after a scan like the sections below (cppCallbacks.js); folds by its header, open by default, never scrolls inside -->
+                <!-- Spell Inclusion: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
+                <!-- Shown after a scan like the sections below (cppCallbacks.js); folds by its header (scanSections.js), never scrolls inside -->
                 <div class="scan-section" id="tomeSourcesSection" style="display:none;">
-                    <div class="settings-block" id="tomeSourcesBlock">
-                        <div class="settings-block-header prm-header tome-sources-header" id="tomeSourcesHeader" aria-expanded="true">
-                            <span class="hom-icon settings-block-icon" data-icon="tome" aria-hidden="true"></span>
-                            <span class="settings-block-title" data-i18n="settings.tomeSources.title">Where Spells Come From</span>
-                            <span class="prm-collapse-icon" aria-hidden="true"></span>
-                        </div>
-                        <div class="settings-block-content tome-sources-content" id="tomeSourcesContent">
+                    <div class="tree-preview-header settings-block-header" id="tomeSourcesHeader">
+                        <span class="tree-preview-title scan-section-title" data-i18n="settings.tomeSources.title">Spell Inclusion</span>
+                    </div>
+                    <div id="tomeSourcesBlock">
+                        <div class="tome-sources-content" id="tomeSourcesContent">
                             <!-- The categories' stack at the left; the right half, as tall as the stack (panel-scan.css), has two
                                  tabs (modules/sourceListTabs.js): Spells, three columns (modules/spellLists.js: Spell list, Blacklisted, Whitelisted / Include; X B W move a row),
                                  and Plugins, the plugin list (settingsPanel.js renderWhitelistEntries; it was a window). The
@@ -362,7 +363,7 @@
                                 </div>
                                 <div class="source-list-page" id="sourceListSpells">
                                     <div class="whitelist-info">
-                                        <span class="whitelist-info-text" data-i18n="scan.spellsInfo">Manually place spells on or off the tree, regardless of their category's state. Flagged spells are less likely to be tree-worthy spells, for the reason given.</span>
+                                        <span class="whitelist-info-text" data-i18n="scan.spellsInfo">Manually sort spells, regardless of their category's state. Flagged spells are less likely to be tree-worthy spells, for the reason given.</span>
                                     </div>
                                     <div class="spell-list-tools">
                                         <input type="text" id="spellListSearch" class="spawn-search" placeholder="Filter spells..." data-i18n-placeholder="scan.filterSpells">
@@ -428,8 +429,7 @@
                 </div>
 
                 <!-- Section 3: Output / Details -->
-                <div class="scan-section" id="scanDetailsSection">
-                </div>
+                <div class="scan-section" id="scanDetailsSection"></div>
 
                 <!-- Hidden output area used by Export Scan and C++ callbacks -->
                 <textarea id="outputArea" style="display:none;"></textarea>
@@ -437,10 +437,10 @@
                 <!-- ============================================================ -->
                 <!-- Section 4: EXTRA SETTINGS (PRM + Alternate Pathways) -->
                 <!-- ============================================================ -->
-                <!-- Laid out like Root Base Preview and Tree Growth Preview: a title, then the content, no box, always open;
+                <!-- Laid out like Root Base Preview and Tree Growth Preview: a header bar, then the content; folds by the bar;
                      each tab's page as tall as its content (no inner scroll) -->
                 <div class="scan-section" id="prereqMasterSection" style="display:none;">
-                    <div class="tree-preview-header">
+                    <div class="tree-preview-header settings-block-header">
                         <span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">Extra Settings</span>
                     </div>
                     <div class="prm-content" id="prmContent">
@@ -2164,7 +2164,7 @@
                     <span data-i18n="modals.gateReview.sourceHeader">Specialty sources</span>
                     <span id="tome-source-count" class="blacklist-count">0</span>
                 </div>
-                <div class="blacklist-empty" data-i18n="modals.gateReview.sourceDescription">Spells whose tomes only come from a source switched off in Where Spells Come From (Complex tree builder), or that nothing hands out. Include one to let it into the tree.</div>
+                <div class="blacklist-empty" data-i18n="modals.gateReview.sourceDescription">Spells whose tomes only come from a source switched off in Spell Inclusion (Complex tree builder), or that nothing hands out. Include one to let it into the tree.</div>
                 <div id="tome-source-entries" class="blacklist-entries"></div>
             </div>
             <div class="modal-footer">
@@ -2352,6 +2352,7 @@
     <script src="modules/spellPeek.js"></script>
     <script src="modules/spellLists.js"></script>
     <script src="modules/scanStage.js"></script>
+    <script src="modules/scanSections.js"></script>
     <script src="modules/buttonHandlers.js"></script>
     
     <!-- 5b. Tree Preview -->

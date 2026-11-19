@@ -2674,7 +2674,7 @@ function buildPluginSpellCounts() {
 }
 
 /**
- * Render all plugin entries on the Plugins tab of Where Spells Come From (#pluginListPanel; it was a
+ * Render all plugin entries on the Plugins tab of Spell Inclusion (#pluginListPanel; it was a
  * window). SourceListTabs (sourceListTabs.js) calls it when the tab opens and after a scan; a change
  * the player makes saves at once (pluginListChanged).
  */

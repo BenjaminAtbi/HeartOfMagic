@@ -1,5 +1,5 @@
 /**
- * SpellLists - the Spells tab of Where Spells Come From (the right half): three columns, left to right
+ * SpellLists - the Spells tab of Spell Inclusion (the right half): three columns, left to right
  * Spell list, Blacklisted and Whitelisted.
  *
  * - Spell list: every spell a tome teaches (isTomeCandidate), from the plugins switched on, on neither list.

@@ -109,6 +109,7 @@ loadModule('findSpellDismissTest', './modules/findSpellDismissTest.js');
 loadModule('gateReviewTest', './modules/gateReviewTest.js');
 loadModule('tomeSourceSettingTest', './modules/tomeSourceSettingTest.js');
 loadModule('spellListsTest', './modules/spellListsTest.js');
+loadModule('scanSectionsTest', './modules/scanSectionsTest.js');
 loadModule('schoolBridgesTest', './modules/schoolBridgesTest.js');
 loadModule('spellTreeSaveTest', './modules/spellTreeSaveTest.js');
 loadModule('treePrereqParityTest', './modules/treePrereqParityTest.js');

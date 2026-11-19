@@ -301,7 +301,7 @@ game the placed references of cells that are not loaded are not in memory:
   (`iniArchives`, lab/tome-reach/make_inputs.py) and `--archives` dumps what it reads. The game's tome pairs (SpellTomes) are the model's tomes: a book teaches its pair's
   spell whatever its DATA says (a non-teaching book Spell Research's Synthesizer pairs, a book a DLL rebinds),
   and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, at the top of the
-  Complex tree builder: Where Spells Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
+  Complex tree builder: Spell Inclusion) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
   `offTree(spell)` is the spell's category switched off (`categoryOf`: its segment; Unreachable for
   `tomeUnreachable`, review and unknown segments), or `questOnly` for a scan without `source` objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).
   Gate Review's "Specialty sources" list shows the spells off by their source with the segment and route
@@ -2950,7 +2950,7 @@ patch").
 
 #### Plugin Whitelist
 - Per-plugin opt-in/out filtering for spell tree generation
-- The Plugins tab of Where Spells Come From on the Scan page (a window until 2026-11-16; `sourceListTabs.js`)
+- The Plugins tab of Spell Inclusion on the Scan page (a window until 2026-11-16; `sourceListTabs.js`)
 - `pluginWhitelist` array in unified config (persistent)
 - Base game plugins auto-detected and always included by default
 

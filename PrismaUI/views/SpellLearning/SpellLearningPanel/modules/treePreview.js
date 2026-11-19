@@ -128,7 +128,7 @@ var TreePreview = {
         }
 
         return '' +
-            '<div class="tree-preview-header">' +
+            '<div class="tree-preview-header settings-block-header">' +
                 '<span class="tree-preview-title scan-section-title">' + t('preview.title') + '</span>' +
             '</div>' +
             '<div class="tree-preview-tabs" id="treePreviewTabs">' +

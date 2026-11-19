@@ -141,7 +141,28 @@
 #contentSpellScan .scan-split-left { flex: 0 1 30em; display: flex; flex-direction: column; gap: 18px; }
 #contentSpellScan .scan-split-right { flex: 1 1 0; display: flex; flex-direction: column; gap: 10px; }
 
-/* Section titles (Root Base Preview, Tree Growth Preview, Extra Settings): Extra Settings' former header size */
+/* The page's sections (scanSections.js): boxes stacked flush, each edge one shared line (margin-top -1px), a
+   full-width header bar that folds the box; the content keeps the old 16px side margin, inside the box. A section
+   with nothing in it shows nothing */
+#contentSpellScan .scan-section {
+    padding: 0 16px 16px; margin: -1px 0 0; min-height: 0;
+    border: 1px solid var(--divider, rgba(255, 255, 255, 0.12));
+}
+#contentSpellScan .scan-section + .scan-section { margin-top: -1px; padding-top: 0; border-top: 1px solid var(--divider, rgba(255, 255, 255, 0.12)); }
+#contentSpellScan .scan-section:empty { display: none; }
+#contentSpellScan .scan-section > .tree-preview-header {
+    margin: 0 -16px 12px; padding: 8px 16px;
+    cursor: pointer; user-select: none; border-bottom: 1px solid var(--divider, rgba(255, 255, 255, 0.12));
+}
+#contentSpellScan .scan-section > .tree-preview-header::after {
+    content: '\25BE'; margin-left: auto; padding-left: 12px; color: var(--text-muted); font-size: 0.85em;
+}
+#contentSpellScan .scan-section.scan-section-folded { padding-bottom: 0; }
+#contentSpellScan .scan-section.scan-section-folded > .tree-preview-header { margin-bottom: 0; border-bottom-color: transparent; }
+#contentSpellScan .scan-section.scan-section-folded > .tree-preview-header::after { content: '\25B8'; }
+#contentSpellScan .scan-section.scan-section-folded > :not(.tree-preview-header) { display: none !important; }
+
+/* Section titles (Scan details, Spell Inclusion, Root Base Preview, Tree Growth Preview, Extra Settings) */
 #contentSpellScan .scan-section-title {
     font-size: 1em;
     font-weight: 500;
@@ -313,16 +334,15 @@
    scrolled under it showed through its Presets row (2.0 audit) */
 #contentSpellScan .scan-actions-bottom { background: var(--panel-bg-solid, #0a0a0a); }
 
-/* Where Spells Come From (tomeSourceSetting.js): folds like Extra Settings, but opens to its full length (no
-   inner scroll); each row is its switch, so the whole row takes the pointer */
-.tome-sources-content.collapsed { display: none; }
+/* Spell Inclusion (tomeSourceSetting.js): its full length (no inner scroll); each row is its switch, so the whole
+   row takes the pointer */
 .tome-sources-content { max-height: none; overflow: visible; }
 #tomeSourcesBlock .setting-row { cursor: pointer; user-select: none; }
 #tomeSourcesBlock .setting-row:hover { background: rgba(255, 255, 255, 0.04); }
 
 /* Each row's count column ("345 spells (2 Whitelisted / 5 Blacklisted)") and the scoped override button
    (hidden until its menu exists), between the row's text and its switch */
-/* Where Spells Come From: the categories' stack in the left half, the Blacklisted and Whitelisted boxes sharing the
+/* Spell Inclusion: the categories' stack in the left half, the Blacklisted and Whitelisted boxes sharing the
    right half, as tall as the stack (the boxes scroll; a long list never makes the section taller) */
 .tome-sources-split { display: flex; gap: 32px; align-items: stretch; }
 .tome-sources-left, .tome-sources-right { flex: 1 1 0; min-width: 0; }

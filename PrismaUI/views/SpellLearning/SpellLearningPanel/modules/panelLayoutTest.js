@@ -439,26 +439,26 @@ var PanelLayoutTest = {
         this.check(/\.scan-relay-target \{ display: none; \}/.test(css) && !/border-right: 1px/.test(css),
             'Scan CSS: relays out of sight, no vertical rule added');
         var details = scan.substring(scan.indexOf('id="scanResultsSection"'), scan.indexOf('id="scannerComplexContent"'));
-        this.check(/class="tree-preview-title scan-details-title" data-i18n="scan.details"/.test(details) && !/scanDetailsToggle|scan-results-body hidden/.test(details) &&
+        this.check(/<div class="tree-preview-header settings-block-header">\s*<span class="tree-preview-title scan-section-title scan-details-title" data-i18n="scan.details"/.test(details) && !/scanDetailsToggle|scan-results-body hidden/.test(details) &&
             !/id="scan(Black|White)listPreview"|scan-split-right/.test(details) &&
             details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && !/id="whitelistBtn"/.test(details),
-            'Scan markup: Scan details is a section title, always open; the counts, then the override button (no plugin line, no list previews)');
+            'Scan markup: Scan details has a section bar (folds like the others, scanSections.js); the counts, then the override button (no plugin line, no list previews)');
         var sourcesBox = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
         var left = sourcesBox.indexOf('class="tome-sources-left"'), right = sourcesBox.indexOf('class="tome-sources-right"');
         this.check(left > 0 && right > sourcesBox.indexOf('id="tomeSourceUnreachableToggle"') && sourcesBox.indexOf('settings.tomeSources.note') > left &&
             sourcesBox.indexOf('id="scanBlacklistPreview"') > right && sourcesBox.indexOf('id="scanWhitelistPreview"') > right &&
             /\.tome-sources-split \{ display: flex;/.test(css) && /\.tome-sources-left, \.tome-sources-right \{ flex: 1 1 0;/.test(css),
-            'Where Spells Come From: the categories\' stack in the left half, the Blacklisted and Whitelisted previews sharing the right half');
+            'Spell Inclusion: the categories\' stack in the left half, the Blacklisted and Whitelisted previews sharing the right half');
         this.check(/id="contentSpellScan" data-scanner-mode="easy"/.test(scan) &&
             /#contentSpellScan\[data-scanner-mode="easy"\] \.complex-only \{ display: none; \}/.test(css) &&
             /function switchScannerMode\(mode\) \{[\s\S]{0,700}getElementById\('contentSpellScan'\)[\s\S]{0,80}setAttribute\('data-scanner-mode', mode\)/.test(this._file('easyMode.js')),
             'Scan markup: the Scan page carries its mode (Easy hides any shared part marked .complex-only)');
         var extra = scan.substring(scan.indexOf('id="prereqMasterSection"'), scan.indexOf('<!-- Shared Build/Apply/Clear'));
-        this.check(/^id="prereqMasterSection"[^>]*>\s*<div class="tree-preview-header">\s*<span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">/.test(extra) &&
+        this.check(/^id="prereqMasterSection"[^>]*>\s*<div class="tree-preview-header settings-block-header">\s*<span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">/.test(extra) &&
             !/prmToggleHeader|prm-collapse-icon|prm-block/.test(extra) && !/prmToggleHeader/.test(this._file('prereqMaster.js')) &&
             /scan-section-title">' \+ t\('preview\.title'\)/.test(this._file('treePreview.js')) && /scan-section-title">' \+ t\('treeViewer\.treeGrowthPreview'\)/.test(this._file('treeGrowth.js')) &&
             /#prereqMasterSection \.prm-split \{ height: auto;/.test(css) && /#prereqMasterSection \.prm-split-left \{ height: auto; overflow: visible; \}/.test(css),
-            'Scan markup: Extra Settings a section title like Root Base Preview and Tree Growth Preview (one title style), no collapsible box, pages as tall as their content');
+            'Scan markup: Extra Settings a section title like Root Base Preview and Tree Growth Preview (one bar and title style, folded by scanSections.js), no PRM collapsible box, pages as tall as their content');
         var prm = this._file('prereqMaster.js');
         this.check(/id="prmTabLocks">/.test(extra) && /class="prm-tab-content prm-page-hidden" id="prmTabCore">/.test(extra) &&
             /class="prm-tab-content prm-page-hidden" id="prmTabAltPaths">/.test(extra) && !/id="prmTab\w+" style="display:none/.test(extra) &&
@@ -473,7 +473,7 @@ var PanelLayoutTest = {
             'Scan markup: Unreachable is the ninth row, last, off by default, a warning row');
     },
 
-    /** Where Spells Come From's right half: Spells and Plugins (sourceListTabs.js), the plugin list there, not a window */
+    /** Spell Inclusion's right half: Spells and Plugins (sourceListTabs.js), the plugin list there, not a window */
     _sourceTabs: function() {
         var self = this, filled = 0, wired = 0, saved = 0, counted = 0;
         var tabs = ['spells', 'plugins'].map(function(t) { return self.el('button', { 'data-source-tab': t, 'class': t === 'spells' ? 'active' : '' }); });
