@@ -3,12 +3,13 @@
  * Spell list, Blacklisted and Whitelisted.
  *
  * - Spell list: every spell a tome teaches (isTomeCandidate), from the plugins switched on, on neither list.
- *   The ones with something to say (the gate's look-over reasons, a source switched off) come first.
+ *   Its header's All / Flagged pick the view (Flagged: the spells to look over, GateReview.flagged, with why
+ *   in their own colour); the category table's View spells shows one category (showCategory).
  * - Blacklisted: settings.spellBlacklist (left out of the tree).
  * - Whitelisted: settings.gateReviewed, the Keep / Include list (GateReview), named by the scan's spell.
  *
  * Every row: the name, and under it the plugin, the category (TomeSourceSetting: where its tomes come
- * from) and any notes. On its right, a small button per other column, in the columns' left-to-right
+ * from) and whether that source is switched off. On its right, a small button per other column, in the columns' left-to-right
  * order: X (red) back to the Spell list, B (black) to the blacklist, W (white) to the whitelist. A move
  * saves at once (addToBlacklist / removeFromBlacklist, autoSaveSettings) and repaints the page.
  *
@@ -69,7 +70,7 @@ var SpellLists = {
         return entry.plugin && entry.formId ? this._fold(entry.plugin) + ':' + this._local(entry.formId) : null;
     },
 
-    /** The row's lines under the name: the plugin, the category, then the notes */
+    /** The row's description under the name: the plugin, the category, then a source switched off */
     describe: function(spell, plugin) {
         var parts = [];
         if (plugin) parts.push(plugin);
@@ -78,11 +79,76 @@ var SpellLists = {
         var category = T ? T.categoryOf(spell) : null;
         if (category && T.NAMES[category]) parts.push(this._t(T.NAMES[category][0], T.NAMES[category][1]));
         else parts.push(this._t('scan.noCategory', 'source not known'));
-        if (typeof GateReview !== 'undefined' && GateReview.flagged && GateReview.flagged(spell)) {
-            parts = parts.concat(GateReview._reasons(spell, false));
-        }
         if (T && T.offTree(spell)) parts.push(this._t('scan.offBySource', 'its source is switched off'));
         return parts;
+    },
+
+    /** Flagged for a look (GateReview.flagged: the gate's bands, or no clear source) */
+    _flagged: function(spell) {
+        return !!spell && typeof GateReview !== 'undefined' && !!GateReview.flagged && GateReview.flagged(spell);
+    },
+
+    /** Why a flagged spell is to be looked over (Gate Review's reasons), shown in the Flagged view only */
+    reasonsOf: function(spell) {
+        return this._flagged(spell) && GateReview._reasons ? GateReview._reasons(spell, false) : [];
+    },
+
+    // =========================================================================
+    // THE SPELL LIST'S VIEW: All, Flagged (the spells to look over), or one category (View spells)
+    // =========================================================================
+
+    view: 'all',
+    category: null,
+    _last: null,
+
+    /** Whether the Spell list shows a spell in the current view */
+    _inView: function(spell) {
+        if (this.view === 'flagged') return this._flagged(spell);
+        if (this.view === 'category') {
+            return typeof TomeSourceSetting !== 'undefined' && TomeSourceSetting.categoryOf(spell) === this.category;
+        }
+        return true;
+    },
+
+    /** Switch the view ('all', 'flagged', or 'category' with its segment) and paint again */
+    setView: function(view, category) {
+        this.view = view === 'flagged' || view === 'category' ? view : 'all';
+        this.category = this.view === 'category' ? category : null;
+        this._syncViewButtons();
+        if (this._last) this.render(this._last[0], this._last[1], true);
+    },
+
+    /** Category table's View spells: that category in the Spell list, on the Spells tab */
+    showCategory: function(segment) {
+        if (typeof SourceListTabs !== 'undefined' && SourceListTabs.show) SourceListTabs.show('spells');
+        this.setView('category', segment);
+    },
+
+    _syncViewButtons: function() {
+        var doc = this._doc();
+        var btns = doc && doc.querySelectorAll ? doc.querySelectorAll('#spellListViews [data-spell-view]') : [];
+        for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].getAttribute('data-spell-view') === this.view);
+    },
+
+    /** The header's All / Flagged buttons */
+    initViews: function() {
+        var doc = this._doc();
+        var btns = doc && doc.querySelectorAll ? doc.querySelectorAll('#spellListViews [data-spell-view]') : [];
+        var self = this;
+        for (var i = 0; i < btns.length; i++) {
+            (function(btn) {
+                btn.addEventListener('click', function() { self.setView(btn.getAttribute('data-spell-view')); });
+            })(btns[i]);
+        }
+        this._syncViewButtons();
+    },
+
+    /** The Spell list's title: the category's name in that view */
+    _spellsTitle: function() {
+        if (this.view !== 'category' || typeof TomeSourceSetting === 'undefined') return null;
+        var n = TomeSourceSetting.NAMES[this.category];
+        var name = n ? this._t(n[0], n[1]) : String(this.category);
+        return ['scan.spellListCategory', 'Spell list: {{category}} ({{count}})', { category: name }];
     },
 
     /**
@@ -98,9 +164,8 @@ var SpellLists = {
         });
         var listed = {};
         var row = function(spell, name, plugin, key, entry) {
-            var lines = self.describe(spell, plugin);
             return { name: name, plugin: plugin, key: key, spell: spell || null, entry: entry || null,
-                lines: lines, notes: Math.max(0, lines.length - 2) };
+                lines: self.describe(spell, plugin), reasons: self.reasonsOf(spell) };
         };
         var blacklisted = (blacklist || []).map(function(e) {
             var key = self._entryKey(e);
@@ -119,11 +184,11 @@ var SpellLists = {
             return s && (typeof isTomeCandidate === 'function' ? isTomeCandidate(s) : s.taughtByTome !== false);
         });
         if (typeof filterWhitelistedSpells === 'function') tome = filterWhitelistedSpells(tome);
-        var spells = tome.filter(function(s) { return !listed[self.keyOf(s)]; }).map(function(s) {
+        var spells = tome.filter(function(s) { return !listed[self.keyOf(s)] && self._inView(s); }).map(function(s) {
             return row(s, s.name || s.formId, s.plugin || '', self.keyOf(s));
         });
         var byName = function(a, b) { return String(a.name).localeCompare(String(b.name)); };
-        spells.sort(function(a, b) { return (b.notes > 0) - (a.notes > 0) || byName(a, b); });
+        spells.sort(byName);
         blacklisted.sort(byName);
         whitelisted.sort(byName);
         return { spells: spells, blacklisted: blacklisted, whitelisted: whitelisted };
@@ -133,7 +198,7 @@ var SpellLists = {
     _signature: function(scanSpells, opts) {
         var doc = this._doc();
         var lang = (doc && doc.documentElement && doc.documentElement.lang) || '';
-        return [(scanSpells || []).length, scanSpells && scanSpells[0] && scanSpells[0].formId, lang,
+        return [(scanSpells || []).length, scanSpells && scanSpells[0] && scanSpells[0].formId, lang, this.view, this.category,
             JSON.stringify(opts.spellBlacklist || []), JSON.stringify(opts.gateReviewed || []),
             JSON.stringify(opts.tomeSources || {}), JSON.stringify(opts.pluginWhitelist || [])].join('|');
     },
@@ -141,6 +206,7 @@ var SpellLists = {
     /** Paint the three columns (ScanStage.refresh); force repaints an unchanged state */
     render: function(scanSpells, opts, force) {
         opts = opts || {};
+        this._last = [scanSpells, opts];
         var sig = this._signature(scanSpells, opts);
         if (!force && sig === this._sig) return false;
         this._sig = sig;
@@ -160,7 +226,11 @@ var SpellLists = {
         var doc = this._doc();
         if (!doc) return;
         var title = doc.getElementById(col.title);
-        if (title && typeof setI18n === 'function') setI18n(title, col.text[0], { count: rows.length }, col.text[1]);
+        var text = (col.name === 'spells' && this._spellsTitle()) || col.text;
+        var params = { count: rows.length };
+        for (var p in (text[2] || {})) params[p] = text[2][p];
+        if (title && typeof setI18n === 'function') setI18n(title, text[0], params, text[1]);
+        var showReasons = col.name === 'spells' && this.view === 'flagged';
         var list = doc.getElementById(col.list);
         if (!list) return;
         this._wire(list, col.name);
@@ -180,7 +250,11 @@ var SpellLists = {
             li.setAttribute('data-index', r);
             var info = this._el(doc, 'div', 'spell-list-info');
             info.appendChild(this._el(doc, 'div', 'spell-list-name', rows[r].name));
-            info.appendChild(this._el(doc, 'div', 'spell-list-desc', rows[r].lines.join(' - ')));
+            var desc = info.appendChild(this._el(doc, 'div', 'spell-list-desc', rows[r].lines.join(' - ')));
+            // The Flagged view: why each is to be looked over, in its own colour
+            if (showReasons && rows[r].reasons.length) {
+                desc.appendChild(this._el(doc, 'span', 'spell-list-reasons', ' - ' + rows[r].reasons.join(', ')));
+            }
             li.appendChild(info);
             var moves = this._el(doc, 'div', 'spell-list-moves');
             for (var t = 0; t < targets.length; t++) {
@@ -246,3 +320,6 @@ var SpellLists = {
 };
 
 if (typeof window !== 'undefined') window.SpellLists = SpellLists;
+if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', function() { SpellLists.initViews(); });
+}

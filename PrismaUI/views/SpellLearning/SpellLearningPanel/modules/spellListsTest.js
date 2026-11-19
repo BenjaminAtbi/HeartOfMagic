@@ -1,8 +1,8 @@
 /**
  * SpellListsTest - node tests for the Spells tab's three columns (spellLists.js).
  *
- * Checks: the Spell list holds tome spells on neither list, the ones with notes first; each row's
- * description (plugin, category, the gate's reasons, a source switched off); blacklist entries named by
+ * Checks: the Spell list holds tome spells on neither list, by name, in its views (All, Flagged, one category); each row's
+ * description (plugin, category, a source switched off; the gate's reasons in the Flagged view only, in their own span); blacklist entries named by
  * the scan's spell, Include keys the scan lacks named by the key; the titles' counts; the move buttons
  * per column in the columns' left-to-right order (X, B, W), B off for a key with no spell; an unchanged
  * state painting nothing; the moves (onto and off each list, saved) and the click listener.
@@ -109,12 +109,18 @@ var SpellListsTest = {
         var L = box.SpellLists;
         var m = L.model(this._spells(), [{ formId: '0x00012FCD', plugin: 'Skyrim.esm', localFormId: '012fcd' }], ['mod.esp:000804', 'gone.esp:000001']);
         var names = function(rows) { return rows.map(function(r) { return r.name; }).join(','); };
-        this.check(names(m.spells) === 'Call Horse,Lost Art,Flames',
-            'Spell list: tome spells on neither list (no tome, blacklisted and kept left out), the ones with notes first');
-        this.check(m.spells[0].lines.join(' - ') === 'Mod.esp - Standard Vendors - summons a horse' &&
-            m.spells[1].lines.join(' - ') === 'Mod.esp - Unreachable - its source is switched off' &&
-            m.spells[2].lines.join(' - ') === 'Skyrim.esm - Standard Vendors',
-            'Rows: the plugin, the category, then the gate\'s reasons and a source switched off');
+        this.check(names(m.spells) === 'Call Horse,Flames,Lost Art',
+            'Spell list: tome spells on neither list (no tome, blacklisted and kept left out), by name');
+        this.check(m.spells[0].lines.join(' - ') === 'Mod.esp - Standard Vendors' && m.spells[0].reasons.join() === 'summons a horse' &&
+            m.spells[2].lines.join(' - ') === 'Mod.esp - Unreachable - its source is switched off' &&
+            m.spells[1].lines.join(' - ') === 'Skyrim.esm - Standard Vendors' && m.spells[1].reasons.length === 0,
+            'Rows: the plugin, the category, a source switched off; the gate\'s reasons kept apart');
+        L.setView('flagged');
+        this.check(names(L.model(this._spells(), [], []).spells) === 'Call Horse', 'Flagged: only the spells to look over');
+        L.setView('category', 'unreachable');
+        this.check(names(L.model(this._spells(), [], []).spells) === 'Lost Art', 'View spells: only that category');
+        L.setView('all');
+        this.check(L.model(this._spells(), [], []).spells.length === 5, 'All: back to every tome spell');
         this.check(names(m.blacklisted) === 'Frostbite' && names(m.whitelisted) === 'gone.esp:000001,Kept One' &&
             m.whitelisted[0].plugin === 'gone.esp' && m.whitelisted[0].lines.join() === 'gone.esp',
             'Lists: a blacklist entry named by the scan\'s spell; an Include key the scan lacks named by the key, its plugin from it');
@@ -136,8 +142,15 @@ var SpellListsTest = {
         var kept = els.scanWhitelistPreview.children[1].find(function(c) { return c.getAttribute('data-move') === 'blacklisted'; })[0];
         this.check(gone.disabled && !kept.disabled && /spell-move-blacklisted/.test(gone.cls()),
             'Render: B is off for an Include key the scan has no spell for (no form id to blacklist)');
-        this.check(els.scanSpellListPreview.children[0].text().indexOf('Call HorseMod.esp - Standard Vendors - summons a horse') === 0,
-            'Render: the name, then its description under it');
+        this.check(els.scanSpellListPreview.children[0].text() === 'Call HorseMod.esp - Standard VendorsBW',
+            'Render: the name, then its description under it; no reasons in the All view');
+        L.setView('flagged');
+        var reason = els.scanSpellListPreview.children[0].find(function(c) { return /spell-list-reasons/.test(c.cls()); });
+        this.check(els.scanSpellListPreview.children.length === 1 && reason.length === 1 && reason[0].textContent === ' - summons a horse',
+            'Render Flagged: the reasons in their own span (their own colour)');
+        L.setView('category', 'unreachable');
+        this.check(els.scanSpellListTitle.textContent === 'Spell list: Unreachable (1)', 'Render: a category\'s view names it in the title');
+        L.setView('all');
         this.check(L.render(this._spells(), box.settings) === false, 'Render: an unchanged state paints nothing');
         this.check(L.render(this._spells(), box.settings, true) === true, 'Render: force paints again');
     },
@@ -165,7 +178,7 @@ var SpellListsTest = {
         box.settings.gateReviewed = [];
         L.render(this._spells(), box.settings, true);
         var list = box.els.scanSpellListPreview;
-        var row = list.children[2];
+        var row = list.children[1];
         var w = row.find(function(b) { return b.getAttribute('data-move') === 'whitelisted'; })[0];
         list.fire('click', { target: w });
         this.check(box.settings.gateReviewed.join() === 'skyrim.esm:012fcc', 'Click: W on a Spell list row whitelists that row\'s spell');

@@ -168,7 +168,7 @@ var TomeSourceSetting = {
 
     /**
      * A row's count column, made once after its text (the switch leads the row): the count, then the button of
-     * the scoped override menu (hidden until that menu exists)
+     * the scoped override menu (hidden until that menu exists); with it, the View spells column at the row's end
      */
     _countCell: function(segment) {
         var toggle = document.getElementById(this.toggleId(segment));
@@ -190,6 +190,23 @@ var TomeSourceSetting = {
         // After the row's text: the switch leads the row (index.html), the count follows the fixed-width text
         var info = row.querySelector('.setting-info');
         row.insertBefore(cell, info ? info.nextSibling : null);
+        row.appendChild(this._viewCell(segment));
+        return cell;
+    },
+
+    /** The row's thin last column: View spells, the category in the Spell list (spellLists.js) */
+    _viewCell: function(segment) {
+        var cell = document.createElement('div');
+        cell.className = 'tome-source-view-cell';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn scan-text-btn tome-source-view';
+        btn.setAttribute('data-segment', segment);
+        btn.textContent = this._t(['settings.tomeSources.viewSpells', 'View spells']);
+        btn.addEventListener('click', function() {
+            if (typeof SpellLists !== 'undefined') SpellLists.showCategory(segment);
+        });
+        cell.appendChild(btn);
         return cell;
     },
 
@@ -218,11 +235,12 @@ var TomeSourceSetting = {
                 self._save();
             });
             // The whole row is the switch: a click on its name, description or count flips it (the switch's
-            // own label already does, and the scoped override button is its own, so clicks there are left alone)
+            // own label already does, and the scoped override and View spells buttons are their own, so clicks
+            // there are left alone)
             var row = toggle.closest ? toggle.closest('.setting-row') : null;
             if (row) {
                 row.addEventListener('click', function(e) {
-                    if (e.target && e.target.closest && e.target.closest('.toggle-switch, .tome-source-scoped')) return;
+                    if (e.target && e.target.closest && e.target.closest('.toggle-switch, .tome-source-scoped, .tome-source-view')) return;
                     toggle.checked = !toggle.checked;
                     toggle.dispatchEvent(new Event('change'));
                 });

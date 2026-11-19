@@ -360,18 +360,29 @@
                                     <button type="button" class="tree-preview-tab active" data-source-tab="spells" data-i18n="scan.tabSpells">Spells</button>
                                     <button type="button" class="tree-preview-tab" data-source-tab="plugins" data-i18n="scan.tabPlugins">Plugins</button>
                                 </div>
-                                <div class="source-list-page scan-lists" id="sourceListSpells">
-                                    <div class="scan-list">
-                                        <div class="scan-list-title" id="scanSpellListTitle" data-i18n="scan.spellList" data-i18n-params='{"count":0}'>Spell list (0)</div>
-                                        <ul class="wheel-capture scan-list-items" id="scanSpellListPreview"></ul>
+                                <div class="source-list-page" id="sourceListSpells">
+                                    <div class="whitelist-info">
+                                        <span class="whitelist-info-text" data-i18n="scan.spellsInfo">Manually place spells on or off the tree, regardless of their category's state.</span>
                                     </div>
-                                    <div class="scan-list">
-                                        <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
-                                        <ul class="wheel-capture scan-list-items" id="scanBlacklistPreview"></ul>
-                                    </div>
-                                    <div class="scan-list">
-                                        <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
-                                        <ul class="wheel-capture scan-list-items" id="scanWhitelistPreview"></ul>
+                                    <div class="scan-lists">
+                                        <div class="scan-list">
+                                            <div class="scan-list-header">
+                                                <div class="scan-list-title" id="scanSpellListTitle" data-i18n="scan.spellList" data-i18n-params='{"count":0}'>Spell list (0)</div>
+                                                <div class="spell-list-views" id="spellListViews">
+                                                    <button type="button" class="spell-view-btn active" data-spell-view="all" data-i18n="scan.viewAll">All</button>
+                                                    <button type="button" class="spell-view-btn" data-spell-view="flagged" data-i18n="scan.viewFlagged">Flagged</button>
+                                                </div>
+                                            </div>
+                                            <ul class="wheel-capture scan-list-items" id="scanSpellListPreview"></ul>
+                                        </div>
+                                        <div class="scan-list">
+                                            <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
+                                            <ul class="wheel-capture scan-list-items" id="scanBlacklistPreview"></ul>
+                                        </div>
+                                        <div class="scan-list">
+                                            <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
+                                            <ul class="wheel-capture scan-list-items" id="scanWhitelistPreview"></ul>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="source-list-page source-list-hidden" id="pluginListPanel">
