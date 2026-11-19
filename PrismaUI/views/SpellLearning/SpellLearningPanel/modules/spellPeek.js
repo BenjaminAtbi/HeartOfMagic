@@ -1,6 +1,7 @@
 /**
  * SpellPeek - the Spells tab's "?" beside a spell's name: on hover, a small card with the spell's figures
- * and description, laid out like the tree's spell card (school, level, cost, type, effects, description).
+ * and description, laid out like the tree's spell card: school, level, cost, type, an Effects table (power,
+ * duration, size), the spell's tags (element, form, cast; the school is the badge), description.
  *
  * Everything comes from the scan's spell object (spell_scan_output.json), no call to the game: the
  * description is the effects' own text with <mag>, <dur> and <area> filled in from each effect, the way the
@@ -50,16 +51,65 @@ var SpellPeek = {
         return out.join(' ');
     },
 
-    /** "Flames (8) 1s, 5 ft" for each shown effect */
-    effectLines: function(spell) {
+    NONE: '—',
+
+    /** One row per shown effect: [name, power, duration, size]; a figure the effect lacks is NONE */
+    effectRows: function(spell) {
+        var none = this.NONE;
         return this._shownEffects(spell).map(function(e) {
-            var text = e.name || '?';
+            var flags = e.flags || {};
             var mag = Math.round(Number(e.magnitude) || 0);
-            if (mag > 0 && !(e.flags && e.flags.noMagnitude)) text += ' (' + mag + ')';
-            if (Number(e.duration) > 0 && !(e.flags && e.flags.noDuration)) text += ' ' + e.duration + 's';
-            if (Number(e.area) > 0) text += ', ' + e.area + ' ft';
-            return text;
+            var dur = Math.round(Number(e.duration) || 0);
+            var area = Math.round(Number(e.area) || 0);
+            return [
+                e.name || '?',
+                mag > 0 && !flags.noMagnitude ? String(mag) : none,
+                dur > 0 && !flags.noDuration ? dur + 's' : none,
+                area > 0 ? area + ' ft' : none
+            ];
         });
+    },
+
+    /** The spell's tags other than its school (shown as the badge): element, form, cast, ... */
+    chipIds: function(spell) {
+        var list = Array.isArray(spell.chips) ? spell.chips : (Array.isArray(spell.traits) ? spell.traits : []);
+        return list.map(String).filter(function(id) { return id && id.indexOf('school.') !== 0; });
+    },
+
+    _chips: function(spell) {
+        var ids = this.chipIds(spell);
+        if (!ids.length) return null;
+        var C = typeof SpellCard !== 'undefined' ? SpellCard : null;
+        var row = this._el('div', 'spell-chips spell-peek-chips');
+        var self = this;
+        ids.forEach(function(id) {
+            var parts = id.split('.');
+            // Same classes as the tree card's chips, so each tag keeps its colour
+            row.appendChild(self._el('span', 'spell-chip chip-' + parts[0] + ' chip-' + parts.join('-'),
+                C ? C.label(id) : id));
+        });
+        return row;
+    },
+
+    _effectsTable: function(spell) {
+        var rows = this.effectRows(spell);
+        if (!rows.length) return null;
+        var box = this._el('div', 'spell-peek-effects');
+        box.appendChild(this._el('div', 'spell-peek-section', this._t('details.effects', null, 'Effects')));
+        var table = this._el('table', 'spell-peek-table');
+        var head = this._el('tr');
+        [['details.effect', 'Effect'], ['details.power', 'Power'], ['details.duration', 'Duration'],
+            ['details.size', 'Size']].forEach(function(h) {
+            head.appendChild(SpellPeek._el('th', null, SpellPeek._t(h[0], null, h[1])));
+        });
+        table.appendChild(head);
+        rows.forEach(function(r) {
+            var tr = SpellPeek._el('tr');
+            r.forEach(function(v) { tr.appendChild(SpellPeek._el('td', null, v)); });
+            table.appendChild(tr);
+        });
+        box.appendChild(table);
+        return box;
     },
 
     _el: function(tag, cls, text) {
@@ -94,12 +144,10 @@ var SpellPeek = {
         card.appendChild(this._row(this._t('details.level', null, 'Level'), level));
         card.appendChild(this._row(this._t('details.cost', null, 'Cost'), String(spell.magickaCost !== undefined ? spell.magickaCost : '?')));
         card.appendChild(this._row(this._t('details.type', null, 'Type'), type + (spell.delivery ? ' · ' + spell.delivery : '')));
-        var effects = this.effectLines(spell);
-        if (effects.length) {
-            var list = this._el('ul', 'spell-peek-effects');
-            effects.forEach(function(t) { list.appendChild(SpellPeek._el('li', null, t)); });
-            card.appendChild(list);
-        }
+        var effects = this._effectsTable(spell);
+        if (effects) card.appendChild(effects);
+        var chips = this._chips(spell);
+        if (chips) card.appendChild(chips);
         card.appendChild(this._el('div', 'spell-peek-desc',
             this.description(spell) || this._t('details.noDescription', null, 'No description.')));
         return card;

@@ -5,7 +5,7 @@
  * description (plugin, category, a source switched off; the gate's reasons in the Flagged view only, in their own span); blacklist entries named by
  * the scan's spell, Include keys the scan lacks named by the key; the titles' counts; the move buttons
  * per column in the columns' left-to-right order (X, B, W), B off for a key with no spell; an unchanged
- * state painting nothing; the moves (onto and off each list, saved) and the click listener.
+ * state painting nothing; the filter (name or plugin, every column); the card's effects table and tags; the moves (onto and off each list, saved) and the click listener.
  *
  * Depends on: spellLists.js, run in a vm sandbox with stand-ins for everything it reads.
  */
@@ -121,6 +121,13 @@ var SpellListsTest = {
         this.check(names(L.model(this._spells(), [], []).spells) === 'Lost Art', 'View spells: only that category');
         L.setView('all');
         this.check(L.model(this._spells(), [], []).spells.length === 5, 'All: back to every tome spell');
+        L.setQuery('  F ');
+        var f = L.model(this._spells(), [{ formId: '0x00012FCD', plugin: 'Skyrim.esm', localFormId: '012fcd' }], ['mod.esp:000804']);
+        this.check(names(f.spells) === 'Flames' && names(f.blacklisted) === 'Frostbite' && f.whitelisted.length === 0,
+            'Filter: every column keeps the rows whose name holds the text, any case');
+        L.setQuery('mod.esp');
+        this.check(names(L.model(this._spells(), [], []).spells) === 'Call Horse,Kept One,Lost Art', 'Filter: a plugin name matches too');
+        L.setQuery('');
         this.check(names(m.blacklisted) === 'Frostbite' && names(m.whitelisted) === 'gone.esp:000001,Kept One' &&
             m.whitelisted[0].plugin === 'gone.esp' && m.whitelisted[0].lines.join() === 'gone.esp',
             'Lists: a blacklist entry named by the scan\'s spell; an Include key the scan lacks named by the key, its plugin from it');
@@ -200,8 +207,12 @@ var SpellListsTest = {
         ] };
         this.check(P.description(spell) === 'A gout of fire that does 8 points per second. Burns for 5 seconds in 10 feet, .',
             'Card: the description is the shown effects\' texts, figures filled in, other tags dropped, each text once');
-        this.check(P.effectLines(spell).join(' | ') === 'Flames (8) 1s | Burn (3) 5s, 10 ft | Flames (8) 1s',
-            'Card: each shown effect with its magnitude, duration and area');
+        var rows = P.effectRows(spell).map(function(r) { return r.join(','); }).join(' | ');
+        this.check(rows === 'Flames,8,1s,— | Burn,3,5s,10 ft | Flames,8,1s,—',
+            'Card: one table row per shown effect: power, duration, size, a dash where there is none');
+        this.check(P.chipIds({ traits: ['school.destruction', 'element.fire', 'form.spray'] }).join() === 'element.fire,form.spray' &&
+            P.chipIds({ chips: ['cast.concentration'], traits: ['element.frost'] }).join() === 'cast.concentration',
+            'Card: the spell\'s tags (chips before traits), its school left to the badge');
     },
 
     run: function() {

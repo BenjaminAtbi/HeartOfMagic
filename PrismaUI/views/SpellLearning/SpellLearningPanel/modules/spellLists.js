@@ -3,8 +3,9 @@
  * Spell list, Blacklisted and Whitelisted.
  *
  * - Spell list: every spell a tome teaches (isTomeCandidate), from the plugins switched on, on neither list.
- *   Its header's All / Flagged pick the view (Flagged: the spells to look over, GateReview.flagged, with why
- *   in their own colour); the category table's View spells shows one category (showCategory).
+ *   All / Flagged (right of the filter field) pick the view (Flagged: the spells to look over,
+ *   GateReview.flagged, with why in their own colour); the category table's View spells shows one category
+ *   (showCategory). The filter field above the lists narrows all three columns by name or plugin.
  * - Blacklisted: settings.spellBlacklist (left out of the tree).
  * - Whitelisted: settings.gateReviewed, the Keep / Include list (GateReview), named by the scan's spell.
  *
@@ -130,7 +131,25 @@ var SpellLists = {
         for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].getAttribute('data-spell-view') === this.view);
     },
 
-    /** The header's All / Flagged buttons */
+    // The filter field above the lists: every column shows the rows whose name or plugin holds the text
+    query: '',
+    FILTER_DELAY_MS: 120,
+    _filterTimer: null,
+
+    /** Whether a row's name or plugin holds the filter text (any case) */
+    _matches: function(name, plugin) {
+        if (!this.query) return true;
+        return String(name || '').toLowerCase().indexOf(this.query) !== -1 ||
+            String(plugin || '').toLowerCase().indexOf(this.query) !== -1;
+    },
+
+    /** Filter every column by a text and paint again */
+    setQuery: function(text) {
+        this.query = String(text || '').trim().toLowerCase();
+        if (this._last) this.render(this._last[0], this._last[1], true);
+    },
+
+    /** The tools row: the filter field, then All / Flagged */
     initViews: function() {
         var doc = this._doc();
         var btns = doc && doc.querySelectorAll ? doc.querySelectorAll('#spellListViews [data-spell-view]') : [];
@@ -139,6 +158,15 @@ var SpellLists = {
             (function(btn) {
                 btn.addEventListener('click', function() { self.setView(btn.getAttribute('data-spell-view')); });
             })(btns[i]);
+        }
+        var search = doc && doc.getElementById ? doc.getElementById('spellListSearch') : null;
+        if (search) {
+            // Typing paints once it pauses (the Spell list can hold thousands of rows)
+            search.addEventListener('input', function() {
+                var value = search.value;
+                clearTimeout(self._filterTimer);
+                self._filterTimer = setTimeout(function() { self.setQuery(value); }, self.FILTER_DELAY_MS);
+            });
         }
         this._syncViewButtons();
     },
@@ -184,9 +212,14 @@ var SpellLists = {
             return s && (typeof isTomeCandidate === 'function' ? isTomeCandidate(s) : s.taughtByTome !== false);
         });
         if (typeof filterWhitelistedSpells === 'function') tome = filterWhitelistedSpells(tome);
-        var spells = tome.filter(function(s) { return !listed[self.keyOf(s)] && self._inView(s); }).map(function(s) {
+        var spells = tome.filter(function(s) {
+            return !listed[self.keyOf(s)] && self._inView(s) && self._matches(s.name || s.formId, s.plugin);
+        }).map(function(s) {
             return row(s, s.name || s.formId, s.plugin || '', self.keyOf(s));
         });
+        var shown = function(r) { return self._matches(r.name, r.plugin); };
+        blacklisted = blacklisted.filter(shown);
+        whitelisted = whitelisted.filter(shown);
         var byName = function(a, b) { return String(a.name).localeCompare(String(b.name)); };
         spells.sort(byName);
         blacklisted.sort(byName);
@@ -198,7 +231,7 @@ var SpellLists = {
     _signature: function(scanSpells, opts) {
         var doc = this._doc();
         var lang = (doc && doc.documentElement && doc.documentElement.lang) || '';
-        return [(scanSpells || []).length, scanSpells && scanSpells[0] && scanSpells[0].formId, lang, this.view, this.category,
+        return [(scanSpells || []).length, scanSpells && scanSpells[0] && scanSpells[0].formId, lang, this.view, this.category, this.query,
             JSON.stringify(opts.spellBlacklist || []), JSON.stringify(opts.gateReviewed || []),
             JSON.stringify(opts.tomeSources || {}), JSON.stringify(opts.pluginWhitelist || [])].join('|');
     },

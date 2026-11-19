@@ -280,15 +280,16 @@
                                     <div class="whitelist-info">
                                         <span class="whitelist-info-text" data-i18n="scan.spellsInfo">Manually place spells on or off the tree, regardless of their category's state. Flagged spells are less likely to be tree-worthy spells, for the reason given.</span>
                                     </div>
+                                    <div class="spell-list-tools">
+                                        <input type="text" id="spellListSearch" class="spawn-search" placeholder="Filter spells..." data-i18n-placeholder="scan.filterSpells">
+                                        <div class="spell-list-views" id="spellListViews">
+                                            <button type="button" class="spell-view-btn active" data-spell-view="all" data-i18n="scan.viewAll">All</button>
+                                            <button type="button" class="spell-view-btn" data-spell-view="flagged" data-i18n="scan.viewFlagged">Flagged</button>
+                                        </div>
+                                    </div>
                                     <div class="scan-lists">
                                         <div class="scan-list">
-                                            <div class="scan-list-header">
-                                                <div class="scan-list-title" id="scanSpellListTitle" data-i18n="scan.spellList" data-i18n-params='{"count":0}'>Spell list (0)</div>
-                                                <div class="spell-list-views" id="spellListViews">
-                                                    <button type="button" class="spell-view-btn active" data-spell-view="all" data-i18n="scan.viewAll">All</button>
-                                                    <button type="button" class="spell-view-btn" data-spell-view="flagged" data-i18n="scan.viewFlagged">Flagged</button>
-                                                </div>
-                                            </div>
+                                            <div class="scan-list-title" id="scanSpellListTitle" data-i18n="scan.spellList" data-i18n-params='{"count":0}'>Spell list (0)</div>
                                             <ul class="wheel-capture scan-list-items" id="scanSpellListPreview"></ul>
                                         </div>
                                         <div class="scan-list">
