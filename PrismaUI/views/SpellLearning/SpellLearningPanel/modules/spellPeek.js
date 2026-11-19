@@ -41,14 +41,18 @@ var SpellPeek = {
             .replace(/\s+/g, ' ').trim();
     },
 
-    /** The spell's description: its shown effects' texts, each once */
-    description: function(spell) {
+    /** The spell's description, one text per shown effect, each text once (a spell has no text of its own) */
+    descriptionParts: function(spell) {
         var self = this, seen = {}, out = [];
         this._shownEffects(spell).forEach(function(e) {
             var text = self.fill(e.description, e);
             if (text && !seen[text]) { seen[text] = true; out.push(text); }
         });
-        return out.join(' ');
+        return out;
+    },
+
+    description: function(spell) {
+        return this.descriptionParts(spell).join(' ');
     },
 
     NONE: '—',
@@ -148,8 +152,12 @@ var SpellPeek = {
         if (effects) card.appendChild(effects);
         var chips = this._chips(spell);
         if (chips) card.appendChild(chips);
-        card.appendChild(this._el('div', 'spell-peek-desc',
-            this.description(spell) || this._t('details.noDescription', null, 'No description.')));
+        // Each effect's text in its own block, a thin line between them (spell-peek-desc-part + spell-peek-desc-part)
+        var desc = this._el('div', 'spell-peek-desc');
+        var parts = this.descriptionParts(spell);
+        if (!parts.length) desc.textContent = this._t('details.noDescription', null, 'No description.');
+        parts.forEach(function(text) { desc.appendChild(SpellPeek._el('div', 'spell-peek-desc-part', text)); });
+        card.appendChild(desc);
         return card;
     },
 

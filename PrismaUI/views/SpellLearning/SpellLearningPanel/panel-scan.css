@@ -186,13 +186,14 @@
 .scan-list { flex: 0 1 18em; min-width: 0; display: flex; flex-direction: column; }
 .scan-list-title { color: var(--text-secondary, #A8A898); font-size: 0.9em; font-weight: 600; margin-bottom: 4px; }
 /* The view buttons right of the spell filter (spellLists.js: All, Flagged) */
-.spell-list-views { flex: 0 0 auto; display: flex; gap: 3px; }
-.spell-view-btn {
-    padding: 1px 8px; font-size: 0.75em; cursor: pointer; border-radius: 2px;
+.spell-list-views { flex: 0 0 auto; display: flex; gap: 8px; }
+/* Sized by .btn like the Plugins tab's All / None / Base Only; their own outline and gold for the active view */
+.btn.spell-view-btn {
+    border-radius: 2px;
     background: transparent; color: var(--text-secondary, #A8A898); border: 1px solid var(--divider, rgba(255, 255, 255, 0.2));
 }
-.spell-view-btn:hover { color: var(--text-primary); }
-.spell-view-btn.active { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
+.btn.spell-view-btn:hover { color: var(--text-primary); }
+.btn.spell-view-btn.active { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
 
 .scan-list-items {
     list-style: none;
@@ -258,6 +259,10 @@
 .spell-peek-table td { text-align: right; padding: 1px 0 1px 8px; white-space: nowrap; }
 .spell-peek-table th:first-child, .spell-peek-table td:first-child { text-align: left; padding-left: 0; white-space: normal; }
 .spell-peek-chips { margin: 6px 0 0; }
+.spell-peek-desc-part + .spell-peek-desc-part {
+    margin-top: 4px; padding-top: 4px;
+    border-top: 1px solid var(--divider, var(--panel-border, rgba(255, 255, 255, 0.12)));
+}
 .spell-peek-desc { margin-top: 6px; line-height: 1.4; color: var(--text-secondary, #A8A898); }
 
 .scan-row-link {

@@ -2,7 +2,7 @@
  * SpellListsTest - node tests for the Spells tab's three columns (spellLists.js).
  *
  * Checks: the Spell list holds tome spells on neither list, by name, in its views (All, Flagged, one category); each row's
- * description (plugin, category, a source switched off; the gate's reasons in the Flagged view only, in their own span); blacklist entries named by
+ * description (plugin, category, a source switched off; the gate's reasons in every column in the Flagged view, in their own span); blacklist entries named by
  * the scan's spell, Include keys the scan lacks named by the key; the titles' counts; the move buttons
  * per column in the columns' left-to-right order (X, B, W), B off for a key with no spell; an unchanged
  * state painting nothing; the filter (name or plugin, every column); the card's effects table and tags; the moves (onto and off each list, saved) and the click listener.
@@ -137,9 +137,11 @@ var SpellListsTest = {
         var L = box.SpellLists, els = box.els;
         box.settings.spellBlacklist = [{ formId: '0x00012FCD', plugin: 'Skyrim.esm', localFormId: '012fcd' }];
         box.settings.gateReviewed = ['mod.esp:000804', 'gone.esp:000001'];
-        this.check(L.render(this._spells(), box.settings) === true, 'Render: the first paint');
-        this.check(els.scanSpellListTitle.textContent === 'Spell list (3)' && els.scanBlacklistTitle.textContent === 'Blacklisted (1)' &&
-            els.scanWhitelistTitle.textContent === 'Whitelisted (2)', 'Render: each title with its count');
+        var spells = this._spells();
+        spells[1].gate = { reasons: ['too costly'] };   // Frostbite: blacklisted, and flagged
+        this.check(L.render(spells, box.settings) === true, 'Render: the first paint');
+        this.check(els.scanSpellListTitle.textContent === 'Spell list: All (3)' && els.scanBlacklistTitle.textContent === 'Blacklisted (1)' &&
+            els.scanWhitelistTitle.textContent === 'Whitelisted (2)', 'Render: each title with its count, the Spell list title with its view');
         var marks = function(list, i) {
             return list.children[i].find(function(c) { return c.tagName === 'BUTTON'; }).map(function(b) { return b.textContent; }).join('');
         };
@@ -155,11 +157,15 @@ var SpellListsTest = {
         var reason = els.scanSpellListPreview.children[0].find(function(c) { return /spell-list-reasons/.test(c.cls()); });
         this.check(els.scanSpellListPreview.children.length === 1 && reason.length === 1 && reason[0].textContent === ' - summons a horse',
             'Render Flagged: the reasons in their own span (their own colour)');
+        var listed = els.scanBlacklistPreview.children[0].find(function(c) { return /spell-list-reasons/.test(c.cls()); });
+        this.check(listed.length === 1 && listed[0].textContent === ' - too costly' &&
+            els.scanSpellListTitle.textContent === 'Spell list: Flagged (1)',
+            'Render Flagged: a listed spell has its reasons in its column too; the title names the view');
         L.setView('category', 'unreachable');
         this.check(els.scanSpellListTitle.textContent === 'Spell list: Unreachable (1)', 'Render: a category\'s view names it in the title');
         L.setView('all');
-        this.check(L.render(this._spells(), box.settings) === false, 'Render: an unchanged state paints nothing');
-        this.check(L.render(this._spells(), box.settings, true) === true, 'Render: force paints again');
+        this.check(L.render(spells, box.settings) === false, 'Render: an unchanged state paints nothing');
+        this.check(L.render(spells, box.settings, true) === true, 'Render: force paints again');
     },
 
     _moves: function(box) {
@@ -210,6 +216,8 @@ var SpellListsTest = {
         var rows = P.effectRows(spell).map(function(r) { return r.join(','); }).join(' | ');
         this.check(rows === 'Flames,8,1s,— | Burn,3,5s,10 ft | Flames,8,1s,—',
             'Card: one table row per shown effect: power, duration, size, a dash where there is none');
+        this.check(P.descriptionParts(spell).length === 2,
+            'Card: one description block per distinct effect text (a line drawn between them)');
         this.check(P.chipIds({ traits: ['school.destruction', 'element.fire', 'form.spray'] }).join() === 'element.fire,form.spray' &&
             P.chipIds({ chips: ['cast.concentration'], traits: ['element.frost'] }).join() === 'cast.concentration',
             'Card: the spell\'s tags (chips before traits), its school left to the badge');

@@ -89,7 +89,7 @@ var SpellLists = {
         return !!spell && typeof GateReview !== 'undefined' && !!GateReview.flagged && GateReview.flagged(spell);
     },
 
-    /** Why a flagged spell is to be looked over (Gate Review's reasons), shown in the Flagged view only */
+    /** Why a flagged spell is to be looked over (Gate Review's reasons), shown in every column in the Flagged view */
     reasonsOf: function(spell) {
         return this._flagged(spell) && GateReview._reasons ? GateReview._reasons(spell, false) : [];
     },
@@ -171,11 +171,16 @@ var SpellLists = {
         this._syncViewButtons();
     },
 
-    /** The Spell list's title: the category's name in that view */
+    /** The Spell list's title with its view: "Spell list: All", "Flagged" or the category's name */
     _spellsTitle: function() {
-        if (this.view !== 'category' || typeof TomeSourceSetting === 'undefined') return null;
-        var n = TomeSourceSetting.NAMES[this.category];
-        var name = n ? this._t(n[0], n[1]) : String(this.category);
+        var name;
+        if (this.view === 'all') name = this._t('scan.viewAll', 'All');
+        else if (this.view === 'flagged') name = this._t('scan.viewFlagged', 'Flagged');
+        else if (typeof TomeSourceSetting === 'undefined') return null;
+        else {
+            var n = TomeSourceSetting.NAMES[this.category];
+            name = n ? this._t(n[0], n[1]) : String(this.category);
+        }
         return ['scan.spellListCategory', 'Spell list: {{category}} ({{count}})', { category: name }];
     },
 
@@ -263,7 +268,8 @@ var SpellLists = {
         var params = { count: rows.length };
         for (var p in (text[2] || {})) params[p] = text[2][p];
         if (title && typeof setI18n === 'function') setI18n(title, text[0], params, text[1]);
-        var showReasons = col.name === 'spells' && this.view === 'flagged';
+        // The Flagged view shows why in every column, so a listed spell's flag stays visible
+        var showReasons = this.view === 'flagged';
         var list = doc.getElementById(col.list);
         if (!list) return;
         this._wire(list, col.name);
@@ -290,7 +296,7 @@ var SpellLists = {
                 help.setAttribute('aria-label', this._t('scan.spellPeek', "Show the spell's figures and description"));
             }
             var desc = info.appendChild(this._el(doc, 'div', 'spell-list-desc', rows[r].lines.join(' - ')));
-            // The Flagged view: why each is to be looked over, in its own colour
+            // Why each is to be looked over, in its own colour
             if (showReasons && rows[r].reasons.length) {
                 desc.appendChild(this._el(doc, 'span', 'spell-list-reasons', ' - ' + rows[r].reasons.join(', ')));
             }
