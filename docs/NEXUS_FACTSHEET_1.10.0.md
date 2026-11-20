@@ -18,7 +18,7 @@ Version: 1.10.0 (proposed: new features since 1.9.3). Install over 1.9.3; no sav
    the progress card now show "???" for a spell below the panel's Reveal Name %, like the tree, its tooltip and the
    node card. A school's starting spell keeps its name in the tooltip, the node card and the rows (and a click opens
    its item card) while the panel's "Show Root Spell Names" is on (the default), as the panel's own tooltip does.
-4. Panel drop-down lists (language, design, notification language, tree builder): the open list now follows the
+4. Panel drop-down lists (language, design, notification language, Pre Req Master's School Distribution and Pool Source): the open list now follows the
    Font Size setting and the design's colours, instead of a small white list. Escape with a list open closes only
    the list.
 5. (Only if its test passes) Spell Research: "Re-judge vanilla spells by their records", Settings > Spell Tome

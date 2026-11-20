@@ -4,13 +4,17 @@
 
 ### Added
 
-- **Spell Research: vanilla spells re-filed by their records (opt-in, off by default).** Settings > Spell Tome
-  Learning, under the Spell Research line: "Re-judge vanilla spells by their records". Spell Research's Import files
-  the vanilla and DLC spells under the school and level its own script carries, so an overhaul that changes a vanilla
-  spell's school or level (Requiem) was not seen. When on, Heart of Magic moves those spells to the school and level
-  their records give now, as the tree judges them, with their tome pairs; a spell a plugin lists in a record entry
-  is left as it is. `spell_research_reclassify.json` lists every change. With Spell Research Upgrade and Fixes,
-  run its spell cache again after turning this on. (SpellResearchReclassify.h; docs/librarian/SPELL_RESEARCH.md 10)
+- **Spell Research: vanilla spells re-filed by their records (opt-in, off by default).** Settings > Spell Tomes >
+  Spell Tome Learning, under the Spell Research line: "Re-judge vanilla spells by their records". Spell Research's
+  Import files the vanilla and DLC spells under the school and level its own script carries, so an overhaul that
+  changes a vanilla spell's school or level (Requiem) was not seen. When on, Heart of Magic moves those spells to the
+  school and level their records give now, as the tree judges them, with their tome pairs where Spell Research's
+  lists allow it (the report lists a partial move); a spell a plugin itself puts in one of Spell Research's lists
+  stays where that plugin put it (reported as locked). Scroll pairs and the element, technique, casting and target
+  lists keep the old class. `spell_research_reclassify.json` lists every change. The move happens at the next
+  load: turn the option on, save, load that save; then, with Spell Research Upgrade and Fixes, rebuild its spell
+  cache. Turning it off keeps the changes until Spell Research's Import runs again.
+  (SpellResearchReclassify.h; docs/librarian/SPELL_RESEARCH.md 10)
 - **Staff casts from SCSSoulCharge count as their spell.** That staff mod casts the spell you bind to a staff
   as a staff enchantment made from it, so the cast gave no learning XP and a concentration staff's effect was
   not weakened for an early-learned spell. With SCSSoulCharge.dll installed, Heart of Magic now asks it which
@@ -31,7 +35,7 @@
 ### Fixed
 
 - **Panel drop-down lists follow Font Size and the design.** The open list of the language, design, notification
-  language and tree-builder drop-downs was drawn by the panel engine itself, white with a small fixed font, whatever
+  language drop-downs and Pre Req Master's School Distribution and Pool Source was drawn by the panel engine itself, white with a small fixed font, whatever
   the Font Size setting or the design. The panel now draws that list at the setting's size in the design's colours.
   Escape with a list open closes the list, not the panel. (modules/selectSkin.js)
 - **Magic Menu Rewrite block: next-spell rows follow the name settings.** With no learning target in a school, the
