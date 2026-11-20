@@ -458,7 +458,7 @@ var PanelLayoutTest = {
             !/prmToggleHeader|prm-collapse-icon|prm-block/.test(extra) && !/prmToggleHeader/.test(this._file('prereqMaster.js')) &&
             /scan-section-title">' \+ t\('preview\.title'\)/.test(this._file('treePreview.js')) && /scan-section-title">' \+ t\('treeViewer\.treeGrowthPreview'\)/.test(this._file('treeGrowth.js')) &&
             /#prereqMasterSection \.prm-split \{ height: auto;/.test(css) && /#prereqMasterSection \.prm-split-left \{ height: auto; overflow: visible; \}/.test(css),
-            'Scan markup: Extra Settings a section title like Root Base Preview and Tree Growth Preview (one bar and title style, folded by scanSections.js), no PRM collapsible box, pages as tall as their content');
+            'Scan markup: Extra Settings a section title like Scaffold Preview and Tree Growth Preview (one bar and title style, folded by scanSections.js), no PRM collapsible box, pages as tall as their content');
         var prm = this._file('prereqMaster.js');
         this.check(/id="prmTabLocks">/.test(extra) && /class="prm-tab-content prm-page-hidden" id="prmTabCore">/.test(extra) &&
             /class="prm-tab-content prm-page-hidden" id="prmTabAltPaths">/.test(extra) && !/id="prmTab\w+" style="display:none/.test(extra) &&

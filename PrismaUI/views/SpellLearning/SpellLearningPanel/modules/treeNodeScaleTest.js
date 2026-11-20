@@ -1,5 +1,5 @@
 /**
- * TreeNodeScaleTest - node tests for TreeNodeScale (run-tests.js): Node Size to scale, the tree's
+ * TreeNodeScaleTest - node tests for TreeNodeScale (run-tests.js): Root Size to scale, the tree's
  * nodeScale clamped, the renderer's spell sizes set from it and back to 1 for a tree without one.
  *
  * Depends on: TreeNodeScale
@@ -19,9 +19,9 @@ var TreeNodeScaleTest = {
         this.passed = 0; this.failed = 0;
         var S = TreeNodeScale;
 
-        this.check(S.fromNodeSize(8) === 1, 'the default Node Size 8 is scale 1');
-        this.check(S.fromNodeSize(16) === 2, 'Node Size 16 is scale 2');
-        this.check(S.fromNodeSize(9999) === S.MAX && S.fromNodeSize(1) === S.MIN, 'Node Size is kept in MIN..MAX');
+        this.check(S.fromNodeSize(8) === 1, 'the default Root Size 8 is scale 1');
+        this.check(S.fromNodeSize(16) === 2, 'Root Size 16 is scale 2');
+        this.check(S.fromNodeSize(9999) === S.MAX && S.fromNodeSize(1) === S.MIN, 'Root Size is kept in MIN..MAX');
         this.check(S.fromNodeSize('x') === 1 && S.fromNodeSize(0) === 1, 'a size that is not a positive number is 1');
 
         this.check(S.fromTree({}) === 1 && S.fromTree(null) === 1, 'a tree without nodeScale is 1');
@@ -41,9 +41,9 @@ var TreeNodeScaleTest = {
         var savedPreview = typeof TreePreview !== 'undefined' ? TreePreview : undefined;
         var g = typeof global !== 'undefined' ? global : window;
         g.TreePreview = { activeMode: 'sun', modes: { sun: { settings: { nodeSize: 12 } }, flat: { settings: {} } } };
-        this.check(S.fromPreview() === 1.5, "the sun preview's Node Size gives the scale");
+        this.check(S.fromPreview() === 1.5, "the sun preview's Root Size gives the scale");
         g.TreePreview.activeMode = 'flat';
-        this.check(S.fromPreview() === 1, 'a mode without Node Size gives 1');
+        this.check(S.fromPreview() === 1, 'a mode without Root Size gives 1');
         g.TreePreview = savedPreview;
 
         return { passed: this.passed, failed: this.failed };

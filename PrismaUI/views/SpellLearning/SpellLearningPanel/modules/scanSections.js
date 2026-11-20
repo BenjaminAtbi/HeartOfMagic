@@ -1,5 +1,5 @@
 /**
- * ScanSections - every section of the Scan page (Scan details, Spell Inclusion, Root Base Preview, Tree Growth
+ * ScanSections - every section of the Scan page (Scan details, Spell Inclusion, Scaffold Preview, Tree Growth
  * Preview, Extra Settings) folds by its header bar: a click on the bar (not on a button or field in it) folds the
  * section to the bar alone, or opens it again. All start open.
  *

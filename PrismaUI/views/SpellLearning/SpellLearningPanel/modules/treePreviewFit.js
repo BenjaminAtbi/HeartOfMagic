@@ -1,5 +1,5 @@
 /**
- * TreePreviewFit - the Root Base Preview's settings box as tall as its tallest tab, so switching modes
+ * TreePreviewFit - the Scaffold Preview's settings box as tall as its tallest tab, so switching modes
  * moves nothing and no theme's fonts push a tab past the box.
  *
  * TreePreview builds only the active mode's settings. Beside them, this lays a copy of every other
