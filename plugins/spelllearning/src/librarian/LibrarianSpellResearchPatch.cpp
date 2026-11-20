@@ -685,8 +685,15 @@ namespace Librarian::SpellResearchPatch
                           "archetypes. Turning this off keeps the changes until SR's Import runs again." } };
             // A run that changed nothing (the next message box) leaves the last report standing
             if (moved + partial == 0) {
-                logger::debug("SpellResearch: {} - reclassify: nothing to move ({} already right, {} locked, {} without a "
-                              "record school or tier, {} ms)", reason, same, locked, unknown, elapsed);
+                // At info once per loaded game (the release log shows it ran), at debug after that
+                static std::uint64_t loggedSession = ~std::uint64_t{ 0 };
+                const bool first = loggedSession != g_gameSession;
+                loggedSession = g_gameSession;
+                const std::string line = std::format("SpellResearch: {} - reclassify: nothing to move ({} already right, {} "
+                                                     "locked, {} without a record school or tier, {} ms)",
+                    reason, same, locked, unknown, elapsed);
+                if (first) logger::info("{}", line);
+                else logger::debug("{}", line);
                 return;
             }
             const auto path = DataPath(RECLASSIFY_FILE);
