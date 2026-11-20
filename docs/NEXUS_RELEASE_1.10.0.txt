@@ -1,0 +1,37 @@
+Heart of Magic Librarian 1.10.0 - text for the Nexus upload
+(The page: docs/NEXUS_PAGE.bbcode, "New in 1.10.0". Full list: CHANGELOG.md. First draft by Gemini Neon from
+docs/NEXUS_FACTSHEET_1.10.0.md, checked against it line by line by Claude. SpellLearning.dll, the panel and the
+Magic Menu Rewrite HoM block changed; Magic Menu Rewrite itself stays 1.2.0.)
+
+Before upload:
+- Replace every {STAFF_MOD} (page and this file) with the staff mod's Nexus name as a link, once its page is public.
+- If the "Re-judge vanilla spells" game test fails, the release goes out without it: delete the page's
+  "Re-judge vanilla spells by their records" [*] entry, use the "Without item 5" file description below and drop
+  the last changelog line.
+
+=====================================================================
+1. Files tab - main file
+=====================================================================
+
+Name: Heart of Magic Librarian
+Version: 1.10.0
+
+Description (with item 5):
+Staff casts with {STAFF_MOD} (the author's own staff mod) now give learning XP as the bound spell, and Heart of Magic's stored names leave out that mod's staff mark. In the Magic Menu Rewrite block, next-spell rows with no learning target show "???" below Reveal Name %, while a school's starting spell keeps its name when "Show Root Spell Names" is on. Panel drop-down lists follow the Font Size setting and the design's colours, and Escape closes only an open list. New optional setting "Re-judge vanilla spells by their records" (Settings > Spell Tome Learning, off by default) moves vanilla and DLC spells to the school and level their records give now, for overhauls such as Requiem. Install over 1.9.3, no save changes with the default settings; Magic Menu Rewrite stays 1.2.0 and the design add-ons are unchanged.
+
+Description (without item 5):
+Staff casts with {STAFF_MOD} (the author's own staff mod) now give learning XP as the bound spell, and Heart of Magic's stored names leave out that mod's staff mark. In the Magic Menu Rewrite block, next-spell rows with no learning target show "???" below Reveal Name %, while a school's starting spell keeps its name when "Show Root Spell Names" is on. Panel drop-down lists follow the Font Size setting and the design's colours, and Escape closes only an open list. Install over 1.9.3, no save changes; Magic Menu Rewrite stays 1.2.0 and the design add-ons are unchanged.
+
+Debug Symbols file description (same version):
+Optional. Puts function names into Crash Logger reports. Install it only if you want to send a crash log.
+
+
+=====================================================================
+2. Changelogs tab - version 1.10.0 (one line per entry)
+=====================================================================
+
+Added: a staff cast of a spell bound to a staff (requires {STAFF_MOD}) now gives the same learning XP as casting the spell by hand, once per cast, for concentration, fire-and-forget and summon spells from either hand; a concentration staff's effect is weakened like the spell when the spell is early-learned; a staff's own enchantment still gives no XP; the XP works with or without Dynamic Magic Modification Framework 2.0.3.
+Added: Heart of Magic's own stored names never keep the mark {STAFF_MOD} adds to the bound spell's name while a staff is held (default " ★R" / " ★L").
+Fixed: in the Magic Menu Rewrite block, with no learning target in a school, the next-spell rows on the progress card now show "???" for spells below Reveal Name %, and a school's starting spell keeps its name in the tooltip, node card and rows (and a click opens its item card) while "Show Root Spell Names" is on.
+Fixed: panel drop-down lists (language, design, notification language, tree builder) now follow the Font Size setting and the design's colours instead of a small white list, and Escape with a list open closes only the list.
+Added: Spell Research option "Re-judge vanilla spells by their records" (Settings > Spell Tome Learning, under the Spell Research line, off by default) moves vanilla and DLC spells and their tome pairs to the school and level their records give now (for overhauls such as Requiem), leaves a spell a plugin lists in its own record entry as it is, and lists the changes in spell_research_reclassify.json; with Spell Research Upgrade and Fixes, rebuild its spell cache after turning it on; turning it off keeps the changes until Spell Research's Import runs again.
