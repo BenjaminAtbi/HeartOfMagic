@@ -275,7 +275,15 @@ var SpellLists = {
         this._wire(list, col.name);
         this._items[col.name] = rows;
         if (typeof SpellPeek !== 'undefined' && SpellPeek.hide) SpellPeek.hide();
+        // Same view and filter (a move, a switch, a rescan): keep the rows loaded so far and the scroll place;
+        // a new view or filter starts at the top with one page
+        var scope = [this.view, this.category, this.query].join('|');
+        var same = this._scope[col.name] === scope;
+        this._scope[col.name] = scope;
+        var top = same ? list.scrollTop || 0 : 0;
+        var count = Math.min(rows.length, Math.max(this.PAGE_ROWS, same ? this._shown[col.name] || 0 : 0));
         list.innerHTML = '';
+        this._shown[col.name] = 0;
         if (!rows.length) {
             var empty = this._el(doc, 'li', 'scan-list-empty');
             if (typeof setI18n === 'function') setI18n(empty, 'scan.listEmpty', null, 'None');
@@ -283,39 +291,65 @@ var SpellLists = {
             list.appendChild(empty);
             return;
         }
-        var targets = this.COLUMNS.filter(function(c) { return c.name !== col.name; });
+        this._more(col.name, count, showReasons);
+        list.scrollTop = top;
+    },
+
+    // Rows are put on the page a page at a time: the first PAGE_ROWS, then the next whenever the list is scrolled
+    // near its end (_wire). A list of thousands then costs a page to paint and to lay out (a move, Easy / Complex)
+    PAGE_ROWS: 60,
+    MORE_AT_PX: 200,
+    _shown: {},
+    _scope: {},
+
+    /** Append the column's next rows (count of them, else a page) after those already on the page */
+    _more: function(column, count, showReasons) {
+        var doc = this._doc();
+        var col = this.COLUMNS.filter(function(c) { return c.name === column; })[0];
+        var list = doc && col ? doc.getElementById(col.list) : null;
+        var rows = this._items[column] || [];
+        var from = this._shown[column] || 0;
+        var to = Math.min(rows.length, from + (count || this.PAGE_ROWS));
+        if (!list || from >= to) return 0;
+        if (showReasons === undefined) showReasons = this.view === 'flagged';
+        var targets = this.COLUMNS.filter(function(c) { return c.name !== column; });
         var into = typeof doc.createDocumentFragment === 'function' ? doc.createDocumentFragment() : list;
-        for (var r = 0; r < rows.length; r++) {
-            var li = this._el(doc, 'li', 'spell-list-item');
-            li.setAttribute('data-index', r);
-            var info = this._el(doc, 'div', 'spell-list-info');
-            var nameEl = info.appendChild(this._el(doc, 'div', 'spell-list-name', rows[r].name));
-            // "?": the spell's card on hover (spellPeek.js); only for a spell the scan has
-            if (rows[r].spell) {
-                var help = nameEl.appendChild(this._el(doc, 'span', 'spell-list-help', '?'));
-                help.setAttribute('aria-label', this._t('scan.spellPeek', "Show the spell's figures and description"));
-            }
-            var desc = info.appendChild(this._el(doc, 'div', 'spell-list-desc', rows[r].lines.join(' - ')));
-            // Why each is to be looked over, in its own colour
-            if (showReasons && rows[r].reasons.length) {
-                desc.appendChild(this._el(doc, 'span', 'spell-list-reasons', ' - ' + rows[r].reasons.join(', ')));
-            }
-            li.appendChild(info);
-            var moves = this._el(doc, 'div', 'spell-list-moves');
-            for (var t = 0; t < targets.length; t++) {
-                var m = this.MOVES[targets[t].name];
-                var btn = this._el(doc, 'button', 'spell-move ' + m.cls, m.mark);
-                btn.setAttribute('type', 'button');
-                btn.setAttribute('data-move', targets[t].name);
-                btn.setAttribute('title', this._t(m.title[0], m.title[1]));
-                // A whitelisted key the scan has no spell for cannot be blacklisted (no form id)
-                if (targets[t].name === 'blacklisted' && !rows[r].spell && !rows[r].entry) btn.disabled = true;
-                moves.appendChild(btn);
-            }
-            li.appendChild(moves);
-            into.appendChild(li);
-        }
+        for (var r = from; r < to; r++) into.appendChild(this._rowEl(doc, rows[r], r, targets, showReasons));
         if (into !== list) list.appendChild(into);
+        this._shown[column] = to;
+        return to - from;
+    },
+
+    /** One row: the name with its "?", the description, the move buttons */
+    _rowEl: function(doc, row, index, targets, showReasons) {
+        var li = this._el(doc, 'li', 'spell-list-item');
+        li.setAttribute('data-index', index);
+        var info = this._el(doc, 'div', 'spell-list-info');
+        var nameEl = info.appendChild(this._el(doc, 'div', 'spell-list-name', row.name));
+        // "?": the spell's card on hover (spellPeek.js); only for a spell the scan has
+        if (row.spell) {
+            var help = nameEl.appendChild(this._el(doc, 'span', 'spell-list-help', '?'));
+            help.setAttribute('aria-label', this._t('scan.spellPeek', "Show the spell's figures and description"));
+        }
+        var desc = info.appendChild(this._el(doc, 'div', 'spell-list-desc', row.lines.join(' - ')));
+        // Why each is to be looked over, in its own colour
+        if (showReasons && row.reasons.length) {
+            desc.appendChild(this._el(doc, 'span', 'spell-list-reasons', ' - ' + row.reasons.join(', ')));
+        }
+        li.appendChild(info);
+        var moves = this._el(doc, 'div', 'spell-list-moves');
+        for (var t = 0; t < targets.length; t++) {
+            var m = this.MOVES[targets[t].name];
+            var btn = this._el(doc, 'button', 'spell-move ' + m.cls, m.mark);
+            btn.setAttribute('type', 'button');
+            btn.setAttribute('data-move', targets[t].name);
+            btn.setAttribute('title', this._t(m.title[0], m.title[1]));
+            // A whitelisted key the scan has no spell for cannot be blacklisted (no form id)
+            if (targets[t].name === 'blacklisted' && !row.spell && !row.entry) btn.disabled = true;
+            moves.appendChild(btn);
+        }
+        li.appendChild(moves);
+        return li;
     },
 
     /** One click listener per list: the button's data-move, the row's data-index */
@@ -342,8 +376,11 @@ var SpellLists = {
         list.addEventListener('mouseout', function(e) {
             if (helpOf(e) && typeof SpellPeek !== 'undefined') SpellPeek.hide();
         });
-        // A repaint or a scroll takes the "?" away from under the pointer
-        list.addEventListener('scroll', function() { if (typeof SpellPeek !== 'undefined') SpellPeek.hide(); });
+        // A repaint or a scroll takes the "?" away from under the pointer; near the end, the next page of rows
+        list.addEventListener('scroll', function() {
+            if (typeof SpellPeek !== 'undefined') SpellPeek.hide();
+            if (list.scrollHeight - list.scrollTop - list.clientHeight < self.MORE_AT_PX) self._more(column);
+        });
     },
 
     /** The row as a spell addToBlacklist takes: the scan's, else the blacklist entry's fields */

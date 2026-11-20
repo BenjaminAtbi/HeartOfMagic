@@ -168,6 +168,31 @@ var SpellListsTest = {
         this.check(L.render(spells, box.settings, true) === true, 'Render: force paints again');
     },
 
+    /** Rows a page at a time: the first page, the next on a scroll near the end, kept (with the scroll) by a repaint */
+    _paging: function(box) {
+        var L = box.SpellLists, list = box.els.scanSpellListPreview;
+        var many = [];
+        for (var i = 0; i < 130; i++) {
+            many.push({ formId: '0x0100' + (1000 + i), name: 'Spell ' + (1000 + i), plugin: 'Big.esp', source: { segment: 'standardSale' } });
+        }
+        L.render(many, box.settings, true);
+        this.check(list.children.length === L.PAGE_ROWS && box.els.scanSpellListTitle.textContent === 'Spell list: All (130)',
+            'Paging: the first page of rows on the page, the title counting them all');
+        list.scrollHeight = 3000; list.clientHeight = 400; list.scrollTop = 1000;
+        list.fire('scroll');
+        this.check(list.children.length === 60, 'Paging: a scroll far from the end adds nothing');
+        list.scrollTop = 2500;
+        list.fire('scroll');
+        this.check(list.children.length === 120 && list.children[119].getAttribute('data-index') === '119',
+            'Paging: a scroll near the end adds the next page');
+        L.render(many.slice(1), box.settings, true);
+        this.check(list.children.length === 120 && list.scrollTop === 2500,
+            'Paging: a repaint in the same view (a move) keeps the rows loaded and the scroll place');
+        L.setQuery('spell 11');
+        this.check(list.children.length === 30 && list.scrollTop === 0, 'Paging: a new filter starts at the top');
+        L.setQuery('');
+    },
+
     _moves: function(box) {
         var L = box.SpellLists, c = box.calls;
         box.settings.spellBlacklist = [{ formId: '0x00012FCD', plugin: 'Skyrim.esm', localFormId: '012fcd' }];
@@ -227,7 +252,7 @@ var SpellListsTest = {
         this.passed = 0;
         this.failed = 0;
         if (typeof require !== 'function') return { passed: 0, failed: 0 };
-        var parts = [['Model', this._model], ['Render', this._render], ['Moves', this._moves], ['Card', this._card]];
+        var parts = [['Model', this._model], ['Render', this._render], ['Paging', this._paging], ['Moves', this._moves], ['Card', this._card]];
         for (var i = 0; i < parts.length; i++) {
             try { parts[i][1].call(this, this._box()); } catch (e) { this.check(false, parts[i][0] + ' threw: ' + (e && e.stack ? e.stack : e)); }
         }
