@@ -134,6 +134,25 @@ namespace TomeReach
             if (store.kinds.at(holder) != Kind::kContainer || store.noisy.contains(holder)) continue;
             for (const Key e : items) AddEdge(e, EdgeKind::kContainer, holder);
         }
+        if (distribution) {
+            // CDF (reach.py _cdf): an add is an entry of each named container, a replace or an uncounted remove
+            // takes the removed form out of it; a vendor chest only with allowVendors. Rules naming no container
+            // and keyword removals are not traced
+            for (const CdfChange& c : distribution->cdf) {
+                if (c.containers.empty()) {
+                    ++m_cdfUntraced;
+                    continue;
+                }
+                const bool removes = c.op == CdfOp::kReplace || (c.op == CdfOp::kRemove && !c.countGiven);
+                for (const Key k : c.containers) {
+                    if (!KindIs(k, Kind::kContainer) || (IsVendor(k) && !c.vendors)) continue;
+                    if (removes) {
+                        for (const Key r : c.remove) RemoveEdge(r, EdgeKind::kContainer, k);
+                    }
+                    for (const Key e : c.add) AddEdge(e, EdgeKind::kContainer, k);
+                }
+            }
+        }
         for (const auto& [npc, record] : store.npcs) {
             if (record.templ) m_npcParents[record.templ].push_back(npc);
         }

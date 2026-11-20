@@ -98,6 +98,7 @@ add_executable(tome-reach-test
     tome-reach-test.cpp
     tome-reach-selftest.cpp
     tome-reach-modeltest.cpp
+    tome-reach-cdftest.cpp
     tome-reach-store.cpp
     tome-reach-graph.cpp
     tome-reach-sources.cpp
@@ -109,6 +110,7 @@ add_executable(tome-reach-test
     ${SL_SRC_DIR}/tomereach/TomeReachArchive.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachData.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachDistr.cpp
+    ${SL_SRC_DIR}/tomereach/TomeReachCdf.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachPex.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachScripts.cpp
     ${SL_SRC_DIR}/tomereach/TomeReachClasses.cpp

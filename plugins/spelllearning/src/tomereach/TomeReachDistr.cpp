@@ -276,10 +276,16 @@ namespace TomeReach
             for (const auto& t : a.forms) add(t);
             for (const auto& t : a.lists) add(t);
         }
+        for (const auto& c : cdf) {
+            for (const auto& t : c.containers) add(t);
+            for (const auto& t : c.add) add(t);
+            if (c.hasRemove) add(c.remove);
+        }
         return w;
     }
 
-    DistributionConfigs ReadDistributionConfigs(const DataFiles& data, NameTable& names)
+    DistributionConfigs ReadDistributionConfigs(const DataFiles& data, NameTable& names,
+        const std::unordered_set<std::string>& activePlugins)
     {
         DistributionConfigs out;
         for (const auto& c : data.SpidConfigs()) {
@@ -288,6 +294,10 @@ namespace TomeReach
         }
         for (const auto& c : data.SkyPatcherConfigs()) {
             ReadSkyPatcher(ReadText(c.file), names, out);
+            ++out.files;
+        }
+        for (const auto& c : data.CdfConfigs()) {
+            ReadCdf(ReadText(c.file), c.path, activePlugins, names, out.cdf, out.cdfWarnings);
             ++out.files;
         }
         return out;
@@ -337,6 +347,8 @@ namespace TomeReach
                 }
             }
         }
+        out.cdfWarnings = configs.cdfWarnings;
+        out.cdf = ResolveCdf(configs.cdf, store, out.cdfWarnings);
         return out;
     }
 
