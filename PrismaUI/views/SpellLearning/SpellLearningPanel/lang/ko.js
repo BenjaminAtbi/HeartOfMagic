@@ -612,7 +612,7 @@ window._i18nPreload = {
     "settings.tomeLearning.srMemoryToPractice": "기억이 연습을 돕는다",
     "settings.tomeLearning.srMaxPracticeBoost": "기억으로 얻는 최대 연습 보너스(%)",
     "settings.tomeLearning.srReclassify": "바닐라 주문 다시 분류",
-    "settings.tomeLearning.srReclassifyDesc": "Spell Research가 가져온 바닐라·DLC 주문을 현재 주문 기록의 학파와 등급에 따라 다시 분류하여 오버홀로 바뀐 값을 반영합니다. 기본값은 꺼짐입니다.",
+    "settings.tomeLearning.srReclassifyDesc": "Spell Research가 가져온 바닐라와 DLC 주문을 현재 주문 데이터의 학파와 등급에 맞춰 다시 분류해 오버홀로 바뀐 내용이 반영되도록 합니다. 기본값은 꺼짐입니다.",
     "settings.tomeLearning.inventoryBoost": "인벤토리 보너스",
     "settings.tomeLearning.inventoryBoostDesc": "마법서 소지 시 보너스 경험치",
     "settings.tomeLearning.learningReqs": "학습 요구 사항",
