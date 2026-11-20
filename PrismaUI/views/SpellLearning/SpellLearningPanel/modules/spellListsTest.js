@@ -246,6 +246,16 @@ var SpellListsTest = {
         this.check(P.chipIds({ traits: ['school.destruction', 'element.fire', 'form.spray'] }).join() === 'element.fire,form.spray' &&
             P.chipIds({ chips: ['cast.concentration'], traits: ['element.frost'] }).join() === 'cast.concentration',
             'Card: the spell\'s tags (chips before traits), its school left to the badge');
+        // A setting's "?" (treePreviewUtils.js) carries its hint for the same card; called unbound like the modes do
+        var ubox = { console: { log: function() {} } };
+        vm.createContext(ubox);
+        var ufile = path.join(__dirname, 'treePreviewUtils.js');
+        vm.runInContext(fs.readFileSync(ufile, 'utf8') + '\nthis.TreePreviewUtils = TreePreviewUtils;', ubox, { filename: ufile });
+        var H = ubox.TreePreviewUtils.settingHTML;
+        var html = H('Ring Tier', 'x', 1, 9, 1, 3, '', 'Rings "out" & <in>');
+        this.check(html.indexOf('<span class="tree-preview-help" data-hint="Rings &quot;out&quot; &amp; &lt;in&gt;">?</span></label>') !== -1 &&
+            H('Node Size', 'y', 1, 9, 1, 3).indexOf('tree-preview-help') === -1 && typeof P.showText === 'function',
+            'Setting hints: a "?" after the label with the hint escaped, none without a hint; the card shows text');
     },
 
     run: function() {

@@ -26,10 +26,12 @@ var TreePreviewUtils = {
      * @param {number} step
      * @param {number} value - Current value
      * @param {string} [suffix] - Optional suffix like '%' or '°'
+     * @param {string} [hint] - What the setting does: a "?" after the label shows it on hover (initHints)
      */
-    settingHTML: function(label, id, min, max, step, value, suffix) {
+    settingHTML: function(label, id, min, max, step, value, suffix, hint) {
+        var help = hint ? '<span class="tree-preview-help" data-hint="' + TreePreviewUtils._attr(hint) + '">?</span>' : '';
         return '<div class="tree-preview-setting">' +
-            '<label class="tree-preview-label">' + label + '</label>' +
+            '<label class="tree-preview-label">' + label + help + '</label>' +
             '<div class="tree-preview-drag-input">' +
                 '<button class="drag-input-btn drag-input-minus" data-for="' + id + '">\u2212</button>' +
                 '<input type="number" class="drag-input-field" id="' + id + '" ' +
@@ -38,6 +40,27 @@ var TreePreviewUtils = {
                 (suffix ? '<span class="drag-input-suffix">' + suffix + '</span>' : '') +
             '</div>' +
         '</div>';
+    },
+
+    _attr: function(text) {
+        return String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    },
+
+    /**
+     * The settings' "?": one listener on the page shows the hint in the hover card (SpellPeek.showText) while the
+     * pointer is on a "?", so settings written later (a mode's settings, a tab switch) need nothing more
+     */
+    initHints: function() {
+        if (this._hintsWired || typeof document === 'undefined' || !document.addEventListener) return;
+        this._hintsWired = true;
+        var helpOf = function(e) { return e && e.target && e.target.closest ? e.target.closest('.tree-preview-help') : null; };
+        document.addEventListener('mouseover', function(e) {
+            var help = helpOf(e);
+            if (help && typeof SpellPeek !== 'undefined') SpellPeek.showText(help.getAttribute('data-hint'), help);
+        });
+        document.addEventListener('mouseout', function(e) {
+            if (helpOf(e) && typeof SpellPeek !== 'undefined') SpellPeek.hide();
+        });
     },
 
     /**
@@ -285,5 +308,9 @@ var TreePreviewUtils = {
         };
     }
 };
+
+if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', function() { TreePreviewUtils.initHints(); });
+}
 
 console.log('[TreePreviewUtils] Loaded');

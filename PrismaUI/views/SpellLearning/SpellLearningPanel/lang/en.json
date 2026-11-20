@@ -365,6 +365,13 @@
     "preview.sun.square": "Square",
     "preview.sun.tierDensity": "Tier Density",
     "preview.sun.title": "Root Ring Settings",
+    "preview.sun.ringTierHint": "Which ring, counted out from the centre, the school roots sit on. Higher leaves a wider empty middle: a tree growing outward places no spell inside this ring, and a tree growing inward has only the space inside it.",
+    "preview.sun.nodeSizeHint": "How big the root dots are drawn in this preview. Display only: the built tree and its nodes in game do not change.",
+    "preview.sun.rootsPerSchoolHint": "How many points each school's tree starts from. With more than one, the root spell's first branches are shared out among them, the largest first, so each start point gets a similar number of spells.",
+    "preview.sun.spokeDensityHint": "How many grid positions go round the rings. More puts more spells side by side on each ring (a wider, bushier tree); fewer spreads them over more rings. Naive gives every ring the same count; Linear and Equal Area add positions on the outer rings; Fibonacci scales its point count; Square does not use it.",
+    "preview.sun.tierDensityHint": "How close together the rings are (spacing 250 divided by this, at most 40). Higher packs the tree tighter and moves the root ring in, since it sits Ring Tier rings from the centre. 5 is the widest spacing.",
+    "preview.sun.clumpingHint": "With several roots per school, pulls them toward the middle of the school's section: 0% spreads them evenly, 100% puts them all at the middle. No effect with one root.",
+    "preview.sun.randomnessHint": "Moves each root along its school's section by a fixed pseudo-random amount, up to half its share of the section at 100%. The same values always give the same positions. With one root, it moves that root off the middle.",
 
     "prm.applyLocks": "Apply Locks",
     "prm.buildTreeFirst": "Build a tree first",

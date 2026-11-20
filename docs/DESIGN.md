@@ -2013,7 +2013,7 @@ Visual-First builds that used them.
 | `treePreview.js` | Preview orchestrator |
 | `treePreviewSun.js` | Sun grid preview mode |
 | `treePreviewFlat.js` | Flat grid preview mode |
-| `treePreviewUtils.js` | Preview utilities: drag inputs, the canvases' size and fit (`fitCanvas`, `contentExtent`, `fitScale`), where a school's name goes (`schoolLabelPlace`) |
+| `treePreviewUtils.js` | Preview utilities: drag inputs (a setting with a hint gets a "?" that shows it in the hover card, `initHints`), the canvases' size and fit (`fitCanvas`, `contentExtent`, `fitScale`), where a school's name goes (`schoolLabelPlace`) |
 | `sunGridLinear.js` | Linear sun grid layout |
 | `sunGridEqualArea.js` | Equal-area sun grid |
 | `sunGridFibonacci.js` | Fibonacci spiral grid |

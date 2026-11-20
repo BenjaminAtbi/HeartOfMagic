@@ -262,6 +262,13 @@
     font-size: 0.75em; line-height: 1.25em; text-align: center; cursor: help;
     color: var(--text-secondary, #A8A898); border: 1px solid var(--divider, rgba(255, 255, 255, 0.3)); border-radius: 50%;
 }
+.tree-preview-help {
+    display: inline-block; width: 1.25em; height: 1.25em; margin-left: 6px; vertical-align: middle;
+    font-size: 0.8em; line-height: 1.25em; text-align: center; cursor: help; text-transform: none;
+    color: var(--text-secondary, #A8A898); border: 1px solid var(--divider, rgba(255, 255, 255, 0.3)); border-radius: 50%;
+}
+.tree-preview-help:hover { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
+.spell-peek-hint { line-height: 1.4; color: var(--text-secondary, #A8A898); }
 .spell-list-help:hover { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
 .spell-peek {
     position: fixed; z-index: 10050; max-width: 24em; padding: 10px 12px; pointer-events: none;

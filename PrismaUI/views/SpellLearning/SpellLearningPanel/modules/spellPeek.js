@@ -8,7 +8,7 @@
  * game writes it; effects hidden from the UI are left out.
  *
  * One card for the page (#spellPeekPopup), placed beside the "?" and kept inside the window.
- * Called by: spellLists.js (the lists' mouseover / mouseout). CSS: panel-scan.css (.spell-peek*).
+ * Called by: spellLists.js (the lists' mouseover / mouseout); treePreviewUtils.js initHints (a setting's "?", showText). CSS: panel-scan.css (.spell-peek*).
  * Depends on: SpellCard (levelText, typeText, KNOWN_SCHOOLS; optional), tOr (i18n.js; optional).
  */
 
@@ -175,9 +175,19 @@ var SpellPeek = {
     /** Show the card for a spell beside an anchor (the "?"), inside the window */
     show: function(spell, anchor) {
         if (!spell || typeof document === 'undefined') return;
+        this._place(this.build(spell), anchor);
+    },
+
+    /** The same card with a line of text: a setting's "?" (TreePreviewUtils.initHints) */
+    showText: function(text, anchor) {
+        if (!text || typeof document === 'undefined') return;
+        this._place(this._el('div', 'spell-peek-hint', text), anchor);
+    },
+
+    _place: function(content, anchor) {
         var el = this._popup();
         el.innerHTML = '';
-        el.appendChild(this.build(spell));
+        el.appendChild(content);
         el.classList.remove('hidden');
         var r = anchor.getBoundingClientRect();
         var w = el.offsetWidth, h = el.offsetHeight;
