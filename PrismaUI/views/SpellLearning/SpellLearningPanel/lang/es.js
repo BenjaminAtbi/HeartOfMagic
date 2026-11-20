@@ -611,6 +611,8 @@ window._i18nPreload = {
     "settings.tomeLearning.srMemoryMinutes": "Memoria por cada 15% de práctica (minutos de investigación)",
     "settings.tomeLearning.srMemoryToPractice": "La memoria guía la práctica",
     "settings.tomeLearning.srMaxPracticeBoost": "Bonificación máxima de práctica por memoria (%)",
+    "settings.tomeLearning.srReclassify": "Reclasificar los hechizos vanilla según sus registros",
+    "settings.tomeLearning.srReclassifyDesc": "Asigna los hechizos vanilla y de DLC importados por Spell Research a la escuela y el nivel que indican actualmente sus registros, para que se tengan en cuenta los cambios de un overhaul. Desactivado por defecto.",
     "settings.tomeLearning.inventoryBoost": "Bonificación de Inventario",
     "settings.tomeLearning.inventoryBoostDesc": "XP extra al llevar el tomo",
     "settings.tomeLearning.learningReqs": "Requisitos de Aprendizaje",

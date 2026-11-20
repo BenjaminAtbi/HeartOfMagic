@@ -633,6 +633,8 @@
     "settings.tomeLearning.srMemoryMinutes": "Память за каждые 15% практики (минуты исследования)",
     "settings.tomeLearning.srMemoryToPractice": "Память направляет практику",
     "settings.tomeLearning.srMaxPracticeBoost": "Максимальный бонус к практике от памяти (%)",
+    "settings.tomeLearning.srReclassify": "Переклассифицировать ванильные заклинания по записям",
+    "settings.tomeLearning.srReclassifyDesc": "Относит ванильные заклинания и заклинания из DLC, импортированные Spell Research, к школе и уровню, которые сейчас указаны в записях, чтобы учитывались изменения оверхаула. По умолчанию выключено.",
     "settings.tomeLearning.inventoryBoost": "Бонус за наличие",
     "settings.tomeLearning.inventoryBoostDesc": "Бонус XP при ношении фолианта",
     "settings.tomeLearning.learningReqs": "Требования к изучению",

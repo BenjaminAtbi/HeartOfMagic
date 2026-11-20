@@ -611,6 +611,8 @@ window._i18nPreload = {
     "settings.tomeLearning.srMemoryMinutes": "Her 15% pratik için hafıza (araştırma dakikası)",
     "settings.tomeLearning.srMemoryToPractice": "Hafıza pratiğe yön verir",
     "settings.tomeLearning.srMaxPracticeBoost": "Hafızadan gelen en yüksek pratik bonusu (%)",
+    "settings.tomeLearning.srReclassify": "Vanilla büyüleri kayıtlarına göre yeniden sınıflandır",
+    "settings.tomeLearning.srReclassifyDesc": "Spell Research'ün içe aktardığı vanilla ve DLC büyülerini kayıtlarında güncel olarak belirtilen okul ve seviyeye atar; böylece bir overhaul'un yaptığı değişiklikler geçerli olur. Varsayılan olarak kapalı.",
     "settings.tomeLearning.inventoryBoost": "Envanter Bonusu",
     "settings.tomeLearning.inventoryBoostDesc": "Kitap taşırken bonus TP",
     "settings.tomeLearning.learningReqs": "Öğrenme Gereksinimleri",
