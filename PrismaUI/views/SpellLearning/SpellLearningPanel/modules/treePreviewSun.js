@@ -114,10 +114,10 @@ var TreePreviewSun = {
                 H(t('preview.sun.ringTier'), 'tpSunRingTier', 1, 9999, 1, s.ringTier, '', t('preview.sun.ringTierHint')) +
                 H(t('preview.rootSize'), 'tpSunNodeSize', 1, 9999, 1, s.nodeSize, '', t('preview.sun.nodeSizeHint')) +
                 H(t('preview.rootsPerSchool'), 'tpSunRoots', 1, 9999, 1, s.rootsPerSchool, '', t('preview.sun.rootsPerSchoolHint')) +
-                H(t('preview.sun.spokeDensity'), 'tpSunGrid', 5, 9999, 5, s.gridDensity, '', t('preview.sun.spokeDensityHint')) +
-                H(t('preview.sun.tierDensity'), 'tpSunTiers', 5, 9999, 5, s.tierDensity, '', t('preview.sun.tierDensityHint')) +
                 H(t('preview.clumping'), 'tpSunClump', 0, 100, 1, s.rootClumping, '%', t('preview.sun.clumpingHint')) +
                 H(t('preview.randomness'), 'tpSunRand', 0, 100, 1, s.rootRandomness, '%', t('preview.sun.randomnessHint')) +
+                H(t('preview.sun.spokeDensity'), 'tpSunGrid', 5, 9999, 5, s.gridDensity, '', t('preview.sun.spokeDensityHint')) +
+                H(t('preview.sun.tierDensity'), 'tpSunTiers', 5, 9999, 5, s.tierDensity, '', t('preview.sun.tierDensityHint')) +
             '</div>';
     },
 
