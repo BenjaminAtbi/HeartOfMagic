@@ -85,8 +85,10 @@ var ClassicTreeOutput = {
             trustPrereqs: true,
             noRotate: (layoutMode === 'flat'),
             layoutMode: layoutMode,
-            // The Scaffold Preview's Root Size, drawn by the tree view (TreeNodeScale.apply on load)
-            nodeScale: typeof TreeNodeScale !== 'undefined' ? TreeNodeScale.fromPreview() : 1,
+            // Spell sizes for the tree view (TreeNodeScale.apply on load): Tree Growth's Node Size for
+            // every spell but the roots, the Scaffold Preview's Root Size for the roots
+            nodeScale: typeof TreeNodeScale !== 'undefined' ? TreeNodeScale.nodeFromGrowth() : 1,
+            rootScale: typeof TreeNodeScale !== 'undefined' ? TreeNodeScale.rootFromPreview() : 1,
             config: treeData.config || {},
             globe: (typeof TreeCore !== 'undefined' && TreeCore.getOutput)
                 ? TreeCore.getOutput()

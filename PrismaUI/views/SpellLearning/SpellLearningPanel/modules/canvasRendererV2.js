@@ -102,6 +102,8 @@ var CanvasRenderer = {
     KNOWN_SIZE: 12,               // a known spell, and the one being learned
     LEARNABLE_SIZE: 9,
     LOCKED_SIZE: 7,
+    NODE_SCALE: 1,                // the three sizes above are this times 12/9/7 (TreeNodeScale.apply, per tree)
+    ROOT_SCALE: 1,                // a root spell's scale instead (_spellSize)
     FOCUS_GROW: 1.5,              // the selected and hovered spell are this much bigger
     HOVER_PATH_ALPHA: 0.85,       // a locked or learnable spell on the hovered one's path: at least this bright
     HALO_SCALE: 2.6,              // a known spell's halo radius per its size

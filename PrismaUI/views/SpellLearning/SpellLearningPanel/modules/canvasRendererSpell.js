@@ -132,7 +132,7 @@
 
             // Focus + context dimming and minimum on-screen size
             alpha *= this._contextFactor(node);
-            size = this._minSize(size);
+            size = this._minSize(this._spellSize(node, size));
 
             if (isSelected || isHovered) {
                 size += this.FOCUS_GROW;  // Subtle hover expansion

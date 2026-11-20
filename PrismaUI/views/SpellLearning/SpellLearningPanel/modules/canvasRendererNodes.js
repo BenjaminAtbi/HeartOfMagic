@@ -60,6 +60,19 @@
         },
 
         /**
+         * A spell's size from one of the shared sizes (KNOWN_SIZE, ...), which carry NODE_SCALE:
+         * a root spell gets ROOT_SCALE instead (Root Size vs Node Size, TreeNodeScale).
+         */
+        _spellSize: function(node, size) {
+            return node && node.isRoot ? size * (this.ROOT_SCALE || 1) / (this.NODE_SCALE || 1) : size;
+        },
+
+        /** The largest any spell is drawn (KNOWN_SIZE, or a root's), for culling and overlay pads */
+        _largestSpellSize: function() {
+            return this.KNOWN_SIZE * Math.max(1, (this.ROOT_SCALE || 1) / (this.NODE_SCALE || 1));
+        },
+
+        /**
          * Mystery (undiscovered) node radius grows with tier so the silhouette
          * still tells the player roughly how advanced the hidden spell is.
          */
@@ -72,7 +85,7 @@
             } else if (typeof node.tier === 'number' && node.tier > 0) {
                 tierIndex = Math.min(node.tier - 1, 4);
             }
-            return this.LOCKED_SIZE + tierIndex;
+            return this._spellSize(node, this.LOCKED_SIZE + tierIndex * (this.NODE_SCALE || 1));
         },
 
         /**
@@ -244,7 +257,7 @@
             }
 
             alpha *= this._contextFactor(node);
-            size = this._minSize(size);
+            size = this._minSize(this._spellSize(node, size));
 
             if (isSelected || isHovered) {
                 size += this.FOCUS_GROW; strokeColor = style.focusStroke; strokeWidth = 1.5; alpha = 1.0;
@@ -346,7 +359,7 @@
                 var base = locked ? 0.4 : style.availableAlpha;
                 // On the hovered spell's path: a little brighter, as renderNode draws it
                 if (this._hoverPathNodes && this._hoverPathNodes.has(node.id)) base = Math.max(base, this.HOVER_PATH_ALPHA);
-                var lsize = this._minSize(locked ? this.LOCKED_SIZE : this.LEARNABLE_SIZE), alpha = base * cf;
+                var lsize = this._minSize(this._spellSize(node, locked ? this.LOCKED_SIZE : this.LEARNABLE_SIZE)), alpha = base * cf;
                 // A learnable spell's own thin ring (renderNode draws it before the shape, unturned)
                 if (available && style.availableRing) {
                     NodeBatch.addShape(NodeBatch.RING, node.x, node.y, lsize + this.RING_GAP, null, schoolColor,
@@ -363,7 +376,7 @@
                     locked ? (style.lockedStroke || schoolColor) : schoolColor, alpha, locked);
                 return true;
             }
-            var size = this._minSize(this.KNOWN_SIZE);
+            var size = this._minSize(this._spellSize(node, this.KNOWN_SIZE));
             var onPath = (this._learningPathNodes instanceof Set) && this._learningPathNodes.has(node.id) &&
                          !(this._animatingPathNodes && this._animatingPathNodes.has(node.id));
             if (style.nodeGlow > 0 && size * this.HALO_SCALE * this.zoom >= this.HALO_MIN_SCREEN_PX) {

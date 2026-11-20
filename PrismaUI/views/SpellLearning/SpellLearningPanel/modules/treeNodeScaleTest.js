@@ -1,6 +1,7 @@
 /**
- * TreeNodeScaleTest - node tests for TreeNodeScale (run-tests.js): Root Size to scale, the tree's
- * nodeScale clamped, the renderer's spell sizes set from it and back to 1 for a tree without one.
+ * TreeNodeScaleTest - node tests for TreeNodeScale (run-tests.js): Node Size and Root Size to scales,
+ * the tree's scales clamped, the renderer's spell sizes set from nodeScale, a root sized by rootScale
+ * (CanvasRenderer._spellSize, copied onto a stand-in renderer), and back to 1 for a tree without them.
  *
  * Depends on: TreeNodeScale
  */
@@ -15,36 +16,60 @@ var TreeNodeScaleTest = {
         else { this.failed++; console.log('  [FAIL] ' + name); }
     },
 
+    // The renderer's helpers (canvasRendererNodes.js), as the renderer has them
+    _renderer: function() {
+        return {
+            KNOWN_SIZE: 12, LEARNABLE_SIZE: 9, LOCKED_SIZE: 7, NODE_SCALE: 1, ROOT_SCALE: 1,
+            _spellSize: function(node, size) {
+                return node && node.isRoot ? size * (this.ROOT_SCALE || 1) / (this.NODE_SCALE || 1) : size;
+            },
+            _largestSpellSize: function() {
+                return this.KNOWN_SIZE * Math.max(1, (this.ROOT_SCALE || 1) / (this.NODE_SCALE || 1));
+            }
+        };
+    },
+
     run: function() {
         this.passed = 0; this.failed = 0;
         var S = TreeNodeScale;
 
-        this.check(S.fromNodeSize(8) === 1, 'the default Root Size 8 is scale 1');
-        this.check(S.fromNodeSize(16) === 2, 'Root Size 16 is scale 2');
-        this.check(S.fromNodeSize(9999) === S.MAX && S.fromNodeSize(1) === S.MIN, 'Root Size is kept in MIN..MAX');
-        this.check(S.fromNodeSize('x') === 1 && S.fromNodeSize(0) === 1, 'a size that is not a positive number is 1');
+        this.check(S.fromSize(5, S.NODE_DEFAULT) === 1 && S.fromSize(8, S.ROOT_DEFAULT) === 1,
+            'the default Node Size 5 and Root Size 8 are scale 1');
+        this.check(S.fromSize(10, S.NODE_DEFAULT) === 2 && S.fromSize(16, S.ROOT_DEFAULT) === 2, 'twice the default is 2');
+        this.check(S.fromSize(9999, 8) === S.MAX && S.fromSize(1, 8) === S.MIN, 'sizes are kept in MIN..MAX');
+        this.check(S.fromSize('x', 8) === 1 && S.fromSize(0, 8) === 1, 'a size that is not a positive number is 1');
 
-        this.check(S.fromTree({}) === 1 && S.fromTree(null) === 1, 'a tree without nodeScale is 1');
-        this.check(S.fromTree({ nodeScale: 1.5 }) === 1.5, "a tree's nodeScale is used");
-        this.check(S.fromTree({ nodeScale: 50 }) === S.MAX, "a tree's nodeScale is clamped");
+        var none = S.fromTree({});
+        this.check(none.nodeScale === 1 && none.rootScale === 1 && S.fromTree(null).nodeScale === 1,
+            'a tree without scales is 1 and 1');
+        var t = S.fromTree({ nodeScale: 1.5, rootScale: 50 });
+        this.check(t.nodeScale === 1.5 && t.rootScale === S.MAX, "a tree's scales are used, clamped");
 
-        var r = { KNOWN_SIZE: 12, LEARNABLE_SIZE: 9, LOCKED_SIZE: 7 };
-        S.apply({ nodeScale: 2 }, r);
+        var r = this._renderer();
+        S.apply({ nodeScale: 2, rootScale: 0.5 }, r);
         this.check(r.KNOWN_SIZE === 24 && r.LEARNABLE_SIZE === 18 && r.LOCKED_SIZE === 14,
-            'apply scales the three spell sizes');
-        S.apply({ nodeScale: 2 }, r);
-        this.check(r.KNOWN_SIZE === 24, 'apply twice does not compound');
+            'nodeScale scales the three spell sizes');
+        this.check(r._spellSize({}, r.KNOWN_SIZE) === 24, 'a spell that is not a root keeps the Node Size');
+        this.check(r._spellSize({ isRoot: true }, r.KNOWN_SIZE) === 6 && r._spellSize({ isRoot: true }, r.LOCKED_SIZE) === 3.5,
+            'a root is drawn at rootScale, whatever nodeScale is');
+        this.check(r._largestSpellSize() === 24, 'smaller roots: the largest spell is KNOWN_SIZE');
+        S.apply({ nodeScale: 1, rootScale: 3 }, r);
+        this.check(r._largestSpellSize() === 36 && r._spellSize({ isRoot: true }, r.KNOWN_SIZE) === 36,
+            'bigger roots: the largest spell is a root');
         S.apply({}, r);
-        this.check(r.KNOWN_SIZE === 12 && r.LEARNABLE_SIZE === 9 && r.LOCKED_SIZE === 7,
-            'a tree without nodeScale puts the sizes back');
+        this.check(r.KNOWN_SIZE === 12 && r.LOCKED_SIZE === 7 && r._spellSize({ isRoot: true }, 12) === 12,
+            'a tree without scales puts every size back');
 
-        var savedPreview = typeof TreePreview !== 'undefined' ? TreePreview : undefined;
         var g = typeof global !== 'undefined' ? global : window;
+        var savedPreview = g.TreePreview, savedGrowth = g.TreeGrowthClassic;
         g.TreePreview = { activeMode: 'sun', modes: { sun: { settings: { nodeSize: 12 } }, flat: { settings: {} } } };
-        this.check(S.fromPreview() === 1.5, "the sun preview's Root Size gives the scale");
+        g.TreeGrowthClassic = { settings: { nodeRadius: 10 } };
+        var both = S.fromSettings();
+        this.check(both.rootScale === 1.5 && both.nodeScale === 2,
+            "Root Size comes from the Scaffold Preview, Node Size from Tree Growth");
         g.TreePreview.activeMode = 'flat';
-        this.check(S.fromPreview() === 1, 'a mode without Root Size gives 1');
-        g.TreePreview = savedPreview;
+        this.check(S.rootFromPreview() === 1, 'a mode without Root Size gives 1');
+        g.TreePreview = savedPreview; g.TreeGrowthClassic = savedGrowth;
 
         return { passed: this.passed, failed: this.failed };
     }

@@ -217,7 +217,9 @@
                         var ddx = node.x - worldX;
                         var ddy = node.y - worldY;
                         var dist = Math.sqrt(ddx * ddx + ddy * ddy);
-                        var hitRadius = Math.max(node.state === 'unlocked' ? 14 : 10, minWorldRadius);
+                        // Scaled like the drawn spell (Node Size, or Root Size for a root)
+                        var hitRadius = Math.max(this._spellSize(node, (node.state === 'unlocked' ? 14 : 10) *
+                            (this.NODE_SCALE || 1)), minWorldRadius);
 
                         if (dist <= hitRadius && dist < bestDist) {
                             best = node;

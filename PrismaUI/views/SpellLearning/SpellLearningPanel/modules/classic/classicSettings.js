@@ -95,7 +95,7 @@ var ClassicSettings = {
             // --- Slider grid ---
             '<div class="tree-preview-settings-grid">' +
                 H(t('preview.ghostOpacity'), 'tgClassicOpacity', 0, 100, 5, opacity, '%') +
-                H(t('preview.nodeSize'), 'tgClassicNodeSize', 1, 20, 1, nodeSize) +
+                H(t('preview.nodeSize'), 'tgClassicNodeSize', 1, 20, 1, nodeSize, '', t('preview.classic.nodeSizeHint')) +
                 H(t('preview.classic.spread'), 'tgClassicSpread', 0, 100, 5, spread) +
                 H(t('preview.classic.radialBias'), 'tgClassicRadialBias', 0, 100, 5, radialBias) +
                 H(t('preview.classic.globeMask'), 'tgClassicCenterMask', 0, 10, 1, centerMask, ' ' + tOr('preview.classic.tiersUnit', null, 'tiers')) +
