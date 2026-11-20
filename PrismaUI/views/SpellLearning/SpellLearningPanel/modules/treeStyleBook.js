@@ -397,7 +397,7 @@
         CHAPTER_BOX_PAD: 1,         // css px round a title's box for antialiasing
         CHAPTER_GAP: 14,            // css px between a title's box and the spells nearest it
         CHAPTER_BIN_DEG: 2,         // the outer edge is kept per this many degrees round the heart
-        CHAPTER_NODE_WORLD: 12,     // a spell's largest radius in world units (CanvasRenderer.KNOWN_SIZE)
+        CHAPTER_NODE_WORLD: 12,     // a spell's largest radius in world units when the renderer has no KNOWN_SIZE
 
         /** How far out the spells reach from the heart, once per tree: per school (returned), and per CHAPTER_BIN_DEG
          *  whatever the school (_chapterBins: the outer ring at a school's spoke is often another school's).
@@ -509,7 +509,7 @@
             var reach = this._schoolReach(r, gd.x, gd.y);
             var zoom = r.zoom || 1;
             var halfH = this.tokens.chapterSize * this.CHAPTER_HALF_HEIGHT;
-            var nodeR = Math.max(this.CHAPTER_NODE_WORLD * zoom, r.MIN_NODE_SCREEN_RADIUS || 0);
+            var nodeR = Math.max((r.KNOWN_SIZE || this.CHAPTER_NODE_WORLD) * zoom, r.MIN_NODE_SCREEN_RADIUS || 0);
             ctx.save();
             this._chapterFont(ctx);
             for (var i = 0; i < names.length; i++) {

@@ -74,6 +74,8 @@ loadModule('layerScroll', './modules/layerScroll.js');
 loadModule('layerBuild', './modules/layerBuild.js');
 loadModule('layerScrollTest', './modules/layerScrollTest.js');
 loadModule('canvasRendererV2', './modules/canvasRendererV2.js');
+loadModule('treeNodeScale', './modules/treeNodeScale.js');
+loadModule('treeNodeScaleTest', './modules/treeNodeScaleTest.js');
 loadModule('canvasRendererData', './modules/canvasRendererData.js');
 loadModule('canvasRendererEdges', './modules/canvasRendererEdges.js');
 loadModule('canvasRendererFrame', './modules/canvasRendererFrame.js');

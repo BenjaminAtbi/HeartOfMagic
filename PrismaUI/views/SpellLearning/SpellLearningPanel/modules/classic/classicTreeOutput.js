@@ -85,6 +85,8 @@ var ClassicTreeOutput = {
             trustPrereqs: true,
             noRotate: (layoutMode === 'flat'),
             layoutMode: layoutMode,
+            // The preview's Node Size, drawn by the tree view (TreeNodeScale.apply on load)
+            nodeScale: typeof TreeNodeScale !== 'undefined' ? TreeNodeScale.fromPreview() : 1,
             config: treeData.config || {},
             globe: (typeof TreeCore !== 'undefined' && TreeCore.getOutput)
                 ? TreeCore.getOutput()

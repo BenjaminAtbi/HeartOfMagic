@@ -322,6 +322,8 @@ function _loadTrustedTree(data, switchToTreeTab, options) {
  */
 function loadTreeData(jsonData, switchToTreeTab, isManualImport, options) {
     var data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+    // Spell sizes from the tree's nodeScale (the preview's Node Size when it was built)
+    if (typeof TreeNodeScale !== 'undefined') TreeNodeScale.apply(data);
     // Its list is of the tree being replaced
     if (typeof dismissFindSpell === 'function') dismissFindSpell();
 
