@@ -283,20 +283,23 @@ var PanelRefreshTest = {
                 this._press(env, fill, 10, [200]);
                 this.check(atTop && nov().min === 0 && nov().max === 20, 'Tier zones: a moved bar stops at 100 and at 0');
 
-                // Handles: the half facing into the bar grabs the bar, the outer half the end
+                // Handles (4 px here) take their end anywhere on them, and from the bar within half their height of them
                 var top = this._handle(env, 'Novice', 'max'), bottom = this._handle(env, 'Novice', 'min');
-                top.rect = { top: 78, height: 4 };       // around 20%
-                this._press(env, top, 81, [51]);         // lower half
-                var topInner = nov().min === 30 && nov().max === 50;
-                bottom.rect = { top: 68, height: 4 };    // around 30%
-                this._press(env, bottom, 69, [89]);      // upper half
-                var bottomInner = nov().min === 10 && nov().max === 30;
-                top.rect = { top: 68, height: 4 };       // around 30%
-                this._press(env, top, 69, [50]);         // upper half
-                this.check(topInner && bottomInner && nov().min === 10 && nov().max === 50,
-                    'Tier zones: a handle\'s inner half moves the bar, its outer half moves the end');
+                top.rect = { top: 78, height: 4 };       // 78-82, around 20%
+                this._press(env, top, 81, [60]);
+                var onHandle = nov().min === 0 && nov().max === 40;
+                top.rect = { top: 58, height: 4 };       // 58-62, around 40%: its grace reaches 64
+                this._press(env, fill, 63, [50]);
+                var topGrace = nov().min === 0 && nov().max === 50;
+                top.rect = { top: 48, height: 4 };       // 48-52, around 50%: grace to 54
+                this._press(env, fill, 65, [55]);        // past it: the bar moves, 10 up
+                var past = nov().min === 10 && nov().max === 60;
+                bottom.rect = { top: 88, height: 4 };    // 88-92, around 10%: its grace reaches up to 86
+                this._press(env, fill, 87, [80]);
+                this.check(onHandle && topGrace && past && nov().min === 20 && nov().max === 60,
+                    'Tier zones: a handle takes its end from up to half its height inside the bar; further in, the bar moves');
 
-                                var other = {};
+                var other = {};
                 CS.buildHTML(other);
                 this.check(other.tierZones && other.tierZones.Master.min === CS.DEFAULT_TIER_ZONES.Master.min &&
                     other.tierZones.Master !== CS.DEFAULT_TIER_ZONES.Master,

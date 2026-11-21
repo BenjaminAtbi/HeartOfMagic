@@ -22,6 +22,9 @@ var ClassicSettings = {
     _treeBuilt: false,
     _nodeCount: 0,
 
+    // How far a tier zone handle's grab area reaches into its bar, as a share of the handle's height
+    HANDLE_GRACE: 0.5,
+
     // Tier zone defaults: settings without tierZones start from a copy of these
     DEFAULT_TIER_ZONES: {
         Novice:     { min: 0,  max: 40 },
@@ -321,8 +324,8 @@ var ClassicSettings = {
 
     /**
      * Bind mousedown/mousemove/mouseup on the tier zone bars: a handle (the bar's top or bottom edge) moves that end,
-     * the bar itself moves the whole range within 0-100. The inner half of each handle counts as the bar
-     * (_innerHalf), so the thin edges are not all resize. @private
+     * the bar itself moves the whole range within 0-100. Each handle reaches into the bar by half the bar's length
+     * (_handleNear), so the ends are easier to take than their thin rendered edges. @private
      */
     _bindTierZoneDrag: function (callbacks) {
         var chart = document.getElementById('tgClassicTierChart');
@@ -364,13 +367,7 @@ var ClassicSettings = {
                 handle.addEventListener('mousedown', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    var type = handle.getAttribute('data-handle');
-                    start(handle, self._innerHalf(handle, type, e.clientY) ? 'move' : type, e);
-                });
-                // The cursor says which: resize on the outer half, move on the inner one
-                handle.addEventListener('mousemove', function (e) {
-                    if (dragging || !handle.style) return;
-                    handle.style.cursor = self._innerHalf(handle, handle.getAttribute('data-handle'), e.clientY) ? 'grab' : 'ns-resize';
+                    start(handle, handle.getAttribute('data-handle'), e);
                 });
             })(handles[i]);
         }
@@ -378,9 +375,19 @@ var ClassicSettings = {
         var fills = chart.querySelectorAll('.classic-tier-fill');
         for (var fi = 0; fi < fills.length; fi++) {
             (function (fill) {
+                var col = fill.closest('.classic-tier-col');
+                var own = [];
+                for (var hi = 0; hi < handles.length; hi++) {
+                    if (handles[hi].closest('.classic-tier-col') === col) own.push(handles[hi]);
+                }
                 fill.addEventListener('mousedown', function (e) {
                     e.preventDefault();
-                    start(fill, 'move', e);
+                    start(fill, self._handleNear(own, e.clientY) || 'move', e);
+                });
+                // The cursor says which: resize within a handle's grace, move elsewhere on the bar
+                fill.addEventListener('mousemove', function (e) {
+                    if (dragging || !fill.style) return;
+                    fill.style.cursor = self._handleNear(own, e.clientY) ? 'ns-resize' : 'grab';
                 });
             })(fills[fi]);
         }
@@ -443,15 +450,27 @@ var ClassicSettings = {
     },
 
     /**
-     * Whether clientY is on the half of a handle that faces into the bar (the lower half of the top handle, the upper
-     * half of the bottom one): that half grabs the bar rather than the end. False without a position. @private
+     * The handle ('max' / 'min') whose grace window holds clientY, or null (the bar moves). A handle's window is its
+     * rendered height plus half its height again, reaching into the bar; where two windows meet, the nearer handle
+     * wins. Null without a position. @private
      */
-    _innerHalf: function (handle, handleType, clientY) {
-        if (typeof clientY !== 'number' || !handle.getBoundingClientRect) return false;
-        var rect = handle.getBoundingClientRect();
-        if (!(rect.height > 0)) return false;
-        var mid = rect.top + rect.height / 2;
-        return handleType === 'max' ? clientY > mid : clientY < mid;
+    _handleNear: function (handles, clientY) {
+        if (typeof clientY !== 'number') return null;
+        var best = null, bestDist = Infinity;
+        for (var i = 0; i < handles.length; i++) {
+            var h = handles[i];
+            if (!h.getBoundingClientRect) continue;
+            var r = h.getBoundingClientRect();
+            if (!(r.height > 0)) continue;
+            var type = h.getAttribute('data-handle');
+            var grace = r.height * this.HANDLE_GRACE, end = r.top + r.height;
+            var top = type === 'min' ? r.top - grace : r.top;               // the bottom handle reaches up,
+            var bottom = type === 'max' ? end + grace : end;                // the top one down
+            if (clientY < top || clientY > bottom) continue;
+            var dist = Math.abs(clientY - (r.top + r.height / 2));
+            if (dist < bestDist) { best = type; bestDist = dist; }
+        }
+        return best;
     },
 
     /** Re-apply tracked state to freshly built DOM elements. @private */
