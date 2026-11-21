@@ -233,11 +233,24 @@ var PanelRefreshTest = {
                     changed.length === 1 && changed[0].join() === 'Novice,20,90',
                     'Tier zones: a drag starts from the current zones (the preset\'s min stays)');
 
+                // Moves only redraw the bar; the change goes out once, on release, and not at all when nothing moved
+                var h = env.handles.filter(function(x) { return x.tier === 'Novice' && x.getAttribute() === 'max'; })[0];
+                h.listeners.mousedown({ preventDefault: function() {}, stopPropagation: function() {} });
+                env.docListeners.mousemove.forEach(function(fn) { fn({ clientY: 30 }); });
+                env.docListeners.mousemove.forEach(function(fn) { fn({ clientY: 20 }); });
+                var duringDrag = changed.length;
+                env.docListeners.mouseup.forEach(function(fn) { fn({}); });
+                this.check(duringDrag === 1 && changed.length === 2 && changed[1].join() === 'Novice,20,80' &&
+                    this._fill(env, 'Novice').style.height === '60%',
+                    'Tier zones: a drag redraws the bar as it moves and sends the change once, on release');
+                this._drag(env, 'Novice', 'max', 20);   // to where it already is
+                this.check(changed.length === 2, 'Tier zones: a release that changed nothing sends nothing');
+
                 this._drag(env, 'Novice', 'min', 0);    // bottom handle past the top
-                this.check(settings.tierZones.Novice.min === 85 && settings.tierZones.Novice.max === 90,
+                this.check(settings.tierZones.Novice.min === 75 && settings.tierZones.Novice.max === 80,
                     'Tier zones: the bottom handle stops 5 below the top');
 
-                this.check(CS.getTierZones().Novice.min === 85 && CS.getTierZones() !== settings.tierZones,
+                this.check(CS.getTierZones().Novice.min === 75 && CS.getTierZones() !== settings.tierZones,
                     'Tier zones: getTierZones reads the settings, as a copy');
 
                 var other = {};

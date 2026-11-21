@@ -337,11 +337,15 @@ var ClassicSettings = {
                     if (!col) return;
                     var track = col.querySelector('.classic-tier-track');
                     if (!track) return;
+                    var tier = col.getAttribute('data-tier');
+                    var start = self._zones()[tier];
                     dragging = {
-                        tier: col.getAttribute('data-tier'),
+                        tier: tier,
                         handleType: handle.getAttribute('data-handle'), // 'min' or 'max'
                         track: track,
-                        fill: track.querySelector('.classic-tier-fill')
+                        fill: track.querySelector('.classic-tier-fill'),
+                        startMin: start ? start.min : null,
+                        startMax: start ? start.max : null
                     };
                 });
             })(handles[i]);
@@ -381,12 +385,17 @@ var ClassicSettings = {
             dragging.fill.style.height = (zone.max - zone.min) + '%';
             var pctLabel = dragging.fill.querySelector('.classic-tier-pct');
             if (pctLabel) pctLabel.textContent = zone.min + '-' + zone.max;
-
-            if (callbacks.onTierZoneChanged) {
-                callbacks.onTierZoneChanged(dragging.tier, zone.min, zone.max);
-            }
         };
-        var onDocUp = function () { dragging = null; };
+        // The change goes out on release, once: the preview lays the tree out again on each one, and doing that on
+        // every move made the drag hitch
+        var onDocUp = function () {
+            if (!dragging) return;
+            var done = dragging;
+            dragging = null;
+            var zone = self._zones()[done.tier];
+            if (!zone || (zone.min === done.startMin && zone.max === done.startMax)) return;
+            if (callbacks.onTierZoneChanged) callbacks.onTierZoneChanged(done.tier, zone.min, zone.max);
+        };
 
         // One document pair at a time: every bind (a rebuilt panel, a preset) used to add one more
         if (this._tierZoneDocDrag) {
