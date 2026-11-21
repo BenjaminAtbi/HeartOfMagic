@@ -63,7 +63,7 @@ var ClassicSettings = {
     buildHTML: function (settings) {
         var s = settings || {};
         this._zoneSource = s;
-        var opacity = s.ghostOpacity !== undefined ? s.ghostOpacity : 35;
+        var opacity = s.ghostOpacity !== undefined ? s.ghostOpacity : 100;
         var nodeSize = s.nodeRadius !== undefined ? s.nodeRadius : 5;
         var spread = s.spread !== undefined ? s.spread : 50;
         var radialBias = s.radialBias !== undefined ? s.radialBias : 50;
@@ -147,15 +147,15 @@ var ClassicSettings = {
 
                     // Fill: positioned from bottom, height = zone range
                     '<div class="classic-tier-fill" ' +
-                        'style="position:absolute; left:2px; right:2px; bottom:' + zone.min + '%; height:' + fillH + '%; background:' + cfg.color + '; border-radius:2px; cursor:grab;">' +
+                        'style="position:absolute; left:2px; right:2px; bottom:' + zone.min + '%; height:' + fillH + '%; background:' + cfg.color + '; border-radius:2px;">' +
 
                         // Top handle (max)
                         '<div class="classic-tier-handle" data-handle="max" ' +
-                            'style="position:absolute; left:-1px; right:-1px; top:-2px; height:5px; cursor:ns-resize; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
+                            'style="position:absolute; left:-1px; right:-1px; top:-2px; height:5px; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
 
                         // Bottom handle (min)
                         '<div class="classic-tier-handle" data-handle="min" ' +
-                            'style="position:absolute; left:-1px; right:-1px; bottom:-2px; height:5px; cursor:ns-resize; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
+                            'style="position:absolute; left:-1px; right:-1px; bottom:-2px; height:5px; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
 
                         // Percentage label centered in fill
                         '<span class="classic-tier-pct" style="position:absolute; width:100%; text-align:center; font-size:0.75em; color:rgba(255,255,255,0.8); pointer-events:none; top:50%; transform:translateY(-50%); white-space:nowrap;">' +
@@ -324,8 +324,9 @@ var ClassicSettings = {
 
     /**
      * Bind mousedown/mousemove/mouseup on the tier zone bars: a handle (the bar's top or bottom edge) moves that end,
-     * the bar itself moves the whole range within 0-100. Each handle reaches into the bar by half the bar's length
-     * (_handleNear), so the ends are easier to take than their thin rendered edges. @private
+     * the bar itself moves the whole range within 0-100. Each handle reaches half its height further on both sides
+     * (_handleNear), so the ends are easier to take than their thin rendered edges. Hit testing is per track, so the
+     * outer reach works past the bar. @private
      */
     _bindTierZoneDrag: function (callbacks) {
         var chart = document.getElementById('tgClassicTierChart');
@@ -340,56 +341,51 @@ var ClassicSettings = {
             return rect.height > 0 ? ((rect.bottom - clientY) / rect.height) * 100 : null;
         };
 
-        // handleType: 'min' / 'max' (an end) or 'move' (the bar)
-        var start = function (el, handleType, e) {
-            var col = el.closest('.classic-tier-col');
-            if (!col) return;
-            var track = col.querySelector('.classic-tier-track');
-            if (!track) return;
-            var tier = col.getAttribute('data-tier');
-            var zone = self._zones()[tier];
-            if (!zone) return;
-            var at = handleType === 'move' && typeof e.clientY === 'number' ? pctAt(track, e.clientY) : null;
-            dragging = {
-                tier: tier,
-                handleType: handleType,
-                track: track,
-                fill: track.querySelector('.classic-tier-fill'),
-                startMin: zone.min,
-                startMax: zone.max,
-                grab: at === null ? null : at - zone.min   // where in the bar it was taken, so it does not jump
-            };
+        var handles = chart.querySelectorAll('.classic-tier-handle');
+
+        // What a press at clientY on a column's track takes: 'min' / 'max' (an end, within a handle's grace),
+        // 'move' (the bar), or null (the empty track)
+        var hitOf = function (col, own, clientY) {
+            var near = self._handleNear(own, clientY);
+            if (near) return near;
+            var zone = self._zones()[col.getAttribute('data-tier')];
+            var at = typeof clientY === 'number' ? pctAt(col.querySelector('.classic-tier-track'), clientY) : null;
+            return zone && at !== null && at >= zone.min && at <= zone.max ? 'move' : null;
         };
 
-        var handles = chart.querySelectorAll('.classic-tier-handle');
-        for (var i = 0; i < handles.length; i++) {
-            (function (handle) {
-                handle.addEventListener('mousedown', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    start(handle, handle.getAttribute('data-handle'), e);
-                });
-            })(handles[i]);
-        }
-
-        var fills = chart.querySelectorAll('.classic-tier-fill');
-        for (var fi = 0; fi < fills.length; fi++) {
-            (function (fill) {
-                var col = fill.closest('.classic-tier-col');
+        // One listener per track: the handles' grace windows reach past the bar on both sides
+        var cols = chart.querySelectorAll('.classic-tier-col');
+        for (var ci = 0; ci < cols.length; ci++) {
+            (function (col) {
+                var track = col.querySelector('.classic-tier-track');
+                if (!track || !track.addEventListener) return;
                 var own = [];
                 for (var hi = 0; hi < handles.length; hi++) {
                     if (handles[hi].closest('.classic-tier-col') === col) own.push(handles[hi]);
                 }
-                fill.addEventListener('mousedown', function (e) {
+                track.addEventListener('mousedown', function (e) {
+                    var type = hitOf(col, own, e.clientY);
+                    if (!type) return;
                     e.preventDefault();
-                    start(fill, self._handleNear(own, e.clientY) || 'move', e);
+                    var zone = self._zones()[col.getAttribute('data-tier')];
+                    var at = type === 'move' ? pctAt(track, e.clientY) : null;
+                    dragging = {
+                        tier: col.getAttribute('data-tier'),
+                        handleType: type,
+                        track: track,
+                        fill: track.querySelector('.classic-tier-fill'),
+                        startMin: zone.min,
+                        startMax: zone.max,
+                        grab: at === null ? null : at - zone.min   // where in the bar it was taken, so it does not jump
+                    };
                 });
-                // The cursor says which: resize within a handle's grace, move elsewhere on the bar
-                fill.addEventListener('mousemove', function (e) {
-                    if (dragging || !fill.style) return;
-                    fill.style.cursor = self._handleNear(own, e.clientY) ? 'ns-resize' : 'grab';
+                // The cursor says which: resize within a handle's grace, move on the bar
+                track.addEventListener('mousemove', function (e) {
+                    if (dragging || !track.style) return;
+                    var type = hitOf(col, own, e.clientY);
+                    track.style.cursor = type === 'move' ? 'grab' : type ? 'ns-resize' : '';
                 });
-            })(fills[fi]);
+            })(cols[ci]);
         }
 
         var onDocMove = function (e) {
@@ -427,6 +423,8 @@ var ClassicSettings = {
             dragging.fill.style.height = (zone.max - zone.min) + '%';
             var pctLabel = dragging.fill.querySelector('.classic-tier-pct');
             if (pctLabel) pctLabel.textContent = zone.min + '-' + zone.max;
+            // The preview redraws its zone arcs as the bar moves (cheap); the tree is laid out again on release
+            if (callbacks.onTierZoneDragging) callbacks.onTierZoneDragging(dragging.tier, zone.min, zone.max);
         };
         // The change goes out on release, once: the preview lays the tree out again on each one, and doing that on
         // every move made the drag hitch
@@ -450,9 +448,9 @@ var ClassicSettings = {
     },
 
     /**
-     * The handle ('max' / 'min') whose grace window holds clientY, or null (the bar moves). A handle's window is its
-     * rendered height plus half its height again, reaching into the bar; where two windows meet, the nearer handle
-     * wins. Null without a position. @private
+     * The handle ('max' / 'min') whose grace window holds clientY, or null. A handle's window is its rendered height
+     * plus half its height again on each side, into the bar and out past it; where two windows meet, the nearer
+     * handle wins. Null without a position. @private
      */
     _handleNear: function (handles, clientY) {
         if (typeof clientY !== 'number') return null;
@@ -463,10 +461,8 @@ var ClassicSettings = {
             var r = h.getBoundingClientRect();
             if (!(r.height > 0)) continue;
             var type = h.getAttribute('data-handle');
-            var grace = r.height * this.HANDLE_GRACE, end = r.top + r.height;
-            var top = type === 'min' ? r.top - grace : r.top;               // the bottom handle reaches up,
-            var bottom = type === 'max' ? end + grace : end;                // the top one down
-            if (clientY < top || clientY > bottom) continue;
+            var grace = r.height * this.HANDLE_GRACE;
+            if (clientY < r.top - grace || clientY > r.top + r.height + grace) continue;
             var dist = Math.abs(clientY - (r.top + r.height / 2));
             if (dist < bestDist) { best = type; bestDist = dist; }
         }
