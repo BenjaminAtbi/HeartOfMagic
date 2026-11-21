@@ -328,7 +328,7 @@ window._i18nPreload = {
     "preview.classic.tiersByCost": "매지카 비용으로 단계 나누기",
     "preview.classic.tiersByCostHint": "각 계열의 주문을 초보자~달인 대신 매지카 비용 순으로 다섯 단계에 나눔. 비용이 없는 주문은 원래 등급의 단계. 주문 등급(XP, 주문 카드)은 그대로.",
     "preview.classic.typeGrouping": "유형별 묶기",
-    "preview.classic.typeGroupingHint": "같은 종류(소환 무기, 룬)와 같은 원소(화염, 냉기, 전격)의 주문을 한 가지에 모으는 정도. 0 = 1.2.0과 같음.",
+    "preview.classic.typeGroupingHint": "같은 종류(소환 무기, 룬)와 같은 원소(화염, 냉기, 전격)의 주문을 한 가지에 모으는 정도. 0 = 종류별 묶음 없음, 원소별 묶음은 고정.",
     "preview.flat.direction": "방향",
     "preview.flat.horizontal": "가로",
     "preview.flat.invert": "반전",

@@ -328,7 +328,7 @@ window._i18nPreload = {
     "preview.classic.tiersByCost": "Poziomy według kosztu magii",
     "preview.classic.tiersByCostHint": "Zaklęcia każdej szkoły trafiają do pięciu poziomów według kosztu magii, od najtańszych, zamiast od Nowicjusza do Mistrza. Zaklęcia bez kosztu zostają na poziomie swojej rangi. Ich ranga (PD, karta) się nie zmienia.",
     "preview.classic.typeGrouping": "Grupowanie wg typu",
-    "preview.classic.typeGroupingHint": "Jak mocno zaklęcia jednego rodzaju (przywołana broń, runy) i jednego żywiołu (ogień, mróz, błyskawica) trzymają się jednej gałęzi. 0 = jak w 1.2.0.",
+    "preview.classic.typeGroupingHint": "Jak mocno zaklęcia jednego rodzaju (przywołana broń, runy) i jednego żywiołu (ogień, mróz, błyskawica) trzymają się jednej gałęzi. 0 = brak grupowania według rodzaju, a grupowanie według żywiołu jest stałe.",
     "preview.flat.direction": "Kierunek",
     "preview.flat.horizontal": "Poziomy",
     "preview.flat.invert": "Odwróć",

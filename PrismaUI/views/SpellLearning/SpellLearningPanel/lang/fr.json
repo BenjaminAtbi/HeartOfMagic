@@ -343,7 +343,7 @@
     "preview.classic.tiersByCost": "Paliers selon le coût en magie",
     "preview.classic.tiersByCostHint": "Les sorts de chaque école sont répartis en cinq paliers selon leur coût en magie, du moins cher au plus cher, au lieu de Novice à Maître. Sans coût, un sort garde le palier de son niveau. Son niveau (XP, fiche) ne change pas.",
     "preview.classic.typeGrouping": "Regroupement par type",
-    "preview.classic.typeGroupingHint": "À quel point les sorts d'un même type (armes invoquées, runes) et d'un même élément (feu, givre, foudre) restent sur une branche. 0 = comme en 1.2.0.",
+    "preview.classic.typeGroupingHint": "À quel point les sorts d'un même type (armes invoquées, runes) et d'un même élément (feu, givre, foudre) restent sur une branche. 0 = aucun regroupement par type, et le regroupement par élément est fixe.",
 
     "preview.flat.direction": "Direction",
     "preview.flat.horizontal": "Horizontal",

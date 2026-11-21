@@ -343,7 +343,7 @@
     "preview.classic.tiersByCost": "マジカ消費で段階を分ける",
     "preview.classic.tiersByCostHint": "各系統の呪文を初心者～達人の代わりにマジカ消費の安い順で五段階に分ける。消費のない呪文は元のランクの段階。呪文のランク(XP、カード)は変わらない。",
     "preview.classic.typeGrouping": "種類でまとめる",
-    "preview.classic.typeGroupingHint": "同じ種類(召喚武器、ルーン)・同じ属性(炎、冷気、雷)の呪文を一つの枝にまとめる強さ。0 = 1.2.0 と同じ。",
+    "preview.classic.typeGroupingHint": "同じ種類(召喚武器、ルーン)・同じ属性(炎、冷気、雷)の呪文を一つの枝にまとめる強さ。0 = 種類によるまとめなし、属性によるまとめは一定。",
 
     "preview.flat.direction": "方向",
     "preview.flat.horizontal": "横",

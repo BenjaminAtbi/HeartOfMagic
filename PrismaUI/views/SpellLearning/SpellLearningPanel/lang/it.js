@@ -328,7 +328,7 @@ window._i18nPreload = {
     "preview.classic.tiersByCost": "Livelli per costo in magicka",
     "preview.classic.tiersByCostHint": "Gli incantesimi di ogni scuola vanno in cinque livelli per costo in magicka, dal più economico, invece che da Novizio a Maestro. Quelli senza costo restano nel livello del loro grado. Il grado (XP, scheda) non cambia.",
     "preview.classic.typeGrouping": "Raggruppamento per tipo",
-    "preview.classic.typeGroupingHint": "Quanto gli incantesimi di un tipo (armi evocate, rune) e di un elemento (fuoco, gelo, folgore) restano su un ramo. 0 = come in 1.2.0.",
+    "preview.classic.typeGroupingHint": "Quanto gli incantesimi di un tipo (armi evocate, rune) e di un elemento (fuoco, gelo, folgore) restano su un ramo. 0 = nessun raggruppamento per tipo, e il raggruppamento per elemento è fisso.",
     "preview.flat.direction": "Direzione",
     "preview.flat.horizontal": "Orizzontale",
     "preview.flat.invert": "Inverti",

@@ -343,7 +343,7 @@
     "preview.classic.tiersByCost": "Stufen nach Magickakosten",
     "preview.classic.tiersByCostHint": "Die Zauber jeder Schule kommen nach Magickakosten in fünf Stufen, die billigsten zuerst, statt Novize bis Meister. Zauber ohne Kosten behalten die Stufe ihres Rangs. Ihr Rang (EP, Zauberkarte) bleibt.",
     "preview.classic.typeGrouping": "Typ-Gruppierung",
-    "preview.classic.typeGroupingHint": "Wie stark Zauber einer Art (gebundene Waffen, Runen) und eines Elements (Feuer, Frost, Blitz) an einem Ast bleiben. 0 = wie in 1.2.0.",
+    "preview.classic.typeGroupingHint": "Wie stark Zauber einer Art (gebundene Waffen, Runen) und eines Elements (Feuer, Frost, Blitz) an einem Ast bleiben. 0 = keine Gruppierung nach Art, die Gruppierung nach Element ist fest.",
 
     "preview.flat.direction": "Richtung",
     "preview.flat.horizontal": "Horizontal",

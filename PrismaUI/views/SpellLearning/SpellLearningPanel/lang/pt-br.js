@@ -328,7 +328,7 @@ window._i18nPreload = {
     "preview.classic.tiersByCost": "Níveis por custo de magia",
     "preview.classic.tiersByCostHint": "Os feitiços de cada escola vão para cinco níveis por custo de magia, do mais barato, em vez de Novato a Mestre. Feitiços sem custo mantêm o nível da sua categoria. A categoria (XP, cartão) não muda.",
     "preview.classic.typeGrouping": "Agrupar por tipo",
-    "preview.classic.typeGroupingHint": "Quanto feitiços de um tipo (armas conjuradas, runas) e de um elemento (fogo, gelo, choque) ficam no mesmo galho. 0 = como na 1.2.0.",
+    "preview.classic.typeGroupingHint": "Quanto feitiços de um tipo (armas conjuradas, runas) e de um elemento (fogo, gelo, choque) ficam no mesmo galho. 0 = sem agrupamento por tipo, e o agrupamento por elemento é fixo.",
     "preview.flat.direction": "Direção",
     "preview.flat.horizontal": "Horizontal",
     "preview.flat.invert": "Inverter",

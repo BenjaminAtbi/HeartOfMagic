@@ -328,7 +328,7 @@ window._i18nPreload = {
     "preview.classic.tiersByCost": "按法力消耗分級",
     "preview.classic.tiersByCostHint": "各系法術按法力消耗從低到高分成五級,而不是從新手到大師。沒有消耗的法術保留其等級所在的一級。法術等級(經驗、法術卡)不變。",
     "preview.classic.typeGrouping": "按類型歸組",
-    "preview.classic.typeGroupingHint": "同一類型(召喚武器、符文)和同一元素(火、冰、電)的法術聚在同一分支的強度。0 = 與 1.2.0 相同。",
+    "preview.classic.typeGroupingHint": "同一類型(召喚武器、符文)和同一元素(火、冰、電)的法術聚在同一分支的強度。0 = 不按類型分組,按元素分組為固定值。",
     "preview.flat.direction": "方向",
     "preview.flat.horizontal": "水平",
     "preview.flat.invert": "反轉",

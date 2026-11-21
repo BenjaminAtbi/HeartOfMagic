@@ -343,7 +343,7 @@
     "preview.classic.tiersByCost": "Büyü gücü maliyetine göre kademeler",
     "preview.classic.tiersByCostHint": "Her okulun büyüleri Acemi–Usta yerine büyü gücü maliyetine göre, en ucuzdan başlayarak beş kademeye ayrılır. Maliyeti olmayan büyüler kendi seviyelerinin kademesinde kalır. Seviyeleri (XP, büyü kartı) değişmez.",
     "preview.classic.typeGrouping": "Türe göre gruplama",
-    "preview.classic.typeGroupingHint": "Bir türdeki (bağlı silahlar, rünler) ve bir elementteki (ateş, buz, şok) büyülerin aynı dalda ne kadar toplandığı. 0 = 1.2.0'daki gibi.",
+    "preview.classic.typeGroupingHint": "Bir türdeki (bağlı silahlar, rünler) ve bir elementteki (ateş, buz, şok) büyülerin aynı dalda ne kadar toplandığı. 0 = türe göre gruplama yok, elemente göre gruplama sabit.",
 
     "preview.flat.direction": "Yön",
     "preview.flat.horizontal": "Yatay",

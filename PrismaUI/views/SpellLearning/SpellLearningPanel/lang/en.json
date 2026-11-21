@@ -344,7 +344,7 @@
     "preview.classic.tiersByCost": "Tiers by Magicka cost",
     "preview.classic.tiersByCostHint": "Each school's spells go into five tiers by Magicka cost, cheapest first, instead of Novice to Master. Spells without a cost keep their level's tier. Their level (XP, spell card) does not change.",
     "preview.classic.typeGrouping": "Type Grouping",
-    "preview.classic.typeGroupingHint": "How strongly spells of one kind (bound weapons, runes) and one element (fire, frost, shock) stay on one branch. 0 = as in 1.2.0.",
+    "preview.classic.typeGroupingHint": "How strongly spells of one kind (bound weapons, runes) and one element (fire, frost, shock) stay on one branch. 0 = no grouping by kind, and element grouping is flat.",
 
     "preview.flat.direction": "Direction",
     "preview.flat.horizontal": "Horizontal",

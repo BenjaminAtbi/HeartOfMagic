@@ -343,7 +343,7 @@
     "preview.classic.tiersByCost": "Niveles por coste de magia",
     "preview.classic.tiersByCostHint": "Los hechizos de cada escuela se reparten en cinco niveles por coste de magia, de menor a mayor, en lugar de Novato a Maestro. Los que no tienen coste conservan el nivel de su rango. Su rango (PX, ficha) no cambia.",
     "preview.classic.typeGrouping": "Agrupar por tipo",
-    "preview.classic.typeGroupingHint": "Cuánto se mantienen en una rama los hechizos de un tipo (armas invocadas, runas) y de un elemento (fuego, escarcha, rayo). 0 = como en 1.2.0.",
+    "preview.classic.typeGroupingHint": "Cuánto se mantienen en una rama los hechizos de un tipo (armas invocadas, runas) y de un elemento (fuego, escarcha, rayo). 0 = sin agrupación por tipo, y la agrupación por elemento es fija.",
 
     "preview.flat.direction": "Dirección",
     "preview.flat.horizontal": "Horizontal",
