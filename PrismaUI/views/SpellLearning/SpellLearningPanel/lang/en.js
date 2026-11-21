@@ -365,7 +365,7 @@ window._i18nPreload = {
     "preview.classic.spreadHint": "How much room each spell keeps: a spell goes only where few grid points around it are taken. 0 = no limit, branches pack tight; 100 = at most one taken neighbour, branches thin out and reach further. Changes where spells sit, not what they link to.",
     "preview.classic.radialBiasHint": "How strongly branches grow outward, away from the centre. 0 = each step follows its parent's direction only; 100 = moving outward outweighs the direction. Changes where spells sit, not what they link to.",
     "preview.classic.globeMaskHint": "A ring around the centre, this many tiers wide, where only roots are placed (drawn in red). 0 = no ring. Changes where spells sit, not what they link to.",
-    "preview.classic.dynamicExpansionHint": "When a school runs out of grid points, adds more so every spell gets a place (large schools such as Destruction). Off: spells that do not fit are left unplaced. Changes where spells sit, not what they link to.",
+    "preview.classic.dynamicExpansionHint": "When a school runs out of grid points, adds more so every spell gets a place. Off: spells that do not fit are left unplaced. Changes where spells sit, not what they link to.",
     "preview.classic.tierZonesHint": "How far out each tier's spells go, as a share of the school's height from its root (0%) to its tip (100%). Drag a bar's ends to set the range. Changes where spells sit, not what they link to.",
     "prm.applyLocks": "Apply Locks",
     "prm.buildTreeFirst": "Build a tree first",
