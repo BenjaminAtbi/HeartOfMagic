@@ -243,24 +243,27 @@ var TreeGrowthClassic = {
                 var arcStart = avgAngle - arcSpan / 2;
                 var arcEnd = avgAngle + arcSpan / 2;
 
+                // Solid, bright arcs in two passes: every tier's inner arc first, then the outer arcs and names over
+                // them (where one tier's inner edge meets another's outer edge, the outer one shows)
+                ctx.setLineDash([]);
+                ctx.lineWidth = 1.5;
+                for (var ivi = 0; ivi < tierVis.length; ivi++) {
+                    var iZone = this.settings.tierZones[tierVis[ivi].key];
+                    if (!iZone) continue;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, zi.ringRadius + (iZone.min / 100) * growRange, arcStart, arcEnd);
+                    ctx.strokeStyle = tierVis[ivi].color + '0.75)';
+                    ctx.stroke();
+                }
                 for (var tvi = 0; tvi < tierVis.length; tvi++) {
                     var tv = tierVis[tvi];
                     var zone = this.settings.tierZones[tv.key];
                     if (!zone) continue;
 
-                    var innerR = zi.ringRadius + (zone.min / 100) * growRange;
                     var outerR = zi.ringRadius + (zone.max / 100) * growRange;
-
-                    // Outer and inner boundary arcs: solid, bright
-                    ctx.setLineDash([]);
-                    ctx.lineWidth = 1.5;
                     ctx.beginPath();
                     ctx.arc(cx, cy, outerR, arcStart, arcEnd);
                     ctx.strokeStyle = tv.color + '0.95)';
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, innerR, arcStart, arcEnd);
-                    ctx.strokeStyle = tv.color + '0.75)';
                     ctx.stroke();
 
                     // Every tier named just outside its outer arc; the names step across the wedge so tiers whose
