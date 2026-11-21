@@ -144,7 +144,7 @@ var ClassicSettings = {
 
                     // Fill: positioned from bottom, height = zone range
                     '<div class="classic-tier-fill" ' +
-                        'style="position:absolute; left:2px; right:2px; bottom:' + zone.min + '%; height:' + fillH + '%; background:' + cfg.color + '; border-radius:2px;">' +
+                        'style="position:absolute; left:2px; right:2px; bottom:' + zone.min + '%; height:' + fillH + '%; background:' + cfg.color + '; border-radius:2px; cursor:grab;">' +
 
                         // Top handle (max)
                         '<div class="classic-tier-handle" data-handle="max" ' +
@@ -319,7 +319,11 @@ var ClassicSettings = {
         }
     },
 
-    /** Bind mousedown/mousemove/mouseup on tier zone bar handles. @private */
+    /**
+     * Bind mousedown/mousemove/mouseup on the tier zone bars: a handle (the bar's top or bottom edge) moves that end,
+     * the bar itself moves the whole range within 0-100. The inner half of each handle counts as the bar
+     * (_innerHalf), so the thin edges are not all resize. @private
+     */
     _bindTierZoneDrag: function (callbacks) {
         var chart = document.getElementById('tgClassicTierChart');
         if (!chart) return;
@@ -327,48 +331,79 @@ var ClassicSettings = {
         var self = this;
         var dragging = null;
 
+        // Y is inverted: top of track = 100%, bottom = 0%; unsnapped
+        var pctAt = function (track, clientY) {
+            var rect = track.getBoundingClientRect();
+            return rect.height > 0 ? ((rect.bottom - clientY) / rect.height) * 100 : null;
+        };
+
+        // handleType: 'min' / 'max' (an end) or 'move' (the bar)
+        var start = function (el, handleType, e) {
+            var col = el.closest('.classic-tier-col');
+            if (!col) return;
+            var track = col.querySelector('.classic-tier-track');
+            if (!track) return;
+            var tier = col.getAttribute('data-tier');
+            var zone = self._zones()[tier];
+            if (!zone) return;
+            var at = handleType === 'move' && typeof e.clientY === 'number' ? pctAt(track, e.clientY) : null;
+            dragging = {
+                tier: tier,
+                handleType: handleType,
+                track: track,
+                fill: track.querySelector('.classic-tier-fill'),
+                startMin: zone.min,
+                startMax: zone.max,
+                grab: at === null ? null : at - zone.min   // where in the bar it was taken, so it does not jump
+            };
+        };
+
         var handles = chart.querySelectorAll('.classic-tier-handle');
         for (var i = 0; i < handles.length; i++) {
             (function (handle) {
                 handle.addEventListener('mousedown', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    var col = handle.closest('.classic-tier-col');
-                    if (!col) return;
-                    var track = col.querySelector('.classic-tier-track');
-                    if (!track) return;
-                    var tier = col.getAttribute('data-tier');
-                    var start = self._zones()[tier];
-                    dragging = {
-                        tier: tier,
-                        handleType: handle.getAttribute('data-handle'), // 'min' or 'max'
-                        track: track,
-                        fill: track.querySelector('.classic-tier-fill'),
-                        startMin: start ? start.min : null,
-                        startMax: start ? start.max : null
-                    };
+                    var type = handle.getAttribute('data-handle');
+                    start(handle, self._innerHalf(handle, type, e.clientY) ? 'move' : type, e);
+                });
+                // The cursor says which: resize on the outer half, move on the inner one
+                handle.addEventListener('mousemove', function (e) {
+                    if (dragging || !handle.style) return;
+                    handle.style.cursor = self._innerHalf(handle, handle.getAttribute('data-handle'), e.clientY) ? 'grab' : 'ns-resize';
                 });
             })(handles[i]);
         }
 
+        var fills = chart.querySelectorAll('.classic-tier-fill');
+        for (var fi = 0; fi < fills.length; fi++) {
+            (function (fill) {
+                fill.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    start(fill, 'move', e);
+                });
+            })(fills[fi]);
+        }
+
         var onDocMove = function (e) {
             if (!dragging) return;
-            var rect = dragging.track.getBoundingClientRect();
-            var trackH = rect.height;
-            if (trackH <= 0) return;
-
-            // Y is inverted: top of track = 100%, bottom = 0%
-            var relY = rect.bottom - e.clientY;
-            var pct = Math.round((relY / trackH) * 100);
+            var raw = pctAt(dragging.track, e.clientY);
+            if (raw === null) return;
             // Snap to 5%
-            pct = Math.round(pct / 5) * 5;
-            pct = Math.max(0, Math.min(100, pct));
+            var pct = Math.max(0, Math.min(100, Math.round(raw / 5) * 5));
 
             // Read on every move: a preset or the change callback may have replaced it
             var zone = self._zones()[dragging.tier];
             if (!zone) return;
 
-            if (dragging.handleType === 'max') {
+            if (dragging.handleType === 'move') {
+                // The whole bar, its width kept, inside 0-100
+                var width = zone.max - zone.min;
+                var min = Math.round((raw - (dragging.grab === null ? width / 2 : dragging.grab)) / 5) * 5;
+                min = Math.max(0, Math.min(100 - width, min));
+                zone.min = min;
+                zone.max = min + width;
+            } else if (dragging.handleType === 'max') {
                 // Top handle: can't go below min + 5
                 if (pct <= zone.min + 5) pct = zone.min + 5;
                 if (pct > 100) pct = 100;
@@ -405,6 +440,18 @@ var ClassicSettings = {
         document.addEventListener('mousemove', onDocMove);
         document.addEventListener('mouseup', onDocUp);
         this._tierZoneDocDrag = { move: onDocMove, up: onDocUp };
+    },
+
+    /**
+     * Whether clientY is on the half of a handle that faces into the bar (the lower half of the top handle, the upper
+     * half of the bottom one): that half grabs the bar rather than the end. False without a position. @private
+     */
+    _innerHalf: function (handle, handleType, clientY) {
+        if (typeof clientY !== 'number' || !handle.getBoundingClientRect) return false;
+        var rect = handle.getBoundingClientRect();
+        if (!(rect.height > 0)) return false;
+        var mid = rect.top + rect.height / 2;
+        return handleType === 'max' ? clientY > mid : clientY < mid;
     },
 
     /** Re-apply tracked state to freshly built DOM elements. @private */
