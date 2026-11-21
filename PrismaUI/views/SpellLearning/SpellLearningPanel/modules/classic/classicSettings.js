@@ -106,12 +106,15 @@ var ClassicSettings = {
             (typeof TreeBuilderSetting !== 'undefined' ? TreeBuilderSetting.html() : '') +
 
             // --- Dynamic Grid Expansion toggle ---
-            '<div style="display:flex; align-items:center; gap:8px; margin:4px 4px 6px; font-size:0.8em;">' +
-                '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:rgba(184,168,120,0.6);">' +
+            // (laid out like Tiers by Magicka cost above it: the option, then its description)
+            '<div class="tree-preview-option">' +
+                '<label>' +
                     '<input type="checkbox" id="tgClassicDynExpand"' + (dynamicExpansion ? ' checked' : '') + '>' +
                     t('preview.classic.dynamicExpansion') +
                 '</label>' +
-                TreePreviewUtils.helpHTML(t('preview.classic.dynamicExpansionHint')) +
+            '</div>' +
+            '<div class="tree-preview-hint">' +
+                t('preview.classic.dynamicExpansionHint') +
             '</div>' +
 
             // --- Tier zone bar chart ---
