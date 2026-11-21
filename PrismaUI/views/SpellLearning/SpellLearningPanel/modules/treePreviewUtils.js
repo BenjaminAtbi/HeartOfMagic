@@ -29,7 +29,7 @@ var TreePreviewUtils = {
      * @param {string} [hint] - What the setting does: a "?" after the label shows it on hover (initHints)
      */
     settingHTML: function(label, id, min, max, step, value, suffix, hint) {
-        var help = hint ? '<span class="tree-preview-help" data-hint="' + TreePreviewUtils._attr(hint) + '">?</span>' : '';
+        var help = TreePreviewUtils.helpHTML(hint);
         return '<div class="tree-preview-setting">' +
             '<label class="tree-preview-label">' + label + help + '</label>' +
             '<div class="tree-preview-drag-input">' +
@@ -40,6 +40,11 @@ var TreePreviewUtils = {
                 (suffix ? '<span class="drag-input-suffix">' + suffix + '</span>' : '') +
             '</div>' +
         '</div>';
+    },
+
+    /** A setting's "?" with its hint (initHints shows it on hover); '' without a hint */
+    helpHTML: function(hint) {
+        return hint ? '<span class="tree-preview-help" data-hint="' + TreePreviewUtils._attr(hint) + '">?</span>' : '';
     },
 
     _attr: function(text) {

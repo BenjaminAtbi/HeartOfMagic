@@ -94,11 +94,12 @@ var ClassicSettings = {
 
             // --- Slider grid ---
             '<div class="tree-preview-settings-grid">' +
-                H(t('preview.ghostOpacity'), 'tgClassicOpacity', 0, 100, 5, opacity, '%') +
+                H(t('preview.ghostOpacity'), 'tgClassicOpacity', 0, 100, 5, opacity, '%', t('preview.classic.ghostOpacityHint')) +
                 H(t('preview.nodeSize'), 'tgClassicNodeSize', 1, 20, 1, nodeSize, '', t('preview.classic.nodeSizeHint')) +
-                H(t('preview.classic.spread'), 'tgClassicSpread', 0, 100, 5, spread) +
-                H(t('preview.classic.radialBias'), 'tgClassicRadialBias', 0, 100, 5, radialBias) +
-                H(t('preview.classic.globeMask'), 'tgClassicCenterMask', 0, 10, 1, centerMask, ' ' + tOr('preview.classic.tiersUnit', null, 'tiers')) +
+                H(t('preview.classic.spread'), 'tgClassicSpread', 0, 100, 5, spread, '', t('preview.classic.spreadHint')) +
+                H(t('preview.classic.radialBias'), 'tgClassicRadialBias', 0, 100, 5, radialBias, '', t('preview.classic.radialBiasHint')) +
+                H(t('preview.classic.globeMask'), 'tgClassicCenterMask', 0, 10, 1, centerMask, ' ' + tOr('preview.classic.tiersUnit', null, 'tiers'),
+                    t('preview.classic.globeMaskHint')) +
             '</div>' +
 
             // --- Builder options the player sets (treeBuilderSetting.js), applied at the next build ---
@@ -110,11 +111,12 @@ var ClassicSettings = {
                     '<input type="checkbox" id="tgClassicDynExpand"' + (dynamicExpansion ? ' checked' : '') + '>' +
                     t('preview.classic.dynamicExpansion') +
                 '</label>' +
-                '<span style="color:rgba(184,168,120,0.3); font-size:0.95em;" title="Automatically expand grid when a school runs out of placement space (e.g. large Destruction trees)">(?)</span>' +
+                TreePreviewUtils.helpHTML(t('preview.classic.dynamicExpansionHint')) +
             '</div>' +
 
             // --- Tier zone bar chart ---
-            '<div class="tree-preview-settings-title" style="margin-top:8px;">' + t('preview.classic.tierZones') + '</div>' +
+            '<div class="tree-preview-settings-title" style="margin-top:8px;">' + t('preview.classic.tierZones') +
+                TreePreviewUtils.helpHTML(t('preview.classic.tierZonesHint')) + '</div>' +
             this._buildTierChartHTML(s) +
             '<div style="text-align:center; margin-top:2px; font-size:0.75em; color:rgba(184,168,120,0.3);">' + t('preview.dragHandles') + '</div>';
     },

@@ -202,7 +202,7 @@ var PanelRefreshTest = {
         var CS = g.ClassicSettings, env = {};
         var over = {
             document: this._chartDoc(env),
-            TreePreviewUtils: { settingHTML: function() { return ''; }, bindInput: function() {} },
+            TreePreviewUtils: { settingHTML: function() { return ''; }, helpHTML: function() { return ''; }, bindInput: function() {} },
             TreeBuilderSetting: undefined,
             t: function(k) { return k; },
             tOr: function(k, p, f) { return f || k; }
