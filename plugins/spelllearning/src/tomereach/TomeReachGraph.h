@@ -112,6 +112,8 @@ namespace TomeReach
         [[nodiscard]] std::vector<Key> ListsHolding(Key item) const;
         // A merchant chest: a faction's VENC reference's base, or a placed container whose editor id says so
         [[nodiscard]] bool IsVendor(Key container) const;
+        // CDF changes naming no container (any container their other conditions allow): not traced
+        [[nodiscard]] std::size_t CdfUntraced() const { return m_cdfUntraced; }
         // The scripts and quest aliases that hand `item` out
         [[nodiscard]] const std::vector<Reward>& RewardsOf(Key item) const;
         // What creates NPC_ / LVLN `npc` at run time, sorted
@@ -179,5 +181,6 @@ namespace TomeReach
         mutable std::unordered_map<Key, std::unordered_set<Key>> m_npcItems[kNpcParts];   // per NpcPart: NPC -> items
         std::size_t m_scriptsRead = 0;
         std::size_t m_scriptsMissing = 0;
+        std::size_t m_cdfUntraced = 0;
     };
 }

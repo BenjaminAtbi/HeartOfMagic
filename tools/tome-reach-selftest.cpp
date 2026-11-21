@@ -257,6 +257,7 @@ namespace
 
 // tome-reach-modeltest.cpp: the distribution model on a hand-built spell store; returns the failures
 int RunModelChecks(int& passed);
+int RunCdfChecks(int& passed);
 
 int RunSelfTest()
 {
@@ -454,6 +455,7 @@ int RunSelfTest()
     ArchiveRules();
     PassOutcomes();
     g_failed += RunModelChecks(g_passed);
+    g_failed += RunCdfChecks(g_passed);
 
     std::printf("self-test: %d passed, %d failed\n", g_passed, g_failed);
     std::error_code ec;
