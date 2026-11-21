@@ -308,7 +308,7 @@
     "preview.clumping": "Wurzelbündelung",
     "preview.dragHandles": "Griffe ziehen zum Anpassen",
     "preview.equal": "Gleichmäßig",
-    "preview.ghostOpacity": "Geister-Deckkraft",
+    "preview.ghostOpacity": "Vorschau-Deckkraft",
     "preview.growthDirection": "Wuchsrichtung",
     "preview.nodeSize": "Knotengröße",
     "preview.rootSize": "Wurzelgröße",
@@ -317,7 +317,7 @@
     "preview.rootsPerSchool": "Wurzeln / Schule",
     "preview.scanToPreview": "Scanne Zauber für Vorschau",
     "preview.sectionSplit": "Abschnittsaufteilung",
-    "preview.title": "Gerüst-Vorschau",
+    "preview.title": "Baumgerüst",
 
     "preview.classic.dynamicExpansion": "Dynamische Rastererweiterung",
     "preview.classic.globeMask": "Globus-Maske",
@@ -341,9 +341,9 @@
     "preview.classic.tierZones": "Stufenzonen",
     "preview.classic.title": "Klassische Wuchseinstellungen",
     "preview.classic.tiersByCost": "Stufen nach Magickakosten",
-    "preview.classic.tiersByCostHint": "Die Zauber jeder Schule kommen nach Magickakosten in fünf Stufen, die billigsten zuerst, statt Novize bis Meister. Zauber ohne Kosten behalten die Stufe ihres Rangs. Ihr Rang (EP, Zauberkarte) bleibt. Gilt ab dem nächsten Aufbau.",
+    "preview.classic.tiersByCostHint": "Die Zauber jeder Schule kommen nach Magickakosten in fünf Stufen, die billigsten zuerst, statt Novize bis Meister. Zauber ohne Kosten behalten die Stufe ihres Rangs. Ihr Rang (EP, Zauberkarte) bleibt.",
     "preview.classic.typeGrouping": "Typ-Gruppierung",
-    "preview.classic.typeGroupingHint": "Wie stark Zauber einer Art (gebundene Waffen, Runen) und eines Elements (Feuer, Frost, Blitz) an einem Ast bleiben. 0 = wie in 1.2.0. Gilt ab dem nächsten Aufbau.",
+    "preview.classic.typeGroupingHint": "Wie stark Zauber einer Art (gebundene Waffen, Runen) und eines Elements (Feuer, Frost, Blitz) an einem Ast bleiben. 0 = wie in 1.2.0.",
 
     "preview.flat.direction": "Richtung",
     "preview.flat.horizontal": "Horizontal",
@@ -805,7 +805,7 @@
     "treeGrowth.readyToBuild": "Bereit zum Erstellen",
 
     "treeViewer.noSettingsAvailable": "Keine Einstellungen verfügbar",
-    "treeViewer.treeGrowthPreview": "Baumwuchs-Vorschau",
+    "treeViewer.treeGrowthPreview": "Baumwuchs",
     "details.masteryRank": "Meisterschaftsrang {{rank}}/{{ranks}}",
     "hud.masteryRankUp": "{{spell}}: Meisterschaftsrang {{rank}} von {{ranks}}",
     "settings.progression.masteryRanks": "Meisterschaftsränge",

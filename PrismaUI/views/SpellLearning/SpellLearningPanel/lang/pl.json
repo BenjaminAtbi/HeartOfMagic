@@ -308,7 +308,7 @@
     "preview.clumping": "Grupowanie korzeni",
     "preview.dragHandles": "przeciągnij uchwyty, aby dostosować",
     "preview.equal": "Równe",
-    "preview.ghostOpacity": "Przezroczystość cieni",
+    "preview.ghostOpacity": "Przezroczystość podglądu",
     "preview.growthDirection": "Kierunek wzrostu",
     "preview.nodeSize": "Rozmiar węzła",
     "preview.rootSize": "Rozmiar korzenia",
@@ -317,7 +317,7 @@
     "preview.rootsPerSchool": "Korzenie / Szkoła",
     "preview.scanToPreview": "Zeskanuj zaklęcia, aby zobaczyć podgląd",
     "preview.sectionSplit": "Podział sekcji",
-    "preview.title": "Podgląd rusztowania",
+    "preview.title": "Rusztowanie drzewa",
 
     "preview.classic.dynamicExpansion": "Dynamiczne rozszerzanie siatki",
     "preview.classic.globeMask": "Maska globu",
@@ -341,9 +341,9 @@
     "preview.classic.tierZones": "Strefy rozmieszczenia poziomów",
     "preview.classic.title": "Ustawienia wzrostu klasycznego",
     "preview.classic.tiersByCost": "Poziomy według kosztu magii",
-    "preview.classic.tiersByCostHint": "Zaklęcia każdej szkoły trafiają do pięciu poziomów według kosztu magii, od najtańszych, zamiast od Nowicjusza do Mistrza. Zaklęcia bez kosztu zostają na poziomie swojej rangi. Ich ranga (PD, karta) się nie zmienia. Działa od następnego budowania.",
+    "preview.classic.tiersByCostHint": "Zaklęcia każdej szkoły trafiają do pięciu poziomów według kosztu magii, od najtańszych, zamiast od Nowicjusza do Mistrza. Zaklęcia bez kosztu zostają na poziomie swojej rangi. Ich ranga (PD, karta) się nie zmienia.",
     "preview.classic.typeGrouping": "Grupowanie wg typu",
-    "preview.classic.typeGroupingHint": "Jak mocno zaklęcia jednego rodzaju (przywołana broń, runy) i jednego żywiołu (ogień, mróz, błyskawica) trzymają się jednej gałęzi. 0 = jak w 1.2.0. Działa od następnego budowania.",
+    "preview.classic.typeGroupingHint": "Jak mocno zaklęcia jednego rodzaju (przywołana broń, runy) i jednego żywiołu (ogień, mróz, błyskawica) trzymają się jednej gałęzi. 0 = jak w 1.2.0.",
 
     "preview.flat.direction": "Kierunek",
     "preview.flat.horizontal": "Poziomy",
@@ -805,7 +805,7 @@
     "treeGrowth.readyToBuild": "Gotowe do zbudowania",
 
     "treeViewer.noSettingsAvailable": "Brak dostępnych ustawień",
-    "treeViewer.treeGrowthPreview": "Podgląd wzrostu drzewa",
+    "treeViewer.treeGrowthPreview": "Wzrost drzewa",
     "details.masteryRank": "Ranga opanowania {{rank}}/{{ranks}}",
     "hud.masteryRankUp": "{{spell}}: ranga opanowania {{rank}} z {{ranks}}",
     "settings.progression.masteryRanks": "Rangi opanowania",

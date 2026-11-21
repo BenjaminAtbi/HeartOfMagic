@@ -308,7 +308,7 @@
     "preview.clumping": "Agrupamento de Raízes",
     "preview.dragHandles": "arraste as alças para ajustar",
     "preview.equal": "Igual",
-    "preview.ghostOpacity": "Opacidade Fantasma",
+    "preview.ghostOpacity": "Opacidade da Pré-visualização",
     "preview.growthDirection": "Direção de Crescimento",
     "preview.nodeSize": "Tamanho do Nó",
     "preview.rootSize": "Tamanho da Raiz",
@@ -317,7 +317,7 @@
     "preview.rootsPerSchool": "Raízes / Escola",
     "preview.scanToPreview": "Faça varredura de magias para ver a pré-visualização",
     "preview.sectionSplit": "Divisão de Seção",
-    "preview.title": "Pré-visualização do Andaime",
+    "preview.title": "Andaime da Árvore",
 
     "preview.classic.dynamicExpansion": "Expansão Dinâmica de Grade",
     "preview.classic.globeMask": "Máscara do Globo",
@@ -341,9 +341,9 @@
     "preview.classic.tierZones": "Zonas de Nível",
     "preview.classic.title": "Configurações de Crescimento Clássico",
     "preview.classic.tiersByCost": "Níveis por custo de magia",
-    "preview.classic.tiersByCostHint": "Os feitiços de cada escola vão para cinco níveis por custo de magia, do mais barato, em vez de Novato a Mestre. Feitiços sem custo mantêm o nível da sua categoria. A categoria (XP, cartão) não muda. Vale a partir da próxima geração.",
+    "preview.classic.tiersByCostHint": "Os feitiços de cada escola vão para cinco níveis por custo de magia, do mais barato, em vez de Novato a Mestre. Feitiços sem custo mantêm o nível da sua categoria. A categoria (XP, cartão) não muda.",
     "preview.classic.typeGrouping": "Agrupar por tipo",
-    "preview.classic.typeGroupingHint": "Quanto feitiços de um tipo (armas conjuradas, runas) e de um elemento (fogo, gelo, choque) ficam no mesmo galho. 0 = como na 1.2.0. Vale a partir da próxima geração.",
+    "preview.classic.typeGroupingHint": "Quanto feitiços de um tipo (armas conjuradas, runas) e de um elemento (fogo, gelo, choque) ficam no mesmo galho. 0 = como na 1.2.0.",
 
     "preview.flat.direction": "Direção",
     "preview.flat.horizontal": "Horizontal",
@@ -805,7 +805,7 @@
     "treeGrowth.readyToBuild": "Pronto para construir",
 
     "treeViewer.noSettingsAvailable": "Nenhuma configuração disponível",
-    "treeViewer.treeGrowthPreview": "Pré-visualização do Crescimento da Árvore",
+    "treeViewer.treeGrowthPreview": "Crescimento da Árvore",
     "details.masteryRank": "Ranque de domínio {{rank}}/{{ranks}}",
     "hud.masteryRankUp": "{{spell}}: ranque de domínio {{rank}} de {{ranks}}",
     "settings.progression.masteryRanks": "Ranques de Domínio",
