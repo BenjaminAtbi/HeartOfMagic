@@ -7,6 +7,10 @@
 #include "librarian/PerkAdapters.h"
 #include "librarian/SpellResearch.h"
 #include "librarian/SpellResearchPlayerFilter.h"
+#include "librarian/SpellResearchReclassify.h"
+#include "EncodingUtils.h"
+#include "librarian/PerkAdapterPatch.h"
+#include <filesystem>
 #include "HudNotify.h"
 #include "ThreadUtils.h"
 #include "JsonText.h"
@@ -321,6 +325,383 @@ namespace Librarian::SpellResearchPatch
             return totals;
         }
 
+        // =====================================================================
+        // Reclassify (opt-in, spellResearch.reclassify): SR's school and tier for the
+        // vanilla and DLC spells its Import filed, judged again from the live records
+        // (SpellResearchReclassify.h has the rules; GetSpellSchool and DetermineSpellTier,
+        // as the scan and the tree use them).
+        //
+        // How a form list holds its entries (1.6.1170: AddForm 20913, RemoveAddedForm's
+        // internal 20914, Save 20915, GetAt 20907; Codex disassembly 2026-11-20): `forms`
+        // is the record's entries, then the script-added ones (spells, books: non-dynamic
+        // forms); `scriptAddedTempForms` holds script-added dynamic (0xFF) forms;
+        // `scriptAddedFormCount` counts every script-added entry in both arrays. Papyrus
+        // indexes the temp array first, then `forms`. So a record entry is one in the first
+        // forms.size() - (count - temp) slots, and nothing else.
+        // =====================================================================
+
+        namespace RC = Librarian::SpellResearch::Reclassify;
+        constexpr const char* RECLASSIFY_KEY = "reclassify";
+        constexpr const char* RECLASSIFY_FILE = "spell_research_reclassify.json";
+        // The masters SR's own Import reads: other spells were filed by HoM (already as their
+        // records say) or by a patch author's choice, which this leaves alone (user: "vanilla spells")
+        constexpr std::array<std::string_view, 5> kImportMasters{ "Skyrim.esm", "Update.esm", "Dawnguard.esm",
+            "HearthFires.esm", "Dragonborn.esm" };
+
+        bool FromImportMaster(RE::SpellItem* spell)
+        {
+            const auto* file = spell ? spell->GetFile(0) : nullptr;
+            if (!file) return false;
+            const std::string_view name = file->GetFilename();
+            return std::ranges::any_of(kImportMasters, [&](std::string_view master) { return AsciiText::EqualsIgnoreCase(name, master); });
+        }
+
+        struct ListShape
+        {
+            std::size_t records = 0;  // record entries at the front of `forms`
+            std::size_t temp = 0;     // scriptAddedTempForms size
+            std::size_t total = 0;    // what Papyrus GetSize counts
+            bool sane = false;        // the counts fit together (another mod's direct edit can break them)
+        };
+
+        ListShape ShapeOf(const RE::BGSListForm* list)
+        {
+            ListShape shape;
+            if (!list) return shape;
+            const std::size_t forms = list->forms.size();
+            shape.temp = list->scriptAddedTempForms ? list->scriptAddedTempForms->size() : 0;
+            const std::size_t count = list->scriptAddedFormCount;
+            shape.total = forms + shape.temp;
+            shape.sane = count >= shape.temp && count - shape.temp <= forms;
+            shape.records = shape.sane ? forms - (count - shape.temp) : forms;
+            return shape;
+        }
+
+        enum class Where { kNone, kRecord, kScript };
+
+        struct Located
+        {
+            Where where = Where::kNone;
+            std::size_t index = 0;  // Papyrus index (GetAt)
+        };
+
+        Located Locate(const RE::BGSListForm* list, RE::FormID id)
+        {
+            if (!list) return {};
+            const ListShape shape = ShapeOf(list);
+            if (list->scriptAddedTempForms) {
+                const auto& temp = *list->scriptAddedTempForms;
+                for (std::uint32_t i = 0; i < temp.size(); ++i) {
+                    if (temp[i] == id) return { Where::kScript, i };
+                }
+            }
+            for (std::uint32_t j = 0; j < list->forms.size(); ++j) {
+                const auto* form = list->forms[j];
+                if (form && form->GetFormID() == id) {
+                    return { (shape.sane && j >= shape.records) ? Where::kScript : Where::kRecord, shape.temp + j };
+                }
+            }
+            return {};
+        }
+
+        RE::TESForm* At(const RE::BGSListForm* list, std::size_t a_index)
+        {
+            if (!list) return nullptr;
+            const std::size_t temp = list->scriptAddedTempForms ? list->scriptAddedTempForms->size() : 0;
+            if (a_index < temp) return RE::TESForm::LookupByID((*list->scriptAddedTempForms)[static_cast<std::uint32_t>(a_index)]);
+            const std::size_t j = a_index - temp;
+            return j < list->forms.size() ? list->forms[static_cast<std::uint32_t>(j)] : nullptr;
+        }
+
+        // What Papyrus FormList.RemoveAddedForm does (20914): the temp array first, then the
+        // script-added part of `forms`; one fewer script-added entry; the list marked changed
+        // so the save writes it. A record entry is never touched. False when nothing went.
+        bool RemoveAdded(RE::BGSListForm* list, RE::FormID id)
+        {
+            if (!list) return false;
+            const ListShape shape = ShapeOf(list);
+            if (!shape.sane || list->scriptAddedFormCount == 0) return false;
+            bool removed = false;
+            if (list->scriptAddedTempForms) {
+                auto& temp = *list->scriptAddedTempForms;
+                const auto found = std::find(temp.begin(), temp.end(), id);
+                if (found != temp.end()) {
+                    temp.erase(found);
+                    removed = true;
+                }
+            }
+            if (!removed) {
+                for (auto it = list->forms.begin() + static_cast<std::ptrdiff_t>(shape.records); it != list->forms.end(); ++it) {
+                    if (*it && (*it)->GetFormID() == id) {
+                        list->forms.erase(it);
+                        removed = true;
+                        break;
+                    }
+                }
+            }
+            if (!removed) return false;
+            --list->scriptAddedFormCount;
+            list->AddChange(RE::BGSListForm::ChangeFlags::kAddedForm);   // what 20914 marks after a removal
+            return true;
+        }
+
+        // One script-added entry by its Papyrus index (the temp array, then forms): a tome pair is the
+        // book and the spell at one index, and a list may hold the same book twice
+        bool RemoveAddedAt(RE::BGSListForm* list, std::size_t a_index)
+        {
+            if (!list) return false;
+            const ListShape shape = ShapeOf(list);
+            if (!shape.sane || list->scriptAddedFormCount == 0) return false;
+            if (a_index < shape.temp) {
+                auto& temp = *list->scriptAddedTempForms;
+                temp.erase(temp.begin() + static_cast<std::ptrdiff_t>(a_index));
+            } else {
+                const std::size_t j = a_index - shape.temp;
+                if (j < shape.records || j >= list->forms.size()) return false;   // a record entry, or past the end
+                list->forms.erase(list->forms.begin() + static_cast<std::ptrdiff_t>(j));
+            }
+            --list->scriptAddedFormCount;
+            list->AddChange(RE::BGSListForm::ChangeFlags::kAddedForm);
+            return true;
+        }
+
+        RC::Entries EntriesOf(const std::array<RE::BGSListForm*, 5>& lists, RE::FormID id)
+        {
+            RC::Entries entries;
+            for (std::size_t i = 0; i < lists.size(); ++i) {
+                const Located at = Locate(lists[i], id);
+                if (at.where == Where::kRecord) entries.record.push_back(i);
+                if (at.where == Where::kScript) entries.script.push_back(i);
+            }
+            return entries;
+        }
+
+        // DetermineSpellTier's two sources, kept apart: the half-cost perk, else the school effect's
+        // minimum skill - but a minimum skill of 0 says nothing (vanilla Novice spells carry a Novice
+        // perk), so then there is no record tier and the spell is left as SR files it
+        std::optional<std::size_t> RecordTier(RE::SpellItem* spell, const char*& a_source)
+        {
+            std::string tier;
+            a_source = "none";
+            if (auto* perk = Librarian::PerkAdapters::OriginalCastingPerk(spell)) {
+                tier = SpellScanner::GetSkillLevelFromPerk(perk);
+                if (!tier.empty()) a_source = "perk";
+            }
+            if (tier.empty()) {
+                const auto* effect = SpellScanner::GetSchoolEffect(spell);
+                const std::uint32_t minimum = effect && effect->baseEffect ? effect->baseEffect->GetMinimumSkillLevel() : 0;
+                if (minimum == 0) return std::nullopt;
+                tier = SpellScanner::GetSkillLevelName(minimum);
+                a_source = "minimumSkill";
+            }
+            const auto found = std::ranges::find(SR::kTiers, AsciiText::ToLower(tier));
+            if (found == SR::kTiers.end()) return std::nullopt;
+            return static_cast<std::size_t>(found - SR::kTiers.begin());
+        }
+
+        std::optional<std::size_t> RecordSchool(RE::SpellItem* spell)
+        {
+            switch (SpellScanner::GetSpellSchool(spell)) {
+            case RE::ActorValue::kAlteration: return 0;
+            case RE::ActorValue::kConjuration: return 1;
+            case RE::ActorValue::kDestruction: return 2;
+            case RE::ActorValue::kIllusion: return 3;
+            case RE::ActorValue::kRestoration: return 4;
+            default: return std::nullopt;
+            }
+        }
+
+        std::string JoinNotes(const std::vector<std::string>& notes)
+        {
+            std::string text;
+            for (const auto& note : notes) text += (text.empty() ? "" : "; ") + note;
+            return text;
+        }
+
+        // Two pair lists line up when a spell's book sits at the spell's Papyrus index (SR: Find
+        // in the spell list, GetAt in the book list): the same temp size and the same total
+        bool PairsLineUp(const RE::BGSListForm* books, const RE::BGSListForm* spells)
+        {
+            const ListShape b = ShapeOf(books), s = ShapeOf(spells);
+            return b.sane && s.sane && b.temp == s.temp && b.total == s.total;
+        }
+
+        // The spell's tome pairs: every tier but a_want gives its script pair up, and a_want gets one
+        // when it has none (book first, as SR and Register add them). Planned before anything is
+        // touched: when a_want cannot take the pair (its lists out of step, or the book already
+        // there), every pair stays where it is. A record pair, lists out of step or a book not at the
+        // spell's index keep that tier's pair. Several pairs elsewhere: one goes to a_want, the rest
+        // (the same spell taught twice) are dropped.
+        std::string MoveTomePairs(RE::SpellItem* spell, std::size_t a_want)
+        {
+            const RE::FormID id = spell->GetFormID();
+            struct Pair
+            {
+                std::size_t tier;
+                std::size_t index;   // the pair's Papyrus index in both lists
+                RE::TESForm* book;
+            };
+            std::vector<Pair> movable;
+            std::vector<std::string> notes;
+            bool wantHasPair = false;
+            for (std::size_t t = 0; t < SR::kTiers.size(); ++t) {
+                const auto* books = ResolveList(g_lists.tomes[t]);
+                const auto* spells = ResolveList(g_lists.tomeSpells[t]);
+                const Located at = Locate(spells, id);
+                if (at.where == Where::kNone) continue;
+                if (t == a_want) {
+                    wantHasPair = true;
+                    continue;
+                }
+                const std::string tier(SR::kTiers[t]);
+                if (at.where == Where::kRecord) {
+                    notes.push_back(tier + ": record pair kept");
+                    continue;
+                }
+                if (!PairsLineUp(books, spells)) {
+                    notes.push_back(tier + ": pairs out of step, kept");
+                    continue;
+                }
+                RE::TESForm* book = At(books, at.index);
+                const Located bookAt = book ? Locate(books, book->GetFormID()) : Located{};
+                if (!book || bookAt.where != Where::kScript || bookAt.index != at.index) {
+                    notes.push_back(tier + ": book not a script entry at the spell's index, kept");
+                    continue;
+                }
+                movable.push_back({ t, at.index, book });
+            }
+            if (movable.empty()) return notes.empty() ? std::string("no tome pair") : JoinNotes(notes);
+
+            auto* wantBooks = ResolveList(g_lists.tomes[a_want]);
+            auto* wantSpells = ResolveList(g_lists.tomeSpells[a_want]);
+            if (!wantHasPair && (!PairsLineUp(wantBooks, wantSpells)
+                                    || Locate(wantBooks, movable.front().book->GetFormID()).where != Where::kNone)) {
+                notes.push_back(std::string(SR::kTiers[a_want]) + " cannot take the pair (out of step or the book already "
+                                "there): every pair kept");
+                return JoinNotes(notes);
+            }
+            for (const Pair& pair : movable) {
+                auto* books = ResolveList(g_lists.tomes[pair.tier]);
+                auto* spells = ResolveList(g_lists.tomeSpells[pair.tier]);
+                const bool removed = RemoveAddedAt(books, pair.index) && RemoveAddedAt(spells, pair.index);
+                notes.push_back(std::string(SR::kTiers[pair.tier]) + (removed && PairsLineUp(books, spells)
+                                                                          ? ": pair removed" : ": removal FAILED, lists checked"));
+            }
+            if (!wantHasPair) {
+                RE::TESForm* book = movable.front().book;
+                wantBooks->AddForm(book);
+                wantSpells->AddForm(spell);
+                const Located b = Locate(wantBooks, book->GetFormID()), s = Locate(wantSpells, id);
+                notes.push_back(std::string(SR::kTiers[a_want])
+                                + (b.where != Where::kNone && s.where != Where::kNone && b.index == s.index ? ": pair added"
+                                                                                                            : ": pair added OUT OF STEP"));
+            }
+            return JoinNotes(notes);
+        }
+
+        // spellResearch.enabled and .reclassify, read again only when config.json's write time changes:
+        // Reconcile runs at every message box. Game thread only.
+        bool ReclassifyOn()
+        {
+            static std::optional<std::filesystem::file_time_type> seen;
+            static bool on = false;
+            std::error_code error;
+            const auto written = std::filesystem::last_write_time(DataPath("config.json"), error);
+            if (error) return false;
+            if (seen && *seen == written) return on;
+            seen = written;
+            on = ConfigSwitchOn(CONFIG_SECTION) && ConfigOptIn(CONFIG_SECTION, RECLASSIFY_KEY);
+            return on;
+        }
+
+        void Reclassify(std::string_view reason)
+        {
+            if (!ReclassifyOn()) return;
+            const auto started = std::chrono::steady_clock::now();
+            std::array<RE::BGSListForm*, 5> tiers{}, schools{};
+            for (std::size_t i = 0; i < 5; ++i) {
+                tiers[i] = ResolveList(g_lists.allSpells[i]);
+                schools[i] = ResolveList(g_lists.school.at(std::string(RC::kSchools[i])));
+                if (!tiers[i] || !schools[i] || !ShapeOf(tiers[i]).sane || !ShapeOf(schools[i]).sane) {
+                    logger::warn("SpellResearch: {} - reclassify skipped: SR's {} lists are missing or their counts do not fit "
+                                 "(another mod edited them directly?)", reason, i < 5 ? "tier/school" : "");
+                    return;
+                }
+            }
+            const Registered registered = ReadRegistered();
+            std::size_t moved = 0, partial = 0, locked = 0, unknown = 0, same = 0;
+            json changes = json::array();
+            json lockedList = json::array();
+            for (const RE::FormID formId : registered.spells) {
+                auto* spell = RE::TESForm::LookupByID<RE::SpellItem>(formId);
+                if (!FromImportMaster(spell)) continue;
+                const std::string id = SpellScanner::GetPersistentFormId(formId);
+                const char* tierSource = "none";
+                const auto wantTier = RecordTier(spell, tierSource);
+                const RC::Spell input{ id, EntriesOf(tiers, formId), EntriesOf(schools, formId), wantTier, RecordSchool(spell) };
+                const std::string name = EncodingUtils::SanitizeToUTF8(spell->GetName());
+                const RC::Decision decision = RC::Decide(input);
+                switch (decision.outcome) {
+                case RC::Outcome::kSame: ++same; continue;
+                case RC::Outcome::kUnknown: ++unknown; continue;
+                case RC::Outcome::kNotInSR: continue;
+                case RC::Outcome::kLocked:
+                    ++locked;
+                    lockedList.push_back({ { "spell", id }, { "name", name } });
+                    continue;
+                case RC::Outcome::kMove: break;
+                }
+                // Join the right lists first, then leave the wrong ones: never a moment in none. A join
+                // the list refused leaves the wrong entries too (the spell keeps SR's reading)
+                if (decision.tier.add) tiers[*decision.tier.add]->AddForm(spell);
+                if (decision.school.add) schools[*decision.school.add]->AddForm(spell);
+                const bool joined = (!decision.tier.add || tiers[*decision.tier.add]->HasForm(spell))
+                    && (!decision.school.add || schools[*decision.school.add]->HasForm(spell));
+                if (joined) {
+                    for (const std::size_t t : decision.tier.drop) RemoveAdded(tiers[t], formId);
+                    for (const std::size_t s : decision.school.drop) RemoveAdded(schools[s], formId);
+                }
+                const std::string tome = !joined ? std::string("join refused, nothing moved")
+                    : decision.tier.Changes() ? MoveTomePairs(spell, *input.wantTier) : std::string("tier unchanged");
+                // What SR reads now: exactly the wanted tier and school, or a partial change to report
+                const RC::Entries tiersAfter = EntriesOf(tiers, formId), schoolsAfter = EntriesOf(schools, formId);
+                const bool done = RC::OnlyIn(tiersAfter, *input.wantTier) && RC::OnlyIn(schoolsAfter, *input.wantSchool);
+                ++(done ? moved : partial);
+                changes.push_back({ { "spell", id }, { "name", name }, { "result", done ? "moved" : "partial" },
+                    { "tierSource", tierSource },
+                    { "from", { { "tier", std::string(SR::kTiers[*decision.fromTier]) },
+                                { "school", decision.fromSchool ? std::string(RC::kSchools[*decision.fromSchool]) : std::string() } } },
+                    { "to", { { "tier", std::string(SR::kTiers[*input.wantTier]) }, { "school", std::string(RC::kSchools[*input.wantSchool]) } } },
+                    { "tomePairs", tome } });
+            }
+            const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count();
+            const json report = { { "reason", std::string(reason) }, { "moved", moved }, { "partial", partial }, { "same", same },
+                { "locked", locked }, { "unknown", unknown }, { "elapsedMs", elapsed }, { "changes", changes },
+                { "lockedSpells", lockedList },
+                { "note", "With Spell Research Upgrade and Fixes, run its spell cache again: the cache keeps each spell's old "
+                          "archetypes. Turning this off keeps the changes until SR's Import runs again." } };
+            // A run that changed nothing (the next message box) leaves the last report standing
+            if (moved + partial == 0) {
+                // At info once per loaded game (the release log shows it ran), at debug after that
+                static std::uint64_t loggedSession = ~std::uint64_t{ 0 };
+                const bool first = loggedSession != g_gameSession;
+                loggedSession = g_gameSession;
+                const std::string line = std::format("SpellResearch: {} - reclassify: nothing to move ({} already right, {} "
+                                                     "locked, {} without a record school or tier, {} ms)",
+                    reason, same, locked, unknown, elapsed);
+                if (first) logger::info("{}", line);
+                else logger::debug("{}", line);
+                return;
+            }
+            const auto path = DataPath(RECLASSIFY_FILE);
+            std::ofstream file(path, std::ios::binary | std::ios::trunc);
+            if (file.is_open()) file << JsonText::Dump(report, 2);
+            if (!file.good()) logger::warn("SpellResearch: could not write '{}'", PathText::Utf8(path));
+            logger::info("SpellResearch: {} - reclassify: {} vanilla spells moved to the school and tier their records give, "
+                         "{} partly ({}), {} already right, {} locked by a plugin's own list entry, {} without a record school "
+                         "or tier, in {} ms", reason, moved, partial, RECLASSIFY_FILE, same, locked, unknown, elapsed);
+        }
+
         void SafeReconcile(std::string_view reason);
 
         // One Reconcile once the tome reach pass is done. A newer pass that took over
@@ -358,6 +739,13 @@ namespace Librarian::SpellResearchPatch
                 return;
             }
             if (GlobalValue(g_lists.importing) != 0.0f) return;
+            // Opt-in, before the count check: a re-import that ends with the same count puts SR's
+            // classes back, and the moves themselves keep the count
+            try {
+                Reclassify(reason);   // opt-in (ReclassifyOn); its failure must not cost this run's registrations
+            } catch (const std::exception& e) {
+                logger::error("SpellResearch: {} - reclassify failed - {}", reason, e.what());
+            }
             const std::size_t entries = CountRegistered();
             if (entries == g_lastSeen) return;
             if (TomeReach::IsRunning()) {

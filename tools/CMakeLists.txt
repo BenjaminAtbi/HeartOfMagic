@@ -455,6 +455,39 @@ target_link_libraries(graft-run-check PRIVATE
 )
 
 # =============================================================================
+# staff-bridge-check  -  offline check of StaffSpellBridge::ResolveWith and DecodeStaffCast
+# =============================================================================
+# The header part of StaffSpellBridge.h: a staff copy from SCSSoulCharge maps to its
+# original spell, everything else (and everything without the DLL) stays as it is.
+
+add_executable(staff-bridge-check
+    staff-bridge-check.cpp
+)
+
+target_compile_features(staff-bridge-check PRIVATE cxx_std_23)
+
+target_include_directories(staff-bridge-check PRIVATE
+    ${SL_INCLUDE_DIR}
+)
+
+# =============================================================================
+# sr-reclassify-check  -  offline check of the Spell Research reclassify decisions
+# =============================================================================
+# librarian/SpellResearchReclassify.h: a spell SR files by its record stays; a changed
+# tier or school leaves the wrong script lists and joins the right one; a wrong record
+# entry locks the spell; no record school or tier, no change.
+
+add_executable(sr-reclassify-check
+    sr-reclassify-check.cpp
+)
+
+target_compile_features(sr-reclassify-check PRIVATE cxx_std_23)
+
+target_include_directories(sr-reclassify-check PRIVATE
+    ${SL_INCLUDE_DIR}
+)
+
+# =============================================================================
 # The magic menu's harnesses (magic-menu-*: the core, the Heart of Magic block and
 # the Spell Research block), in their own file; included here, so they share this
 # directory's settings (SL_INCLUDE_DIR, the output folder build/tools/Release)

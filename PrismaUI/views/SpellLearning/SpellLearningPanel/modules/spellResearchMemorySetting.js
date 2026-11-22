@@ -9,6 +9,8 @@
  * the share of the spell's archetypes remembered at its rank
  * (LibrarianSpellResearchMemory.cpp; docs/librarian/SPELL_RESEARCH.md).
  *
+ * Also the Spell Research reclassify switch (config.spellResearch.reclassify, off by default):
+ * the vanilla spells SR imported are re-filed by their records' school and level.
  * Saved as config.spellResearch.memoryExchange = { practiceToMemory, memoryMinutes,
  * memoryToPractice, maxPracticeBoost }. Only that object is written: the C++ save
  * merges objects key by key, so spellResearch.enabled (set by hand) stays. Shown
@@ -30,6 +32,8 @@ var SpellResearchMemorySetting = {
     MAX_MINUTES: 240,
     MAX_BOOST: 100,
     ROW_IDS: ['srPracticeToMemoryRow', 'srMemoryMinutesRow', 'srMemoryToPracticeRow', 'srMaxPracticeBoostRow'],
+    // spellResearch.reclassify (opt-in, default off): SR's vanilla spells re-filed by their records
+    reclassify: false,
 
     /** settings.spellResearchMemory, made with the defaults when missing. */
     _mem: function() {
@@ -57,7 +61,14 @@ var SpellResearchMemorySetting = {
         var minutes = document.getElementById('srMemoryMinutesInput');
         var toPractice = document.getElementById('srMemoryToPracticeToggle');
         var boost = document.getElementById('srMaxPracticeBoostInput');
+        var reclassify = document.getElementById('srReclassifyToggle');
 
+        if (reclassify) {
+            reclassify.addEventListener('change', function() {
+                self.reclassify = this.checked;
+                self._save();
+            });
+        }
         if (toMemory) {
             toMemory.addEventListener('change', function() {
                 self._mem().practiceToMemory = this.checked;
@@ -98,7 +109,9 @@ var SpellResearchMemorySetting = {
         var toPractice = document.getElementById('srMemoryToPracticeToggle');
         var boost = document.getElementById('srMaxPracticeBoostInput');
         var boostRow = document.getElementById('srMaxPracticeBoostRow');
+        var reclassify = document.getElementById('srReclassifyToggle');
 
+        if (reclassify) reclassify.checked = this.reclassify === true;
         if (toMemory) toMemory.checked = m.practiceToMemory !== false;
         if (toPractice) toPractice.checked = m.memoryToPractice !== false;
         if (minutes) {
@@ -113,12 +126,18 @@ var SpellResearchMemorySetting = {
         if (boostRow && boostRow.classList) boostRow.classList.toggle('disabled-controls', m.memoryToPractice === false);
     },
 
-    /** Show or hide the rows (with the Spell Research line: shown only when the plugin reports SR). */
-    show: function(visible) {
+    /**
+     * Show or hide the rows (with the Spell Research line). The memory rows need the plugin's memory
+     * part (visible); the reclassify row needs only Spell Research (reclassifyVisible, else as visible).
+     */
+    show: function(visible, reclassifyVisible) {
         for (var i = 0; i < this.ROW_IDS.length; i++) {
             var row = document.getElementById(this.ROW_IDS[i]);
             if (row) row.style.display = visible ? '' : 'none';
         }
+        var reclassifyRow = document.getElementById('srReclassifyRow');
+        var showReclassify = reclassifyVisible === undefined ? visible : reclassifyVisible;
+        if (reclassifyRow) reclassifyRow.style.display = showReclassify ? '' : 'none';
     },
 
     /** Read the saved settings from a config, keeping the defaults for what is missing or wrong. */
@@ -126,6 +145,7 @@ var SpellResearchMemorySetting = {
         var d = this.DEFAULTS;
         var section = (data && data.spellResearch && typeof data.spellResearch === 'object') ? data.spellResearch : {};
         var src = (section.memoryExchange && typeof section.memoryExchange === 'object') ? section.memoryExchange : {};
+        this.reclassify = section.reclassify === true;
         settings.spellResearchMemory = {
             practiceToMemory: typeof src.practiceToMemory === 'boolean' ? src.practiceToMemory : d.practiceToMemory,
             memoryMinutes: this._number(typeof src.memoryMinutes === 'number' ? src.memoryMinutes : null,
@@ -147,11 +167,13 @@ var SpellResearchMemorySetting = {
             memoryToPractice: m.memoryToPractice !== false,
             maxPracticeBoost: this._number(m.maxPracticeBoost, this.DEFAULTS.maxPracticeBoost, this.MAX_BOOST)
         };
+        config.spellResearch.reclassify = this.reclassify === true;
         return config;
     },
 
     reset: function() {
         settings.spellResearchMemory = JSON.parse(JSON.stringify(this.DEFAULTS));
+        this.reclassify = false;
         this.sync();
     },
 

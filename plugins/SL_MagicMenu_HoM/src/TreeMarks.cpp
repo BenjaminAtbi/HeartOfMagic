@@ -69,9 +69,24 @@ namespace HomAddon
         return HomStyle::DisplayOf(BehaviourOf(Spells::LookOf(a_snapshot, a_index).state), isTarget);
     }
 
+    bool IsRootNode(int a_index)
+    {
+        const auto& tree = Data().tree;
+        if (a_index < 0 || a_index >= static_cast<int>(tree.nodes.size())) return false;
+        const auto& node = tree.nodes[static_cast<std::size_t>(a_index)];
+        if (node.isRoot) return true;
+        return std::ranges::any_of(tree.schools, [&](const TreeData::School& a_school) {
+            return a_school.rootIndex == a_index && a_school.name == node.school;
+        });
+    }
+
     bool NameShown(int a_index, const Spells::Snapshot& a_snapshot)
     {
         const auto style = CurrentStyle();
+        // HoM's tooltip names a school's root spell whatever its share while Show Root Spell Names is on
+        // (canvasRendererInput.js:30,34; a root is node.isRoot or the school's spoke root, wheelRenderer.js:811).
+        // The tree's own labels keep Reveal alone, as HoM's labels do (canvasRendererLabels.js:140-152).
+        if (style->showRootSpellNames && IsRootNode(a_index)) return true;
         return HomStyle::Reveal(DisplayOfNode(a_index, a_snapshot), Spells::LookOf(a_snapshot, a_index).percent, style->revealName,
                    style->cheatMode) == HomStyle::Name::kShown;
     }

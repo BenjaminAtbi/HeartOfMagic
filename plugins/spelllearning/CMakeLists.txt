@@ -111,6 +111,7 @@ add_commonlibsse_plugin(${PROJECT_NAME}
     src/librarian/LibrarianSpellResearchMemory.cpp
     src/SpellCastHandler.cpp
     src/SpellCastImmediateHook.cpp
+    src/StaffSpellBridge.cpp
     src/progressionmanager/ProgressionManagerCore.cpp
     src/progressionmanager/ProgressionManagerTargets.cpp
     src/progressionmanager/ProgressionManagerCopies.cpp

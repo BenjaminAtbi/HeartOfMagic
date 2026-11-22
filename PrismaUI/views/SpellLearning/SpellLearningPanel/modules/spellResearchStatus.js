@@ -71,7 +71,7 @@ var SpellResearchStatus = {
         if (!row || !out) return;
         var shown = !!this._last;
         if (typeof SpellResearchMemorySetting !== 'undefined') {
-            SpellResearchMemorySetting.show(shown && this._last.memoryReady === true);
+            SpellResearchMemorySetting.show(shown && this._last.memoryReady === true, shown);
         }
         if (!shown) {
             row.style.display = 'none';

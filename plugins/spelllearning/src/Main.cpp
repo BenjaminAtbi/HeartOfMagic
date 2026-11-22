@@ -18,6 +18,7 @@
 #include "PapyrusAPI.h"
 #include "RisaMenu.h"
 #include "SpellLearningAPI.h"
+#include "StaffSpellBridge.h"
 #include "ThreadUtils.h"
 #include "environment/EnvironmentSelfTest.h"
 #include "AutoScan.h"
@@ -495,6 +496,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
             SpellEffectivenessHook::InstallDisplayHooks();
             // Casts that send no cast event (SpellHotbar 2, Spell.Cast) still give XP
             SpellCastHandler::InstallImmediateCastHook();
+            // Staff casts send no cast event either: SCSSoulCharge reports them by message
+            StaffSpellBridge::RegisterCastListener();
 
             // Install spell tome hook (intercepts book reading)
             if (SpellTomeHook::Install()) {
@@ -514,6 +517,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
                 SpellLearning::kMessageType_APIReady,
                 api, sizeof(void*), nullptr);
             logger::info("SpellLearning: API broadcasted to all listeners (v{})", api->GetAPIVersion());
+            // Every plugin DLL is loaded by now: link to SCSSoulCharge.dll if it is there
+            StaffSpellBridge::Init();
             break;
         }
         case SKSE::MessagingInterface::kDataLoaded:

@@ -119,6 +119,11 @@ function handleEscapePress() {
     var now = Date.now();
     if (now - _lastEscapeAt < ESCAPE_REPEAT_MS) return false;
     _lastEscapeAt = now;
+    // An open drop-down list (selectSkin.js) takes the press: the list closes, the panel stays
+    if (typeof SelectSkin !== 'undefined' && SelectSkin._open) {
+        SelectSkin.close();
+        return true;
+    }
     if (typeof isFindSpellOpen === 'function' && isFindSpellOpen()) {
         closeFindSpell();
         return true;

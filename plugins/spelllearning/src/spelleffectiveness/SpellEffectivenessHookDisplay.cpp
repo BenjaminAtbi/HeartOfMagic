@@ -1,4 +1,5 @@
 #include "SpellEffectivenessHook.h"
+#include "StaffSpellBridge.h"
 #include <sstream>
 
 // =============================================================================
@@ -64,7 +65,8 @@ void SpellEffectivenessHook::UpdateSpellDisplayCache(RE::FormID spellFormId, RE:
             originalName = it->second;
         } else {
             // First time seeing this spell - store its current name as original
-            originalName = spell->GetName();
+            // never with SCSSoulCharge's held-staff marker: it would stay in the name for good
+            originalName = StaffSpellBridge::StripNameMarker(spellFormId, spell->GetName());
             m_originalSpellNames[spellFormId] = originalName;
             logger::info("SpellEffectivenessHook: Stored original name for {:08X}: '{}'",
                 spellFormId, originalName);
@@ -225,7 +227,7 @@ std::string SpellEffectivenessHook::GetOriginalName(const RE::SpellItem* spell) 
         }
     }
     const char* name = spell->GetFullName();
-    return name ? std::string(name) : std::string();
+    return name ? StaffSpellBridge::StripNameMarker(spell->GetFormID(), name) : std::string();
 }
 
 void SpellEffectivenessHook::RefreshAllSpellNames()

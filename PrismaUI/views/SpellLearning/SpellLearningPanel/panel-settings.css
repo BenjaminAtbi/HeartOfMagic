@@ -205,3 +205,71 @@
     grid-template-columns: 4.6em 3.6em 5.1em 3.6em 5.1em 1fr;   /* an engine without max-content in minmax() */
     grid-template-columns: 4.6em 3.6em minmax(5.1em, max-content) 3.6em minmax(5.1em, max-content) 1fr;
 }
+
+/* The panel's own drop-down list (modules/selectSkin.js): Ultralight draws a <select>'s open list
+   itself, white and small, past any CSS. The select stays as the value's home, hidden; the button
+   takes its classes (.setting-select and the designs' rules) and the list its font size. */
+select.hom-select-native {
+    display: none !important;
+}
+
+.hom-select {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6em;
+    box-sizing: border-box;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.hom-select-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hom-select-arrow {
+    flex: 0 0 auto;
+    opacity: 0.7;
+    font-size: 0.8em;
+}
+
+.hom-select.open,
+.hom-select:hover {
+    border-color: var(--accent-gold);
+}
+
+.hom-select.disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.hom-select-list {
+    position: fixed;
+    z-index: 100000;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background: var(--panel-bg-solid, #0a0a0a);
+    border: 1px solid var(--accent-gold);
+    color: var(--text-primary);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+
+.hom-select-item {
+    padding: 0.3em 0.8em;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.hom-select-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.hom-select-item.selected {
+    color: var(--accent-gold);
+}
+
+.hom-select-item.disabled {
+    opacity: 0.4;
+    cursor: default;
+}

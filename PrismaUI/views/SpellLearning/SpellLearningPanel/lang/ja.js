@@ -611,6 +611,8 @@ window._i18nPreload = {
     "settings.tomeLearning.srMemoryMinutes": "練習15%ごとに増える記憶（研究時間・分）",
     "settings.tomeLearning.srMemoryToPractice": "記憶が練習を助ける",
     "settings.tomeLearning.srMaxPracticeBoost": "記憶による最大練習ボーナス（%）",
+    "settings.tomeLearning.srReclassify": "バニラ呪文をレコードをもとに再分類",
+    "settings.tomeLearning.srReclassifyDesc": "Spell Research が取り込んだバニラ・DLC の呪文を、現在のレコードに設定されている系統とランクに分類し直す。オーバーホールによる変更が反映される。初期設定はオフ。",
     "settings.tomeLearning.inventoryBoost": "所持ブースト",
     "settings.tomeLearning.inventoryBoostDesc": "魔導書所持時のボーナスXP",
     "settings.tomeLearning.learningReqs": "学習要件",

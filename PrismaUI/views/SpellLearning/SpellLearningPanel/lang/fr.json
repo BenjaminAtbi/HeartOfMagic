@@ -633,6 +633,8 @@
     "settings.tomeLearning.srMemoryMinutes": "Mémoire tous les 15 % de pratique (minutes de recherche)",
     "settings.tomeLearning.srMemoryToPractice": "La mémoire guide la pratique",
     "settings.tomeLearning.srMaxPracticeBoost": "Bonus de pratique maximal grâce à la mémoire (%)",
+    "settings.tomeLearning.srReclassify": "Reclasser les sorts vanilla selon leurs enregistrements",
+    "settings.tomeLearning.srReclassifyDesc": "Classe les sorts vanilla et DLC importés par Spell Research dans l'école et le niveau qu'indiquent actuellement leurs enregistrements, afin que les modifications d'une refonte soient prises en compte. Désactivé par défaut.",
     "settings.tomeLearning.inventoryBoost": "Bonus d'inventaire",
     "settings.tomeLearning.inventoryBoostDesc": "Bonus d'XP en portant le grimoire",
     "settings.tomeLearning.learningReqs": "Exigences d'apprentissage",

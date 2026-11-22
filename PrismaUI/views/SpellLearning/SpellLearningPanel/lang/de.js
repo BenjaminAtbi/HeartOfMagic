@@ -611,6 +611,8 @@ window._i18nPreload = {
     "settings.tomeLearning.srMemoryMinutes": "Erinnerung pro 15% Übung (Forschungsminuten)",
     "settings.tomeLearning.srMemoryToPractice": "Erinnerung leitet die Übung",
     "settings.tomeLearning.srMaxPracticeBoost": "Maximaler Übungsbonus durch Erinnerung (%)",
+    "settings.tomeLearning.srReclassify": "Vanilla-Zauber nach ihren Einträgen neu einordnen",
+    "settings.tomeLearning.srReclassifyDesc": "Ordnet die von Spell Research importierten Vanilla- und DLC-Zauber der Schule und dem Rang zu, die ihre Einträge aktuell vorgeben, damit die Änderungen einer Überarbeitung berücksichtigt werden. Standardmäßig aus.",
     "settings.tomeLearning.inventoryBoost": "Inventar-Bonus",
     "settings.tomeLearning.inventoryBoostDesc": "Bonus-EP beim Tragen des Zauberbuchs",
     "settings.tomeLearning.learningReqs": "Lern-Anforderungen",

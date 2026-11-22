@@ -113,7 +113,7 @@ namespace HomAddon
                                            dropTitle(a_need, "the next-spell rows");
                                            return kCardTop;
                                        } };
-                return DrawChoices(a_movie, content, area, info);
+                return DrawChoices(a_movie, content, area, info, a_snapshot);
             }
 
             // the learning target: name and share, the bar with its XP, and the next step under it
