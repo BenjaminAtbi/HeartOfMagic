@@ -218,6 +218,7 @@ namespace HomStyle
         // config.json (settingsPanel.js load rules: line numbers in HomStyle.cpp)
         bool discoveryMode = true, showSelectionPath = true, showNodeNames = true, showBaseConnections = true, cheatMode = false,
              focusDimOthers = true;
+        bool showRootSpellNames = true;  // a school's root spell is named whatever its share (tooltip, card, next-spell rows)
         double revealName = 0.0;
         Color learning{ 0x00FFFF, 1.0 };  // _learningColor (canvasRendererColors.js:49)
         Color hubRing{ 0xB8A878, 1.0 };   // _heartRing (:53)

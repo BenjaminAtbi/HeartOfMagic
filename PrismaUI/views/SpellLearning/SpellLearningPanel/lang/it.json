@@ -623,6 +623,8 @@
     "settings.tomeLearning.srMemoryMinutes": "Memoria ogni 15% di pratica (minuti di ricerca)",
     "settings.tomeLearning.srMemoryToPractice": "La memoria guida la pratica",
     "settings.tomeLearning.srMaxPracticeBoost": "Bonus massimo alla pratica dalla memoria (%)",
+    "settings.tomeLearning.srReclassify": "Riclassifica gli incantesimi vanilla in base ai loro record",
+    "settings.tomeLearning.srReclassifyDesc": "Assegna gli incantesimi vanilla e DLC importati da Spell Research alla scuola e al livello attualmente indicati dai loro record, in modo che le modifiche di un overhaul vengano applicate. Disattivato per impostazione predefinita.",
     "settings.tomeLearning.inventoryBoost": "Bonus Inventario",
     "settings.tomeLearning.inventoryBoostDesc": "XP bonus mentre porti il tomo",
     "settings.tomeLearning.learningReqs": "Requisiti di Apprendimento",

@@ -2,6 +2,7 @@
 #include "AsciiText.h"
 
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <iterator>
 #include <sstream>
@@ -14,7 +15,19 @@ namespace TomeReach
         constexpr std::string_view kSpidSuffix = "_distr.ini";
         constexpr std::string_view kIniSuffix = ".ini";
         constexpr std::string_view kArchiveSuffix = ".bsa";
-        constexpr std::string_view kSkyPatcherFolder = "skse/plugins/skypatcher";
+        // SkyPatcher-syntax ini folders: SkyPatcher's own, and Paths of Empyrean's (its DLL, 1.6+, reads leveled-list,
+        // form-list, NPC and weapon lines in SkyPatcher's syntax from SKSE/Plugins/POE/<kind>/; spellmap core.SKYPATCHER_DIRS)
+        constexpr std::array<std::string_view, 2> kSkyPatcherFolders = { "skse/plugins/skypatcher", "skse/plugins/poe" };
+        // Container Distribution Framework: *.json directly in this folder (spellmap core.CDF_LIKE)
+        constexpr std::string_view kCdfFolder = "skse/plugins/containerdistributionframework";
+        constexpr std::string_view kJsonSuffix = ".json";
+
+        // `path` lies in `folder` (directly, unless `nested`)
+        bool InFolder(std::string_view path, std::string_view folder, bool nested)
+        {
+            if (!path.starts_with(folder) || path.size() <= folder.size() + 1 || path[folder.size()] != '/') return false;
+            return nested || path.find('/', folder.size() + 1) == std::string_view::npos;
+        }
         // The loose folders and archive folders the model reads
         constexpr std::string_view kScripts = "scripts";
         constexpr std::string_view kStrings = "strings";
@@ -107,7 +120,8 @@ namespace TomeReach
         }
         AddFolder(dir, kScripts, false);
         AddFolder(dir, kStrings, false);
-        AddFolder(dir, kSkyPatcherFolder, true);
+        for (const auto folder : kSkyPatcherFolders) AddFolder(dir, folder, true);
+        AddFolder(dir, kCdfFolder, false);
     }
 
     std::vector<std::pair<std::string, std::size_t>> DataFiles::PackedMembers() const
@@ -150,9 +164,20 @@ namespace TomeReach
     {
         std::vector<ConfigFile> out;
         for (const auto& [path, file] : m_loose) {
-            if (path.starts_with(kSkyPatcherFolder) && path.size() > kSkyPatcherFolder.size() &&
-                path[kSkyPatcherFolder.size()] == '/' && path.ends_with(kIniSuffix))
-                out.push_back({ path, file });
+            if (!path.ends_with(kIniSuffix)) continue;
+            for (const auto folder : kSkyPatcherFolders) {
+                if (InFolder(path, folder, true)) out.push_back({ path, file });
+            }
+        }
+        std::sort(out.begin(), out.end(), [](const auto& a, const auto& b) { return a.path < b.path; });
+        return out;
+    }
+
+    std::vector<ConfigFile> DataFiles::CdfConfigs() const
+    {
+        std::vector<ConfigFile> out;
+        for (const auto& [path, file] : m_loose) {
+            if (path.ends_with(kJsonSuffix) && InFolder(path, kCdfFolder, false)) out.push_back({ path, file });
         }
         std::sort(out.begin(), out.end(), [](const auto& a, const auto& b) { return a.path < b.path; });
         return out;

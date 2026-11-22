@@ -136,11 +136,15 @@ int DumpGraph(const std::vector<PluginFile>& loadOrder, const std::vector<std::f
     const auto ms = [](auto a, auto b) {
         return static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count());
     };
-    std::printf("configs: %zu files, %zu SPID lines, %zu SkyPatcher list lines, %zu archives with scripts or strings; "
+    std::printf("configs: %zu files, %zu SPID lines, %zu SkyPatcher list lines, %zu CDF changes (%zu naming no container), %zu archives with scripts or strings; "
                 "%zu script holders, %zu scripts read, %zu not found\n",
         model.ConfigFiles().files, distribution ? distribution->spid.size() : 0,
-        distribution ? distribution->listAdds.size() : 0, model.Data() ? model.Data()->ArchiveCount() : 0,
+        distribution ? distribution->listAdds.size() : 0, distribution ? distribution->cdf.size() : 0, graph.CdfUntraced(),
+        model.Data() ? model.Data()->ArchiveCount() : 0,
         store.holders.size(), graph.ScriptsRead(), graph.ScriptsMissing());
+    if (distribution) {
+        for (const std::string& w : distribution->cdfWarnings) std::printf("CDF: %s\n", w.c_str());
+    }
     std::printf("graph: %zu tomes, %zu spells, %zu unreachable, %zu bases placed; data files and configs %lld ms, "
                 "store %lld ms, graph (scripts included) %lld ms, sites and dump %lld ms -> %s\n",
         store.bookSpells.size(), spellReached.size(), unreachable, need.size(), model.Times().configs,

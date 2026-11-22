@@ -1,5 +1,49 @@
 # Changelog
 
+## Heart of Magic Librarian 1.10.0
+
+### Added
+
+- **Spell Research: vanilla spells re-filed by their records (opt-in, off by default).** Settings > Spell Tomes >
+  Spell Tome Learning, under the Spell Research line: "Re-judge vanilla spells by their records". Spell Research's
+  Import files the vanilla and DLC spells under the school and level its own script carries, so an overhaul that
+  changes a vanilla spell's school or level (Requiem) was not seen. When on, Heart of Magic moves those spells to the
+  school and level their records give now, as the tree judges them, with their tome pairs where Spell Research's
+  lists allow it (the report lists a partial move); a spell a plugin itself puts in one of Spell Research's lists
+  stays where that plugin put it (reported as locked). Scroll pairs and the element, technique, casting and target
+  lists keep the old class. `spell_research_reclassify.json` lists every change. The move happens at the next
+  load: turn the option on, save, load that save; then, with Spell Research Upgrade and Fixes, rebuild its spell
+  cache. Turning it off keeps the changes until Spell Research's Import runs again.
+  (SpellResearchReclassify.h; docs/librarian/SPELL_RESEARCH.md 10)
+- **Staff casts from SCSSoulCharge count as their spell.** That staff mod casts the spell you bind to a staff
+  as a staff enchantment made from it, so the cast gave no learning XP and a concentration staff's effect was
+  not weakened for an early-learned spell. With SCSSoulCharge.dll installed, Heart of Magic now asks it which
+  spell a staff cast stands for and treats it as that spell: the same XP as casting it by hand (one credit per
+  cast) and the same early-learned weakening. Without SCSSoulCharge nothing changes. A staff's own enchantment
+  gives no XP, as before; that includes vanilla staves and staves imbued with Staff Enchanting Plus.
+  Spellcasting Staff NG and Elden Catalyst cast the real spell (per their sources) and need nothing. The log shows the
+  link at startup (`listening for SCSSoulCharge staff casts`, then `StaffSpellBridge: linked`) and the first cast
+  of each staff copy (`XP: staff cast ... counts as its original spell ...`). SCSSoulCharge reports each staff
+  cast by an SKSE message, because a staff cast may send no cast event (Dynamic Magic Modification Framework
+  2.0.3 drops it); when the game does send one, it is skipped so the cast counts once. Needs an SCSSoulCharge
+  build that sends the message (API 2); with an older one the cast event is used as before. (`StaffSpellBridge`; docs/ARCHITECTURE.md,
+  SpellCastHandler.)
+- **Staff names keep no staff marker.** SCSSoulCharge (API 2) adds a marker to the bound spell's name while its staff
+  is held. The name Heart of Magic stores for a weakened spell, and the name a scan records, now leave that marker
+  out, and only the marker SCSSoulCharge put on that spell, for a staff in either hand (read from SCSSoulCharge each time, so a changed or turned-off marker is followed). Without SCSSoulCharge nothing changes.
+
+### Fixed
+
+- **Panel drop-down lists follow Font Size and the design.** The open list of the language, design, notification
+  language drop-downs and Pre Req Master's School Distribution and Pool Source was drawn by the panel engine itself, white with a small fixed font, whatever
+  the Font Size setting or the design. The panel now draws that list at the setting's size in the design's colours.
+  Escape with a list open closes the list, not the panel. (modules/selectSkin.js)
+- **Magic Menu Rewrite block: next-spell rows follow the name settings.** With no learning target in a school, the
+  progress card's next-spell rows showed every spell's real name, while the tree, its tooltip and the node card show
+  "???" below the panel's Reveal Name %. The rows now show "???" the same way. A school's starting spell keeps its
+  name in the tooltip, the node card and the rows, and a click on it opens its item card, while the panel's Show Root
+  Spell Names is on (the default), as the panel's own tooltip does; the tree's name labels are unchanged. (ProgressChoices.cpp, TreeMarks.cpp, HomStyle.cpp)
+
 ## Heart of Magic Librarian 1.9.3
 
 ### Fixed

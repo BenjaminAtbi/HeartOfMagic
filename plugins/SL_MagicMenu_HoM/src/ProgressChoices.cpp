@@ -18,6 +18,7 @@
 #include "AddonState.h"
 #include "ChoiceRules.h"
 #include "HomSettings.h"
+#include "TreeMarks.h"
 #include "TreeRules.h"
 
 #include <algorithm>
@@ -130,7 +131,8 @@ namespace HomAddon
 
         // One row: a clip at a_y holding the band, the hit fill and the text "<name> · <level>" (the name alone, cut, when the level
         // does not fit beside it)
-        void DrawRow(RE::GFxMovieView* a_movie, RE::GFxValue& a_card, int a_row, int a_node, double a_y, double a_w, double a_size)
+        void DrawRow(RE::GFxMovieView* a_movie, RE::GFxValue& a_card, int a_row, int a_node, double a_y, double a_w, double a_size,
+            const Spells::Snapshot& a_snapshot)
         {
             const auto name = std::format("choice{}", a_row);
             auto row = Draw::Clip(a_card, name.c_str());
@@ -147,7 +149,8 @@ namespace HomAddon
             }
             Draw::NoLine(row);
             Draw::Rect(row, 0, 0, a_w, h, kPanelFill, kHitAlpha);
-            const std::string spell = Spells::NodeName(a_node);
+            // "???" under HoM's revealName, as the tree, the tooltip and the node card show it (these rows are available spells)
+            const std::string spell = ShownName(a_node, a_snapshot);
             const auto& level = Data().tree.nodes[a_node].skillLevel;
             auto& log = Menu().textLog;
             auto field = Draw::Text(a_movie, row, "label", 0, 0, a_w, h, "", kWhite, a_size);
@@ -172,7 +175,8 @@ namespace HomAddon
         return ChoiceRules::RegisteredHeight(a_iniH, a_maxChoices, TextFit::LayoutMetrics(fallback), sizes, kCardTop, kCardBottom);
     }
 
-    std::optional<double> DrawChoices(RE::GFxMovieView* a_movie, RE::GFxValue& a_card, const ChoicesArea& a_area, const SchoolInfo& a_info)
+    std::optional<double> DrawChoices(RE::GFxMovieView* a_movie, RE::GFxValue& a_card, const ChoicesArea& a_area, const SchoolInfo& a_info,
+        const Spells::Snapshot& a_snapshot)
     {
         auto& menu = Menu();
         auto& log = menu.textLog;
@@ -190,7 +194,7 @@ namespace HomAddon
         const int maxChoices = HomSettings::Get().maxChoices;
         const auto plan = ChoiceRules::PlanRows({ static_cast<int>(ordered.size()), maxChoices, rowsTop, rowH, bottom });
         for (int i = 0; i < plan.rows; ++i) {
-            DrawRow(a_movie, a_card, i, ordered[static_cast<std::size_t>(i)], rowsTop + rowH * i, a_area.w, size);
+            DrawRow(a_movie, a_card, i, ordered[static_cast<std::size_t>(i)], rowsTop + rowH * i, a_area.w, size, a_snapshot);
         }
         if (plan.moreLine) {
             const auto more = Fill(Str::kProgressChoicesMore,

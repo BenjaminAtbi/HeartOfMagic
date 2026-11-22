@@ -1,6 +1,8 @@
 #include "tomereach/TomeReachModel.h"
+#include "AsciiText.h"
 
 #include <chrono>
+#include <unordered_set>
 
 namespace TomeReach
 {
@@ -20,10 +22,14 @@ namespace TomeReach
         ConfigWants wants;
         if (!dataDirs.empty()) {
             std::vector<std::string> plugins;
+            std::unordered_set<std::string> active;
             plugins.reserve(loadOrder.size());
-            for (const auto& plugin : loadOrder) plugins.push_back(plugin.name);
+            for (const auto& plugin : loadOrder) {
+                plugins.push_back(plugin.name);
+                active.insert(AsciiText::ToLower(plugin.name));
+            }
             m_data.emplace(dataDirs, ArchiveOrder(iniArchives, plugins));
-            m_configs = ReadDistributionConfigs(*m_data, names);
+            m_configs = ReadDistributionConfigs(*m_data, names, active);
             wants = m_configs.Wants();
         }
         const auto configsRead = std::chrono::steady_clock::now();

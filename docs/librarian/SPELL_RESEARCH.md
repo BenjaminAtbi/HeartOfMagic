@@ -287,3 +287,37 @@ HoM 의 시전 XP 는 "연습", SR 의 아키타입 XP(아키타입 60개 x 등�
   전역도 세이브에 남는다. 불러온 뒤 "loaded paid boundaries for 1 spells". 지급한 7개 아키타입 모두 지급분 이상을
   가졌다(그 밖의 몫은 같은 세션의 SR 자체 활동). 남은 것: SR MCM 에 보이는 지식(눈으로), 치트 재잠금 뒤
   "all paid before" debug 줄(게임 안 순서는 자가 테스트가 대신 확인).
+
+## 10. 바닐라 주문 다시 분류 (2026-11-20, 선택 기능, 기본 꺼짐 · 게임 확인 전)
+
+`spellResearch.reclassify` (패널: 설정 > 마법서 학습, Spell Research 줄 아래 "바닐라 주문 다시 분류").
+켜면 SR Import 가 넣은 바닐라·DLC 주문(Skyrim/Update/Dawnguard/HearthFires/Dragonborn.esm)의 학파와 등급을
+지금 레코드로 다시 판정한다. 판정은 스캔과 같은 `GetSpellSchool`/`DetermineSpellTier`(살아 있는 레코드, 카탈로그 아님).
+다른 모드 주문은 HoM 등록(이미 레코드대로)이나 패치 제작자의 선택이라 건드리지 않는다(사용자 결정 "바닐라 주문").
+등급은 반값 퍽이 정하고, 퍽이 없거나 읽을 수 없으면 학파 효과의 최소 스킬이 정한다. 최소 스킬이 0이면 판정하지 않는다
+(바닐라 초급 주문은 초급 퍽이 있다. 오버홀의 이름 모를 퍽 + 최소 스킬 0이 숙련 주문을 초급으로 내리는 일을 막는다).
+보고의 `tierSource` 가 perk / minimumSkill 을 적는다.
+
+- 규칙(`librarian/SpellResearchReclassify.h`, `tools/sr-reclassify-check`): SR 은 학파·등급을 첫 일치로 읽는다
+  (GetSpellSkill 변성부터, GetSpellRank 초급부터). 그래서 맞는 목록에 넣은 뒤 틀린 목록에서 뺀다. 틀린 항목이
+  레코드에 선언돼 있으면(뺄 수 없음) 그 주문은 두 축 모두 그대로 두고 `lockedSpells` 로 보고한다.
+- 목록 구조(1.6.1170 디스어셈블리, Codex 2026-11-20): `forms` = 레코드 항목 다음 스크립트 추가 항목(주문·책),
+  `scriptAddedTempForms` = 스크립트가 넣은 동적(0xFF) 폼, `scriptAddedFormCount` = 두 배열의 스크립트 추가분 합.
+  Papyrus 인덱스는 temp 다음 forms. 빼기는 Papyrus RemoveAddedForm 의 내부 함수(AE ID 20914)와 같은 순서로
+  한다: temp, 그다음 forms 의 스크립트 구간, count 1 감소, `AddChange(0x80000000)`.
+- 마법서 짝: 먼저 계획한다. 목표 등급이 짝을 받을 수 있는지(두 목록의 temp 크기와 전체 크기가 같고 책이 아직
+  없는지) 보고, 못 받으면 어느 짝도 건드리지 않는다. 받을 수 있으면 다른 등급의 스크립트 짝을 위치(같은 Papyrus
+  인덱스의 책과 주문)로 빼고, 목표 등급에 짝이 없으면 책 먼저 하나 붙인다. 같은 주문의 짝이 여러 등급에 있으면 하나만
+  목표로 가고 나머지는 빠진다.
+- 맞는 목록 넣기가 거절되면(HasForm 이 거짓) 틀린 목록에서도 빼지 않는다.
+- 시점: Reconcile 의 Import 확인 뒤, 개수 비교 앞(같은 개수로 끝나는 재Import 도 본다). Reconcile 은 메시지창마다,
+  불러오기·스캔·마법서 도달 계산 뒤에 돈다. 스위치는 config.json 의 쓰인 시각이 바뀔 때만 다시 읽고, 매번 다시 돌려도
+  결과는 같다(두 번째는 모두 same). 예외는 이 단계 안에서 잡아 그 회차의 등록을 막지 않는다.
+- 보고: `spell_research_reclassify.json` (moved, partial, same, locked, unknown, tierSource, 바뀐 주문과 짝 처리).
+  옮긴 것이 있는 회차만 쓴다(다음 메시지창의 빈 회차가 덮지 않는다).
+- 패널 스위치는 Spell Research 줄이 보일 때 보인다(기억 기능 준비와 무관).
+- 한계: Spell Research Upgrade and Fixes 의 주문 캐시(`SRCache/SpellResearchRank*.json`, 주문 이름별 아키타입)는
+  옛 분류를 들고 있어, 켠 뒤 그 모드의 캐시를 다시 만들어야 한다. 끄면 SR Import 를 다시 할 때까지 바뀐 분류가
+  세이브에 남는다. 원소·기법·시전·대상 목록과 두루마리 짝(`_SR_ListScrolls*`, 연구 등급은 옛 등급)은 그대로다.
+  SR 의 연구·필사 Papyrus 스택이 옛 인덱스를 쥐고 있는 사이에 짝이 옮겨지면 그 한 번은 엉뚱한 책을 볼 수 있다(미검증).
+  목록 변경은 SKSE 작업 큐에서 하며, 기존 등록(Register)과 같은 스레드 조건이다.

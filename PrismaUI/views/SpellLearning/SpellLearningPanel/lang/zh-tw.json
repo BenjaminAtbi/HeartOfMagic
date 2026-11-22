@@ -623,6 +623,8 @@
     "settings.tomeLearning.srMemoryMinutes": "每15%練習累積的記憶（研究分鐘數）",
     "settings.tomeLearning.srMemoryToPractice": "記憶指引練習",
     "settings.tomeLearning.srMaxPracticeBoost": "記憶帶來的最大練習加成（%）",
+    "settings.tomeLearning.srReclassify": "依記錄重新歸類原版法術",
+    "settings.tomeLearning.srReclassifyDesc": "將 Spell Research 匯入的原版與 DLC 法術依記錄中目前的系與等級重新歸類，使大型改動模組的調整生效。預設關閉。",
     "settings.tomeLearning.inventoryBoost": "持有加成",
     "settings.tomeLearning.inventoryBoostDesc": "攜帶魔法書時的額外經驗",
     "settings.tomeLearning.learningReqs": "學習要求",

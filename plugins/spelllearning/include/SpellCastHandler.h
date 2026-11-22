@@ -4,6 +4,7 @@
 #include <chrono>
 #include <deque>
 #include <unordered_map>
+#include <unordered_set>
 
 class SpellCastHandler : public RE::BSTEventSink<RE::TESSpellCastEvent>
 {
@@ -17,6 +18,9 @@ public:
     // the player's casters (SpellHotbar 2, Papyrus Spell.Cast). Installed at kPostLoad.
     static void InstallImmediateCastHook();
     void OnImmediateCast(RE::FormID spellId);
+    // A staff cast reported by SCSSoulCharge's message (StaffSpellBridge::RegisterCastListener): no cast event exists
+    // for it. a_copy is the runtime enchantment, a_spell the spell it stands for.
+    void OnStaffCast(RE::FormID a_copy, RE::FormID a_spell);
 
     // Event sink
     RE::BSEventNotifyControl ProcessEvent(
@@ -49,7 +53,8 @@ private:
     // The work for one player cast, run on the game thread. a_immediate: seen by the
     // CastSpellImmediate hook rather than the cast event (only known spells count then).
     // a_castAt: when the engine reported it, not when the queued task runs.
-    void HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt);
+    // a_staffMessage: an SCSSoulCharge staff cast (spellId is already the original spell; not paired with other reports)
+    void HandlePlayerCast(RE::FormID spellId, bool a_immediate, Clock::time_point a_castAt, bool a_staffMessage = false);
 
     // One cast reported both ways (the cast event and the immediate-cast hook) is
     // credited once, whichever way comes first and however the reports interleave:
@@ -85,6 +90,9 @@ private:
     // SpellHotbar 2's 0.5 s cooldown, so its casts each count.
     static constexpr float kImmediateStreamGapSeconds = 0.45f;
     std::unordered_map<RE::FormID, std::chrono::steady_clock::time_point> m_lastImmediateAt;
+    // SCSSoulCharge staff copies already logged at info (game thread only): the first cast of
+    // each copy shows in a release log, the rest at debug
+    std::unordered_set<RE::FormID> m_staffCopiesLogged;
 
     bool m_registered = false;
     

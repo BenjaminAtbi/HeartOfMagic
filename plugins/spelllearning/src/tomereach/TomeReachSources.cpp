@@ -57,11 +57,12 @@ namespace TomeReach
             }
             const ModelTimes& t = model.Times();
             logger::info("TomeReach: distribution model: {} spells with a tome ({}), {} spellpack vendors; {} config "
-                         "files, {} SPID lines, {} SkyPatcher adds, {} archives with scripts or strings, {} scripts read, {} "
+                         "files, {} SPID lines, {} SkyPatcher adds, {} CDF changes ({} naming no container), {} archives with scripts or strings, {} scripts read, {} "
                          "not found; configs {} ms, plugins {} ms, graph {} ms, classes {} ms", out.size(), summary,
                 sources.shops.size(), model.ConfigFiles().files, model.Configs()->spid.size(),
-                model.Configs()->listAdds.size(), model.Data() ? model.Data()->ArchiveCount() : 0,
+                model.Configs()->listAdds.size(), model.Configs()->cdf.size(), model.Graph().CdfUntraced(), model.Data() ? model.Data()->ArchiveCount() : 0,
                 model.Graph().ScriptsRead(), model.Graph().ScriptsMissing(), t.configs, t.store, t.graph, ms);
+            for (const std::string& w : model.Configs()->cdfWarnings) logger::warn("TomeReach: CDF: {}", w);
             for (const SpellpackShop& shop : sources.shops) {
                 logger::info("TomeReach: spellpack vendor: {} - {} of {} vendor-sold tome spells", shop.plugin, shop.sold,
                     shop.set);

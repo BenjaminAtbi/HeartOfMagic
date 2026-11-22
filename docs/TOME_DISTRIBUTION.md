@@ -69,7 +69,13 @@ How the rules are measured:
   - an NPC's effective inventory: its inventory and default outfit come from its template when the template flag
     Use Inventory is set, its death item when Use Traits is; the bases that place an NPC's inventory are leveled
     NPC lists only (a template child carries its own);
-  - SkyPatcher `addToLLs` and `addOnceToLLs` add list parents, `removeFromLLs` takes them away;
+  - SkyPatcher `addToLLs` and `addOnceToLLs` add list parents, `removeFromLLs` takes them away; the same lines in
+    Paths of Empyrean's `SKSE/Plugins/POE/` folders count (its DLL reads them in SkyPatcher's syntax);
+  - Container Distribution Framework (`SKSE/Plugins/ContainerDistributionFramework/*.json`, `TomeReachCdf`): an
+    `add` makes the named containers parents, a replace or an uncounted `remove` takes the removed form out; a
+    vendor chest only with `allowVendors`; a syntax error keeps the whole rules before it, and a rule without
+    friendlyName or with an inactive `plugins` entry ends its file, as CDF reads it. Rules naming no container and
+    keyword removals are not traced;
   - scripts on records (and dialogue, scenes, packages) and on placed references: a `List.AddForm(Item)` call
     whose two sides come from properties; a property that reaches AddItem or PlaceAtMe is a reward; one that
     reaches PlaceAtMe or PlaceActorAtMe spawns the NPC it holds;
@@ -93,7 +99,8 @@ Model (pure C++, shared by the plugin and the tools): `plugins/spelllearning/src
 |---|---|
 | `TomeReachPlugin`, `TomeReachReader` | plugin files into the spell store: winning records, placements; gated lists (`gatedLists`), global editor ids (`globalIds`) |
 | `TomeReachData`, `TomeReachArchive` | Data folder files as the game sees them: loose files over BSAs, archives in the game's order (`ArchiveOrder`) |
-| `TomeReachDistr`, `TomeReachConfig` | SPID and SkyPatcher configs |
+| `TomeReachDistr`, `TomeReachToken`, `TomeReachConfig` | SPID and SkyPatcher configs, config form tokens |
+| `TomeReachCdf` | Container Distribution Framework rules |
 | `TomeReachPex`, `TomeReachScripts` | compiled scripts: which properties reach AddItem / PlaceAtMe (rewards, restocks) or PlaceAtMe / PlaceActorAtMe (spawned NPCs), and the property pairs of AddForm calls (lists filled at run time) |
 | `TomeReachGraph`, `TomeReachSites` | the reach graph (each item up to its roots) and sites and regions |
 | `TomeReachClasses` | routes per tome: class (generic, faction, vendor, encounter, placed, reward, crafted, other, none) and subtype; vendor chests with the entries they hold |
@@ -125,7 +132,7 @@ unknown keys (older segment names) are ignored. Not part of the settings presets
 ## Checking it
 
 - `build/tools/Release/tome-reach-test.exe --self-test`: the reader on made-up plugins and the model's rules on a
-  hand-built store (`tools/tome-reach-modeltest.cpp`; 67 checks);
+  hand-built store (`tools/tome-reach-modeltest.cpp`, CDF in `tools/tome-reach-cdftest.cpp`; 78 checks);
   `graft-check --self-test`: the switch rules in Tree Graft; `node run-tests.js` in the panel folder:
   `TomeSourceSetting`, Gate Review, the tome filter, and that dev-harness.html matches index.html.
 - The harness on a real load order:

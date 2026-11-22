@@ -5,7 +5,9 @@
 // =============================================================================
 //
 // The files the model reads besides plugins, as the game would see them: SPID
-// (*_DISTR.ini at the top of Data) and SkyPatcher (SKSE/Plugins/SkyPatcher/**.ini)
+// (*_DISTR.ini at the top of Data), SkyPatcher-syntax (SKSE/Plugins/SkyPatcher/**.ini and
+// Paths of Empyrean's SKSE/Plugins/POE/**.ini) and Container Distribution Framework
+// (SKSE/Plugins/ContainerDistributionFramework/*.json)
 // configs, compiled scripts (Scripts/*.pex) and string tables (Strings/*). A loose
 // file wins; otherwise the archive the game registered last that holds it. Data
 // folders are given lowest priority first (the game's Data folder alone in game;
@@ -48,6 +50,7 @@ namespace TomeReach
 
         [[nodiscard]] std::vector<ConfigFile> SpidConfigs() const;
         [[nodiscard]] std::vector<ConfigFile> SkyPatcherConfigs() const;
+        [[nodiscard]] std::vector<ConfigFile> CdfConfigs() const;    // by path, as CDF reads them
 
         // A data file (lower case, '/' separated): the winning loose copy, else the
         // highest-priority archive member. False when neither exists or it cannot be read.

@@ -601,6 +601,8 @@ window._i18nPreload = {
     "settings.tomeLearning.srMemoryMinutes": "Pamięć co 15% praktyki (minuty badań)",
     "settings.tomeLearning.srMemoryToPractice": "Pamięć wspiera praktykę",
     "settings.tomeLearning.srMaxPracticeBoost": "Maksymalna premia do praktyki z pamięci (%)",
+    "settings.tomeLearning.srReclassify": "Przeklasyfikuj zaklęcia vanilla na podstawie rekordów",
+    "settings.tomeLearning.srReclassifyDesc": "Przypisuje zaklęcia vanilla i DLC zaimportowane przez Spell Research do szkoły i poziomu określonych obecnie w rekordach, aby uwzględnić zmiany z overhaulu. Domyślnie wyłączone.",
     "settings.tomeLearning.inventoryBoost": "Bonus za posiadanie",
     "settings.tomeLearning.inventoryBoostDesc": "Bonus XP podczas noszenia tomu",
     "settings.tomeLearning.learningReqs": "Wymagania nauki",

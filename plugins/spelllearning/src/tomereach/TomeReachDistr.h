@@ -16,24 +16,18 @@
 // resolve_token, spid_items, skypatcher_ll_adds). Pure C++, shared by the plugin and
 // tools/tome-reach-test.
 
+#include "tomereach/TomeReachCdf.h"
 #include "tomereach/TomeReachData.h"
 #include "tomereach/TomeReachReader.h"
+#include "tomereach/TomeReachToken.h"
 
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
 namespace TomeReach
 {
-    // A config's form: a plugin's form (key) or an editor id (lower case)
-    struct FormToken
-    {
-        Key key = 0;
-        std::string editorId;
-    };
-
-    FormToken ParseFormToken(std::string_view text, NameTable& names);
-
     struct SpidFilterPart
     {
         bool form = false;    // the form field; else the string field (editor ids or names)
@@ -62,12 +56,16 @@ namespace TomeReach
     {
         std::vector<RawSpidLine> spid;
         std::vector<RawListAdd> listAdds;
+        std::vector<RawCdfChange> cdf;
+        std::vector<std::string> cdfWarnings;      // what CDF rejects or never reads
         std::size_t files = 0;
 
         [[nodiscard]] ConfigWants Wants() const;
     };
 
-    DistributionConfigs ReadDistributionConfigs(const DataFiles& data, NameTable& names);
+    // `activePlugins`: the load order's plugin names, lower case (CDF `plugins` conditions)
+    DistributionConfigs ReadDistributionConfigs(const DataFiles& data, NameTable& names,
+        const std::unordered_set<std::string>& activePlugins);
 
     enum class FilterKind : std::uint8_t { kFaction, kClass, kRace, kKeyword, kNpc, kString, kOther };
 
@@ -92,14 +90,14 @@ namespace TomeReach
     {
         std::vector<SpidLine> spid;          // one per form of a line
         std::vector<ListAdd> listAdds;
+        std::vector<CdfChange> cdf;
+        std::vector<std::string> cdfWarnings;      // the configs' and the unresolved changes'
     };
 
     // Resolves the configs' forms in the store; string filters naming an NPC (its editor id
     // or name, and no keyword of an NPC or race) count as NPC filters
     Distribution ResolveDistribution(const DistributionConfigs& configs, const SpellStore& store, const DataFiles& data,
         const NameTable& names);
-
-    [[nodiscard]] Key ResolveToken(const FormToken& token, const SpellStore& store);
 
     // A SPID line's class and subtype (scripts/spellmap/distribution.py spid_route)
     struct SpidClass

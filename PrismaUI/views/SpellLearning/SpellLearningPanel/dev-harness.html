@@ -1866,6 +1866,17 @@
                                 </div>
                                 <input type="number" id="srMaxPracticeBoostInput" class="tier-xp-input" value="25" min="0" max="100">
                             </div>
+                            <!-- Spell Research reclassify (opt-in, spellResearch.reclassify; LibrarianSpellResearchPatch.cpp Reclassify) -->
+                            <div class="setting-row" id="srReclassifyRow" style="display: none;">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.tomeLearning.srReclassify">Re-judge vanilla spells by their records</span>
+                                    <span class="setting-desc" data-i18n="settings.tomeLearning.srReclassifyDesc">Files the vanilla and DLC spells Spell Research imported under the school and level their records give now, so an overhaul's changes count. Off by default.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="srReclassifyToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
                         
                             <div class="setting-row">
                                 <div class="setting-info">
@@ -2406,6 +2417,7 @@
     <script src="modules/autoBuildCpp.js"></script>
 
     <!-- 7. Main Application (init, tabs, dragging, early learning settings) -->
+    <script src="modules/selectSkin.js"></script>
     <script src="script.js"></script>
 
     <!-- 9. Main Entry Point (initialization, module verification) -->

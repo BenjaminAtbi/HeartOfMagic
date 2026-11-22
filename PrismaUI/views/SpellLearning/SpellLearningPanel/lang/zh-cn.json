@@ -623,6 +623,8 @@
     "settings.tomeLearning.srMemoryMinutes": "每15%练习积累的记忆（研究分钟数）",
     "settings.tomeLearning.srMemoryToPractice": "记忆指引练习",
     "settings.tomeLearning.srMaxPracticeBoost": "记忆带来的最大练习加成（%）",
+    "settings.tomeLearning.srReclassify": "按记录重新归类原版法术",
+    "settings.tomeLearning.srReclassifyDesc": "把 Spell Research 导入的原版与 DLC 法术按记录中当前的系与等级重新归类，使大型改动模组的调整生效。默认关闭。",
     "settings.tomeLearning.inventoryBoost": "持有加成",
     "settings.tomeLearning.inventoryBoostDesc": "携带魔法书时的额外经验",
     "settings.tomeLearning.learningReqs": "学习要求",

@@ -623,6 +623,8 @@
     "settings.tomeLearning.srMemoryMinutes": "Memória a cada 15% de prática (minutos de pesquisa)",
     "settings.tomeLearning.srMemoryToPractice": "A memória guia a prática",
     "settings.tomeLearning.srMaxPracticeBoost": "Bônus máximo de prática da memória (%)",
+    "settings.tomeLearning.srReclassify": "Reclassificar feitiços vanilla com base nos registros",
+    "settings.tomeLearning.srReclassifyDesc": "Atribui os feitiços vanilla e de DLC importados pelo Spell Research à escola e ao nível indicados atualmente pelos registros, para que as mudanças de um overhaul sejam aplicadas. Desativado por padrão.",
     "settings.tomeLearning.inventoryBoost": "Bônus de Inventário",
     "settings.tomeLearning.inventoryBoostDesc": "XP bônus ao carregar o tomo",
     "settings.tomeLearning.learningReqs": "Requisitos de Aprendizado",

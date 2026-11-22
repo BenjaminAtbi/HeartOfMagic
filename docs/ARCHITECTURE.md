@@ -1210,7 +1210,9 @@ Split across: SpellEffectivenessHookCore.cpp, SpellEffectivenessHookDisplay.cpp,
 **Status:** ✅ Implemented
 
 **Responsibilities:**
-- Hook `ActiveEffect::AdjustForPerks()` for runtime magnitude scaling
+- Hook `ActiveEffect::AdjustForPerks()` for runtime magnitude scaling. An effect whose spell is a
+  `kStaffEnchantment` is judged as the spell `StaffSpellBridge::Resolve` maps it to (an SCSSoulCharge staff
+  copy keeps the copy on concentration effects; see SpellCastHandler)
 - Hook `SpellItem::GetFullName()` for display name modification (optional)
 - Track early-learned spells that need nerfing
 - **Stepped power system** - Discrete power levels at XP thresholds
@@ -1298,6 +1300,29 @@ not affected.
   actors' casters pass). SpellHotbar 2 casts every hotbar spell this way and Papyrus `Spell.Cast` does
   too; before, those casts gave no XP. Only the player's casts of a real spell (`kSpell`) the player has
   (`Actor::HasSpell`, so a mod's helper or proc spell does not count) are credited.
+  **Staff casts from SCSSoulCharge (2026-11-17).** That staff mod fires a runtime copy of the bound spell (an
+  `EnchantmentItem`, `kStaffEnchantment`, FormID index 0xFF). `StaffSpellBridge` (`include/StaffSpellBridge.h`)
+  looks up `SCSSoulCharge_ApiVersion` / `SCSSoulCharge_GetOriginalSpell` in SCSSoulCharge.dll at kPostPostLoad
+  and maps such a copy to its original spell before everything else in `HandlePlayerCast` (the pairing is keyed
+  by the original) and in the immediate-cast hook. Only 0xFF forms are asked about; without the DLL (or with
+  API < 1) nothing changes. A throw from the lookup turns the link off for the session.
+  The cast itself reaches HoM by message, not by the cast event (2026-11-18): with Dynamic Magic Modification
+  Framework 2.0.3 installed, its `CasterHook::SpellCast` returns for an `EnchantmentItem` without calling the
+  original, so no `TESSpellCastEvent` is sent for a staff cast (probe build: hand casts reported, staff casts
+  never; DMMF's log shows no `SpellCastImpl called` at the staff casts). SCSSoulCharge broadcasts one SKSE
+  message per released staff cast (sender `SCSSoulCharge`, type `'SCST'`, 12 bytes copy/spell/concentration, at least 12 read since later builds may append fields,
+  its src/api.h, main thread); `StaffSpellBridge::RegisterCastListener` (kPostLoad) decodes it
+  (`DecodeStaffCast`, checked by staff-bridge-check) and calls `SpellCastHandler::OnStaffCast`, which queues
+  `HandlePlayerCast` with the message's spell (the copy only names the log line; the message path is not paired by
+  `IsSecondReport`, and the listener callback catches everything). The staff mod sends one message per staff
+  cast it sees go off (release state, its cast event, or at least half the cost paid; a summon costing under 1
+  magicka under DMMF sends none). The listener is registered only for SCSSoulCharge API 2+ (the first to send
+  'SCST'); with an older build the cast event path stays on. While the listener is registered, a staff copy that arrives by the cast
+  event or the immediate-cast hook (a load order without DMMF) is skipped, so a staff cast counts once. A staff's own
+  enchantment (a plugin form) is never a copy, so it still gives no XP. Spellcasting Staff NG and Elden Catalyst
+  cast the real spell with `CastSpellImmediate` and need no bridge (read from their docs and sources, not checked
+  in game). Staff Enchanting Plus staves are deliberately not mapped (user decision 2026-11-17): what it imbues
+  is the staff's own enchantment, so like any staff enchantment it gives no XP and is not weakened.
   **One cast, one credit (1.2.1).** Each report is stamped when the engine sends it (`ProcessEvent` /
   `OnImmediateCast`), not when the queued task runs. Per spell, `m_pendingCasts` holds the casts credited
   from each way (event, hook) that the other way may still report; a report of the other way within
