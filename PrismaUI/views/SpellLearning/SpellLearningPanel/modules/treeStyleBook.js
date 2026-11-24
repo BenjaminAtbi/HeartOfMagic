@@ -567,7 +567,8 @@
                 var ang = (s.startAngle !== undefined ? s.startAngle : (i * (360 / names.length) - 90)) * Math.PI / 180;
                 var ux = Math.cos(ang), uy = Math.sin(ang), px = -uy * off, py = ux * off;
                 var sx = gd.x + ux * 60, sy = gd.y + uy * 60;
-                var ex = gd.x + ux * length, ey = gd.y + uy * length;
+                var len = typeof length === 'number' ? length : length[i];   // one per divider, or one for all
+                var ex = gd.x + ux * len, ey = gd.y + uy * len;
                 ctx.moveTo(sx + px, sy + py); ctx.lineTo(ex + px, ey + py);
                 ctx.moveTo(sx - px, sy - py); ctx.lineTo(ex - px, ey - py);
                 ends.push(ex + ux * mark, ey + uy * mark, ux, uy);

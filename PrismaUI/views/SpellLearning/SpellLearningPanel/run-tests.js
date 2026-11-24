@@ -80,6 +80,8 @@ loadModule('canvasRendererData', './modules/canvasRendererData.js');
 loadModule('canvasRendererEdges', './modules/canvasRendererEdges.js');
 loadModule('canvasRendererFrame', './modules/canvasRendererFrame.js');
 loadModule('canvasRendererLabels', './modules/canvasRendererLabels.js');
+loadModule('canvasRendererDividers', './modules/canvasRendererDividers.js');
+loadModule('dividerLengthTest', './modules/dividerLengthTest.js');
 // TreeParser.updateNodeFromCache: canvasCullTest and layerFlowTest change nodes through it
 loadModule('treeParser', './modules/treeParser.js', true);
 loadModule('canvasCullTest', './modules/canvasCullTest.js');

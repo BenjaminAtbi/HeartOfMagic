@@ -23,18 +23,20 @@
             var schoolNames = Object.keys(this.schools);
             if (schoolNames.length < 2) return;
 
-            var length = settings.dividerLength !== undefined ? settings.dividerLength : 800;
+            var fallback = settings.dividerLength !== undefined ? settings.dividerLength : 800;
             var fade = (settings.dividerFade !== undefined ? settings.dividerFade : 50) / 100;  // Convert to 0-1
             var lineWidth = settings.dividerSpacing !== undefined ? settings.dividerSpacing : 3;
             var colorMode = settings.dividerColorMode || 'school';
             var customColor = settings.dividerCustomColor || '#ffffff';
             var gd = (state.treeData && state.treeData.globe) || { x: 0, y: 0 };
+            // Each divider as long as the tree beside it
+            var lengths = this._dividerLengths(schoolNames, gd, fallback);
 
             // A design preset can draw them as book rules instead
-            if (TreeStyle.renderOrnamentDividers(ctx, this, length, gd)) return;
+            if (TreeStyle.renderOrnamentDividers(ctx, this, lengths, gd)) return;
 
             // Build cache key from all settings that affect gradients
-            var cacheKey = length + '|' + fade + '|' + lineWidth + '|' + colorMode + '|' + customColor + '|' + gd.x + '|' + gd.y + '|' + schoolNames.length;
+            var cacheKey = lengths.join(',') + '|' + fade + '|' + lineWidth + '|' + colorMode + '|' + customColor + '|' + gd.x + '|' + gd.y + '|' + schoolNames.length;
             for (var ci = 0; ci < schoolNames.length; ci++) {
                 var sch = this.schools[schoolNames[ci]];
                 cacheKey += '|' + (sch.startAngle || 0);
@@ -50,9 +52,8 @@
 
                 for (var i = 0; i < schoolNames.length; i++) {
                     var schoolName = schoolNames[i];
-                    var school = this.schools[schoolName];
-                    var angle = school.startAngle !== undefined ? school.startAngle : (i * (360 / schoolNames.length) - 90);
-                    var rad = angle * Math.PI / 180;
+                    var rad = this._dividerAngle(schoolNames, i);
+                    var length = lengths[i];
 
                     var color;
                     if (colorMode === 'custom') {
@@ -90,6 +91,55 @@
                 ctx.lineTo(cached.endX, cached.endY);
                 ctx.stroke();
             }
+        },
+
+        // A spell this close to a divider's line (tree units) sets its length: 75% of the mean
+        // edge length of the tree it was measured on (103, 990 edges, 2026-11-23)
+        DIVIDER_BAND: 77,
+        DIVIDER_MARGIN: 40,   // how far a divider runs past the furthest such spell
+
+        /** The divider at school i: its angle in radians, from the school's start angle. */
+        _dividerAngle: function(schoolNames, i) {
+            var school = this.schools[schoolNames[i]];
+            var angle = school.startAngle !== undefined ? school.startAngle : (i * (360 / schoolNames.length) - 90);
+            return angle * Math.PI / 180;
+        },
+
+        /**
+         * Each divider's length: a little past the furthest shown spell lying close
+         * to its line, on the outward side of the globe. A divider no spell comes
+         * near runs as far as the furthest spell of the tree; no spells at all, the
+         * dividerLength setting. Rounded, so it keys the gradient cache.
+         */
+        _dividerLengths: function(schoolNames, gd, fallback) {
+            var nodes = this.nodes || [];
+            var band = this.DIVIDER_BAND, margin = this.DIVIDER_MARGIN;
+            var dirs = [], near = [], furthest = 0;
+            for (var i = 0; i < schoolNames.length; i++) {
+                var rad = this._dividerAngle(schoolNames, i);
+                dirs.push(Math.cos(rad), Math.sin(rad));
+                near.push(0);
+            }
+            var hidden = settings.schoolVisibility;
+            for (var n = 0; n < nodes.length; n++) {
+                var node = nodes[n];
+                if (hidden && hidden[node.school] === false) continue;
+                var dx = node.x - gd.x, dy = node.y - gd.y;
+                if (!isFinite(dx) || !isFinite(dy)) continue;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > furthest) furthest = dist;
+                for (var d = 0; d < near.length; d++) {
+                    var ux = dirs[d * 2], uy = dirs[d * 2 + 1];
+                    var along = dx * ux + dy * uy;
+                    if (along > near[d] && Math.abs(dx * uy - dy * ux) <= band) near[d] = along;
+                }
+            }
+            var out = [];
+            for (var k = 0; k < near.length; k++) {
+                var reach = near[k] || furthest;
+                out.push(reach > 0 ? Math.round(reach + margin) : fallback);
+            }
+            return out;
         },
 
         /**
