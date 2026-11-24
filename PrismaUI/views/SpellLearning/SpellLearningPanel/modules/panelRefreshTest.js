@@ -322,6 +322,10 @@ var PanelRefreshTest = {
         var at = src.indexOf('_deepCopy(s.classicSettings, TreeGrowthClassic.settings)');
         this.check(at !== -1 && src.indexOf('ClassicSettings.refreshTierChart()', at) !== -1,
             'Tier zones: applying a scanner preset refreshes the chart');
+        var main = require('fs').readFileSync(require('path').join(__dirname, 'classic', 'classicMain.js'), 'utf8');
+        var handler = main.slice(main.indexOf('onSettingChanged:'), main.indexOf('onTierZoneDragging:'));
+        this.check(/key === 'dynamicGridExpansion'/.test(handler) && /self\._layoutData = null/.test(handler),
+            'Dynamic Grid Expansion: a change re-lays out the preview');
     },
 
     // =========================================================================

@@ -79,7 +79,8 @@ var TreeGrowthClassic = {
             onSettingChanged: function (key, value) {
                 self.settings[key] = value;
                 // Layout-affecting settings: invalidate cached layout so it recomputes
-                if (key === 'spread' || key === 'radialBias' || key === 'centerMask' || key === 'spellMatching') {
+                if (key === 'spread' || key === 'radialBias' || key === 'centerMask' || key === 'spellMatching' ||
+                    key === 'dynamicGridExpansion') {
                     if (self._treeData) {
                         self._layoutData = null; // triggers lazy re-layout on next render
                     }
