@@ -163,12 +163,63 @@ var LevelFilterTest = {
             this.check(B.forNode(nodes[0]).length === 1 && B.forNode(nodes[0])[0].other === 'b' &&
                 B.forNode(nodes[2]).length === 0 && B.forNode({ formId: '0x40E01500' }).length === 0,
                 'bridges with an end not in the tree are left out');
+
+            this._contextChecks(g, B);
         } finally {
             g.state = oldState;
             g.document = oldDocument;
             g.CanvasRenderer = oldRenderer;
         }
         return { passed: this.passed, failed: this.failed };
+    },
+
+    /**
+     * Under a filter the rest of the tree stays: grey lines, small grey dots,
+     * known spells a smaller muted dot in their school colour; the lit spells
+     * keep the largest dot and the halo.
+     */
+    _contextChecks: function(g, B) {
+        var oldSettings = g.settings;
+        var spells = [
+            { id: 'p', x: 0, y: 0, school: 'Destruction', state: 'unlocked', traits: ['element.fire'] },
+            { id: 'q', x: 10, y: 0, school: 'Destruction', state: 'unlocked', traits: ['element.frost'] },
+            { id: 'r', x: 20, y: 0, school: 'Destruction', state: 'locked', traits: [] },
+            { id: 's', x: 30, y: 0, school: 'Hidden', state: 'unlocked', traits: [] }
+        ];
+        var arcs = [], fill = null, alpha = 1, paths = 0, edgeStrokes = [];
+        var ctx = {
+            save: function() {}, restore: function() {}, fillRect: function() {},
+            beginPath: function() {}, fill: function() {}, stroke: function() { edgeStrokes.push(this.strokeStyle); },
+            arc: function(x, y, r) { arcs.push({ x: x, r: r, fill: fill, alpha: alpha }); }
+        };
+        Object.defineProperty(ctx, 'fillStyle', { get: function() { return fill; }, set: function(v) { fill = v; } });
+        Object.defineProperty(ctx, 'globalAlpha', { get: function() { return alpha; }, set: function(v) { alpha = v; } });
+        var renderer = {
+            ctx: ctx, zoom: 1, nodes: spells, _nodeMap: new Map(),
+            _getSchoolColor: function() { return '#ff0000'; },
+            _cullIndex: function() { return { vis: [], from: [spells[0], spells[1]], to: [spells[1], spells[3]] }; },
+            _visibleEdges: function(ix) { ix.vis[0] = 0; ix.vis[1] = 1; return 2; },
+            _drawEdgePath: function() { paths++; }
+        };
+        try {
+            g.settings = { schoolVisibility: { Hidden: false } };
+            B.setTree({ nodes: spells, rawData: {} });
+            B.toggleFilter('element.fire');
+            B.render(ctx, renderer, { left: -100, right: 100, top: -100, bottom: 100 });
+            var at = function(x) { return arcs.filter(function(a) { return a.x === x; }); };
+            var lit = at(0), known = at(10)[0], other = at(20)[0];
+            this.check(paths === 1 && edgeStrokes[0] === B.CONTEXT.color,
+                'Filter: the lines stay, in grey, and a line to a hidden school is not drawn');
+            this.check(lit.length === 2 && known && other && at(30).length === 0,
+                'Filter: lit spell has dot and halo, the others a dot each, a hidden school none');
+            this.check(other.fill === B.CONTEXT.color && other.r < known.r && known.r < lit[0].r,
+                'Filter: other spells grey and smallest, known spells between, lit spells largest');
+            this.check(known.fill === '#ff0000' && known.alpha < 1 && lit[0].alpha === 1,
+                'Filter: a known spell keeps its school colour, muted below the lit spells');
+        } finally {
+            if (B.hasFilter()) B.toggleFilter(B._filterTrait);
+            g.settings = oldSettings;
+        }
     }
 };
 
