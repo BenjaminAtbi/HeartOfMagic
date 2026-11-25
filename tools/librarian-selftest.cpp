@@ -375,7 +375,8 @@ namespace
 
         tags = Librarian::Classify(Spell(json::array({ Effect({ "KIT_MagicElement_Poison" }, "PoisonResist"),
             HiddenHelper({ "ASP_Shadow" }) })), rules);
-        Check(tags.elements == std::set<std::string>{ "shadow" }, "an aspect on a hidden holder effect counts");
+        Check(tags.elements == std::set<std::string>{ "poison" },
+            "a replacing rule reads the evidence the others do: its mark on a hidden helper is none");
 
         tags = Librarian::Classify(Spell(json::array({ Effect({ "Plain", "ASP_Shadow" }) })), rules);
         Check(tags.elements == std::set<std::string>{ "shadow" }, "a rule can opt out of its file's replaceElements");

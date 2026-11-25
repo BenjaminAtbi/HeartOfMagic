@@ -81,8 +81,8 @@ creature·human·armor·health 같은 대상 쪽 원소는 스캐너의 `kind.*`
 (룰마다 `"replaceElements": false` 로 뺄 수 있다), `"keepElements": [...]` 는 모든 파일에서 합쳐진다. 이런 룰이
 원소를 하나라도 준 주문은(그 룰들의 `remove` 뒤) 그 원소만 가진다. 나머지 룰의 원소는 `keepElements` 에 든 것만
 남고(주문이 거는 대상·세상에 남기는 것: `construct`, `trap`, `undead` ...), 증거 충돌 단계가 뗀 것도 보고하지 않는다.
-기법은 바뀌지 않는다. 바꾸는 룰은 숨은 이펙트도 증거로 읽는다: 그런 패치는 키워드를 숨은 보관 이펙트(holder)에
-싣기도 한다. 이런 룰이 맞지 않은 주문은 사서의 분류 그대로다. 예: 주문 측면 패치의 `ASP_*` 키워드를 원소로
+기법은 바뀌지 않는다. 바꾸는 룰도 다른 룰과 같은 증거를 읽는다(숨은 이펙트는 실제 피해를 줄 때만), 그러니
+키워드는 주문의 보이는 이펙트에 있어야 한다. 이런 룰이 맞지 않은 주문은 사서의 분류 그대로다. 예: 주문 측면 패치의 `ASP_*` 키워드를 원소로
 옮기는 `95_aspects.json` (Nolvus Awakening 인스턴스의 Custom - HoM Aspect Elements). 자가 시험: `librarian-test
 --self-test` 의 replaceElements.
 

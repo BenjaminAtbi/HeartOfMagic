@@ -458,9 +458,8 @@ namespace Librarian
                 continue;  // waits for the last pass
             }
             effectIds.clear();
-            // A replacing file's keywords are its own marks, often on a hidden
-            // holder effect riding in the spell: every effect counts for it
-            if (!SpellMatches(spell, rule.match, sifted && !rule.replacesElements, &effectIds)) {
+            // Replacing rules read the same evidence as the others
+            if (!SpellMatches(spell, rule.match, sifted, &effectIds)) {
                 continue;
             }
 
