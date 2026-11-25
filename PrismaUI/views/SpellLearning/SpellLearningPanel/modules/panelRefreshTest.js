@@ -157,24 +157,35 @@ var PanelRefreshTest = {
     // TIER ZONES
     // =========================================================================
 
-    /** A tier chart: one column per tier with its fill, handles and track (100 px tall) */
+    /**
+     * A tier chart: one column per tier with its fill, handles and track (100 px tall, 0% at client Y 100). The
+     * handles sit where the fill's style puts them, 4 px tall, as in the page; presses go to the track.
+     */
     _chartDoc: function(env) {
         var cols = [], handles = [];
         ['Novice', 'Apprentice', 'Adept', 'Expert', 'Master'].forEach(function(tier) {
             var pct = { textContent: '' };
+            var col;
             var fill = { style: {}, querySelector: function() { return pct; } };
-            var track = { getBoundingClientRect: function() { return { bottom: 100, height: 100 }; },
-                          querySelector: function() { return fill; } };
-            var col = { getAttribute: function() { return tier; },
-                        querySelector: function(sel) { return sel === '.classic-tier-fill' ? fill : track; } };
-            ['min', 'max'].forEach(function(kind) {
-                var h = { listeners: {}, tier: tier,
+            var track = { listeners: {}, style: {},
                           addEventListener: function(ev, fn) { this.listeners[ev] = fn; },
+                          getBoundingClientRect: function() { return { bottom: 100, height: 100 }; },
+                          querySelector: function() { return fill; } };
+            col = { getAttribute: function() { return tier; },
+                    querySelector: function(sel) { return sel === '.classic-tier-fill' ? fill : track; } };
+            ['min', 'max'].forEach(function(kind) {
+                var h = { tier: tier,
                           getAttribute: function() { return kind; },
+                          getBoundingClientRect: function() {
+                              var bottom = parseFloat(fill.style.bottom), height = parseFloat(fill.style.height);
+                              var y = 100 - (kind === 'max' ? bottom + height : bottom);
+                              return { top: y - 2, height: 4 };
+                          },
                           closest: function() { return col; } };
                 handles.push(h);
             });
             col.fill = fill;
+            col.track = track;
             cols.push(col);
         });
         var chart = { querySelectorAll: function(sel) { return sel === '.classic-tier-col' ? cols : handles; } };
@@ -186,23 +197,35 @@ var PanelRefreshTest = {
         };
     },
 
-    _fill: function(env, tier) {
-        for (var i = 0; i < env.cols.length; i++) if (env.cols[i].getAttribute() === tier) return env.cols[i].fill;
+    _col: function(env, tier) {
+        for (var i = 0; i < env.cols.length; i++) if (env.cols[i].getAttribute() === tier) return env.cols[i];
         return null;
     },
 
+    _fill: function(env, tier) {
+        var col = this._col(env, tier);
+        return col ? col.fill : null;
+    },
+
+    /** Press tier's track at downY, move through moveYs, release (client Y: 0% at 100, 100% at 0) */
+    _press: function(env, tier, downY, moveYs) {
+        this._col(env, tier).track.listeners.mousedown({ clientY: downY, preventDefault: function() {} });
+        moveYs.forEach(function(y) { env.docListeners.mousemove.forEach(function(fn) { fn({ clientY: y }); }); });
+        env.docListeners.mouseup.forEach(function(fn) { fn({}); });
+    },
+
+    /** Take a handle at its middle and drag it to clientY */
     _drag: function(env, tier, kind, clientY) {
         var h = env.handles.filter(function(x) { return x.tier === tier && x.getAttribute() === kind; })[0];
-        h.listeners.mousedown({ preventDefault: function() {}, stopPropagation: function() {} });
-        env.docListeners.mousemove.forEach(function(fn) { fn({ clientY: clientY }); });
-        env.docListeners.mouseup.forEach(function(fn) { fn({}); });
+        var r = h.getBoundingClientRect();
+        this._press(env, tier, r.top + r.height / 2, [clientY]);
     },
 
     _testTierZones: function(g) {
         var CS = g.ClassicSettings, env = {};
         var over = {
             document: this._chartDoc(env),
-            TreePreviewUtils: { settingHTML: function() { return ''; }, bindInput: function() {} },
+            TreePreviewUtils: { settingHTML: function() { return ''; }, helpHTML: function() { return ''; }, bindInput: function() {} },
             TreeBuilderSetting: undefined,
             t: function(k) { return k; },
             tOr: function(k, p, f) { return f || k; }
@@ -213,10 +236,12 @@ var PanelRefreshTest = {
                 var settings = { tierZones: { Novice: { min: 5, max: 30 } } };
                 var changed = [];
                 var html = CS.buildHTML(settings);
-                CS.bindEvents({ onTierZoneChanged: function(tier, min, max) {
-                    changed.push([tier, min, max]);
-                    settings.tierZones[tier] = { min: min, max: max };   // as classicMain.js does
-                } });
+                var dragged = [];
+                CS.bindEvents({ onTierZoneDragging: function(tier, min, max) { dragged.push([tier, min, max]); },
+                    onTierZoneChanged: function(tier, min, max) {
+                        changed.push([tier, min, max]);
+                        settings.tierZones[tier] = { min: min, max: max };   // as classicMain.js does
+                    } });
                 this.check(/bottom:\s*5%/.test(html) && this._fill(env, 'Novice').style.bottom === '5%' &&
                     this._fill(env, 'Apprentice').style.bottom === '10%',
                     'Tier zones: chart drawn from the settings, a tier they lack from the defaults');
@@ -233,13 +258,57 @@ var PanelRefreshTest = {
                     changed.length === 1 && changed[0].join() === 'Novice,20,90',
                     'Tier zones: a drag starts from the current zones (the preset\'s min stays)');
 
+                // Moves redraw the bar and tell the preview (its zone arcs); the change goes out once, on release,
+                // and not at all when nothing moved
+                var hr = env.handles.filter(function(x) { return x.tier === 'Novice' && x.getAttribute() === 'max'; })[0].getBoundingClientRect();
+                this._col(env, 'Novice').track.listeners.mousedown({ clientY: hr.top + 2, preventDefault: function() {} });
+                env.docListeners.mousemove.forEach(function(fn) { fn({ clientY: 30 }); });
+                env.docListeners.mousemove.forEach(function(fn) { fn({ clientY: 20 }); });
+                var duringDrag = changed.length;
+                env.docListeners.mouseup.forEach(function(fn) { fn({}); });
+                this.check(duringDrag === 1 && changed.length === 2 && changed[1].join() === 'Novice,20,80' &&
+                    this._fill(env, 'Novice').style.height === '60%' &&
+                    dragged.length === 3 && dragged[1].join() === 'Novice,20,70' && dragged[2].join() === 'Novice,20,80',
+                    'Tier zones: a drag redraws the bar and reports each step as it moves, and sends the change once, on release');
+                this._drag(env, 'Novice', 'max', 20);   // to where it already is
+                this.check(changed.length === 2, 'Tier zones: a release that changed nothing sends nothing');
+
                 this._drag(env, 'Novice', 'min', 0);    // bottom handle past the top
-                this.check(settings.tierZones.Novice.min === 85 && settings.tierZones.Novice.max === 90,
+                this.check(settings.tierZones.Novice.min === 75 && settings.tierZones.Novice.max === 80,
                     'Tier zones: the bottom handle stops 5 below the top');
 
-                this.check(CS.getTierZones().Novice.min === 85 && CS.getTierZones() !== settings.tierZones,
+                this.check(CS.getTierZones().Novice.min === 75 && CS.getTierZones() !== settings.tierZones,
                     'Tier zones: getTierZones reads the settings, as a copy');
 
+                // The bar moves whole: taken at 30% (10 above its bottom), dropped at 50%
+                var nov = function() { return settings.tierZones.Novice; }, fill = this._fill(env, 'Novice'), sent = changed.length;
+                nov().min = 20; nov().max = 40;
+                CS.refreshTierChart();
+                this._press(env, 'Novice', 70, [50]);
+                this.check(nov().min === 40 && nov().max === 60 && fill.style.bottom === '40%' && fill.style.height === '20%' &&
+                    changed.length === sent + 1 && changed[sent].join() === 'Novice,40,60',
+                    'Tier zones: dragging the bar moves the range, its width kept, sent once on release');
+                this._press(env, 'Novice', 50, [-50]);
+                var atTop = nov().min === 80 && nov().max === 100;
+                this._press(env, 'Novice', 10, [200]);
+                this.check(atTop && nov().min === 0 && nov().max === 20, 'Tier zones: a moved bar stops at 100 and at 0');
+
+                // Handles (4 px here) take their end from half their height either side of them: into the bar and
+                // out past it. Novice is 0-20: the top handle spans 78-82, so its window is 76-84
+                this._press(env, 'Novice', 83, [60]);     // inside the bar
+                var inner = nov().min === 0 && nov().max === 40;
+                this._press(env, 'Novice', 57, [50]);     // above the bar (handle 58-62)
+                var outerTop = nov().min === 0 && nov().max === 50;
+                this._press(env, 'Novice', 55, [45]);     // in the bar, past the window (46-54): the bar moves
+                var past = nov().min === 10 && nov().max === 60;
+                this._press(env, 'Novice', 93, [80]);     // below the bar (bottom handle 88-92)
+                var outerBottom = nov().min === 20 && nov().max === 60;
+                sent = changed.length;
+                this._press(env, 'Novice', 20, [0]);      // empty track above
+                this.check(inner && outerTop && past && outerBottom && nov().min === 20 && nov().max === 60 &&
+                    changed.length === sent,
+                    'Tier zones: a handle takes its end within half its height of it, inside or outside the bar; ' +
+                    'the bar moves elsewhere on it, the empty track does nothing');
                 var other = {};
                 CS.buildHTML(other);
                 this.check(other.tierZones && other.tierZones.Master.min === CS.DEFAULT_TIER_ZONES.Master.min &&
@@ -253,6 +322,10 @@ var PanelRefreshTest = {
         var at = src.indexOf('_deepCopy(s.classicSettings, TreeGrowthClassic.settings)');
         this.check(at !== -1 && src.indexOf('ClassicSettings.refreshTierChart()', at) !== -1,
             'Tier zones: applying a scanner preset refreshes the chart');
+        var main = require('fs').readFileSync(require('path').join(__dirname, 'classic', 'classicMain.js'), 'utf8');
+        var handler = main.slice(main.indexOf('onSettingChanged:'), main.indexOf('onTierZoneDragging:'));
+        this.check(/key === 'dynamicGridExpansion'/.test(handler) && /self\._layoutData = null/.test(handler),
+            'Dynamic Grid Expansion: a change re-lays out the preview');
     },
 
     // =========================================================================

@@ -22,6 +22,9 @@ var ClassicSettings = {
     _treeBuilt: false,
     _nodeCount: 0,
 
+    // How far a tier zone handle's grab area reaches into its bar, as a share of the handle's height
+    HANDLE_GRACE: 0.5,
+
     // Tier zone defaults: settings without tierZones start from a copy of these
     DEFAULT_TIER_ZONES: {
         Novice:     { min: 0,  max: 40 },
@@ -60,7 +63,7 @@ var ClassicSettings = {
     buildHTML: function (settings) {
         var s = settings || {};
         this._zoneSource = s;
-        var opacity = s.ghostOpacity !== undefined ? s.ghostOpacity : 35;
+        var opacity = s.ghostOpacity !== undefined ? s.ghostOpacity : 100;
         var nodeSize = s.nodeRadius !== undefined ? s.nodeRadius : 5;
         var spread = s.spread !== undefined ? s.spread : 50;
         var radialBias = s.radialBias !== undefined ? s.radialBias : 50;
@@ -94,27 +97,32 @@ var ClassicSettings = {
 
             // --- Slider grid ---
             '<div class="tree-preview-settings-grid">' +
-                H(t('preview.ghostOpacity'), 'tgClassicOpacity', 0, 100, 5, opacity, '%') +
-                H(t('preview.nodeSize'), 'tgClassicNodeSize', 1, 20, 1, nodeSize) +
-                H(t('preview.classic.spread'), 'tgClassicSpread', 0, 100, 5, spread) +
-                H(t('preview.classic.radialBias'), 'tgClassicRadialBias', 0, 100, 5, radialBias) +
-                H(t('preview.classic.globeMask'), 'tgClassicCenterMask', 0, 10, 1, centerMask, ' ' + tOr('preview.classic.tiersUnit', null, 'tiers')) +
+                H(t('preview.ghostOpacity'), 'tgClassicOpacity', 0, 100, 5, opacity, '%', t('preview.classic.ghostOpacityHint')) +
+                H(t('preview.nodeSize'), 'tgClassicNodeSize', 1, 20, 1, nodeSize, '', t('preview.classic.nodeSizeHint')) +
+                H(t('preview.classic.spread'), 'tgClassicSpread', 0, 100, 5, spread, '', t('preview.classic.spreadHint')) +
+                H(t('preview.classic.radialBias'), 'tgClassicRadialBias', 0, 100, 5, radialBias, '', t('preview.classic.radialBiasHint')) +
+                H(t('preview.classic.globeMask'), 'tgClassicCenterMask', 0, 10, 1, centerMask, ' ' + tOr('preview.classic.tiersUnit', null, 'tiers'),
+                    t('preview.classic.globeMaskHint')) +
             '</div>' +
 
             // --- Builder options the player sets (treeBuilderSetting.js), applied at the next build ---
             (typeof TreeBuilderSetting !== 'undefined' ? TreeBuilderSetting.html() : '') +
 
             // --- Dynamic Grid Expansion toggle ---
-            '<div style="display:flex; align-items:center; gap:8px; margin:4px 4px 6px; font-size:0.8em;">' +
-                '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:rgba(184,168,120,0.6);">' +
+            // (laid out like Tiers by Magicka cost above it: the option, then its description)
+            '<div class="tree-preview-option">' +
+                '<label>' +
                     '<input type="checkbox" id="tgClassicDynExpand"' + (dynamicExpansion ? ' checked' : '') + '>' +
                     t('preview.classic.dynamicExpansion') +
                 '</label>' +
-                '<span style="color:rgba(184,168,120,0.3); font-size:0.95em;" title="Automatically expand grid when a school runs out of placement space (e.g. large Destruction trees)">(?)</span>' +
+            '</div>' +
+            '<div class="tree-preview-hint">' +
+                t('preview.classic.dynamicExpansionHint') +
             '</div>' +
 
             // --- Tier zone bar chart ---
-            '<div class="tree-preview-settings-title" style="margin-top:8px;">' + t('preview.classic.tierZones') + '</div>' +
+            '<div class="tree-preview-settings-title" style="margin-top:8px;">' + t('preview.classic.tierZones') +
+                TreePreviewUtils.helpHTML(t('preview.classic.tierZonesHint')) + '</div>' +
             this._buildTierChartHTML(s) +
             '<div style="text-align:center; margin-top:2px; font-size:0.75em; color:rgba(184,168,120,0.3);">' + t('preview.dragHandles') + '</div>';
     },
@@ -143,11 +151,11 @@ var ClassicSettings = {
 
                         // Top handle (max)
                         '<div class="classic-tier-handle" data-handle="max" ' +
-                            'style="position:absolute; left:-1px; right:-1px; top:-2px; height:5px; cursor:ns-resize; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
+                            'style="position:absolute; left:-1px; right:-1px; top:-2px; height:5px; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
 
                         // Bottom handle (min)
                         '<div class="classic-tier-handle" data-handle="min" ' +
-                            'style="position:absolute; left:-1px; right:-1px; bottom:-2px; height:5px; cursor:ns-resize; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
+                            'style="position:absolute; left:-1px; right:-1px; bottom:-2px; height:5px; background:rgba(255,255,255,0.7); border-radius:2px;"></div>' +
 
                         // Percentage label centered in fill
                         '<span class="classic-tier-pct" style="position:absolute; width:100%; text-align:center; font-size:0.75em; color:rgba(255,255,255,0.8); pointer-events:none; top:50%; transform:translateY(-50%); white-space:nowrap;">' +
@@ -314,7 +322,12 @@ var ClassicSettings = {
         }
     },
 
-    /** Bind mousedown/mousemove/mouseup on tier zone bar handles. @private */
+    /**
+     * Bind mousedown/mousemove/mouseup on the tier zone bars: a handle (the bar's top or bottom edge) moves that end,
+     * the bar itself moves the whole range within 0-100. Each handle reaches half its height further on both sides
+     * (_handleNear), so the ends are easier to take than their thin rendered edges. Hit testing is per track, so the
+     * outer reach works past the bar. @private
+     */
     _bindTierZoneDrag: function (callbacks) {
         var chart = document.getElementById('tgClassicTierChart');
         if (!chart) return;
@@ -322,44 +335,78 @@ var ClassicSettings = {
         var self = this;
         var dragging = null;
 
+        // Y is inverted: top of track = 100%, bottom = 0%; unsnapped
+        var pctAt = function (track, clientY) {
+            var rect = track.getBoundingClientRect();
+            return rect.height > 0 ? ((rect.bottom - clientY) / rect.height) * 100 : null;
+        };
+
         var handles = chart.querySelectorAll('.classic-tier-handle');
-        for (var i = 0; i < handles.length; i++) {
-            (function (handle) {
-                handle.addEventListener('mousedown', function (e) {
+
+        // What a press at clientY on a column's track takes: 'min' / 'max' (an end, within a handle's grace),
+        // 'move' (the bar), or null (the empty track)
+        var hitOf = function (col, own, clientY) {
+            var near = self._handleNear(own, clientY);
+            if (near) return near;
+            var zone = self._zones()[col.getAttribute('data-tier')];
+            var at = typeof clientY === 'number' ? pctAt(col.querySelector('.classic-tier-track'), clientY) : null;
+            return zone && at !== null && at >= zone.min && at <= zone.max ? 'move' : null;
+        };
+
+        // One listener per track: the handles' grace windows reach past the bar on both sides
+        var cols = chart.querySelectorAll('.classic-tier-col');
+        for (var ci = 0; ci < cols.length; ci++) {
+            (function (col) {
+                var track = col.querySelector('.classic-tier-track');
+                if (!track || !track.addEventListener) return;
+                var own = [];
+                for (var hi = 0; hi < handles.length; hi++) {
+                    if (handles[hi].closest('.classic-tier-col') === col) own.push(handles[hi]);
+                }
+                track.addEventListener('mousedown', function (e) {
+                    var type = hitOf(col, own, e.clientY);
+                    if (!type) return;
                     e.preventDefault();
-                    e.stopPropagation();
-                    var col = handle.closest('.classic-tier-col');
-                    if (!col) return;
-                    var track = col.querySelector('.classic-tier-track');
-                    if (!track) return;
+                    var zone = self._zones()[col.getAttribute('data-tier')];
+                    var at = type === 'move' ? pctAt(track, e.clientY) : null;
                     dragging = {
                         tier: col.getAttribute('data-tier'),
-                        handleType: handle.getAttribute('data-handle'), // 'min' or 'max'
+                        handleType: type,
                         track: track,
-                        fill: track.querySelector('.classic-tier-fill')
+                        fill: track.querySelector('.classic-tier-fill'),
+                        startMin: zone.min,
+                        startMax: zone.max,
+                        grab: at === null ? null : at - zone.min   // where in the bar it was taken, so it does not jump
                     };
                 });
-            })(handles[i]);
+                // The cursor says which: resize within a handle's grace, move on the bar
+                track.addEventListener('mousemove', function (e) {
+                    if (dragging || !track.style) return;
+                    var type = hitOf(col, own, e.clientY);
+                    track.style.cursor = type === 'move' ? 'grab' : type ? 'ns-resize' : '';
+                });
+            })(cols[ci]);
         }
 
         var onDocMove = function (e) {
             if (!dragging) return;
-            var rect = dragging.track.getBoundingClientRect();
-            var trackH = rect.height;
-            if (trackH <= 0) return;
-
-            // Y is inverted: top of track = 100%, bottom = 0%
-            var relY = rect.bottom - e.clientY;
-            var pct = Math.round((relY / trackH) * 100);
+            var raw = pctAt(dragging.track, e.clientY);
+            if (raw === null) return;
             // Snap to 5%
-            pct = Math.round(pct / 5) * 5;
-            pct = Math.max(0, Math.min(100, pct));
+            var pct = Math.max(0, Math.min(100, Math.round(raw / 5) * 5));
 
             // Read on every move: a preset or the change callback may have replaced it
             var zone = self._zones()[dragging.tier];
             if (!zone) return;
 
-            if (dragging.handleType === 'max') {
+            if (dragging.handleType === 'move') {
+                // The whole bar, its width kept, inside 0-100
+                var width = zone.max - zone.min;
+                var min = Math.round((raw - (dragging.grab === null ? width / 2 : dragging.grab)) / 5) * 5;
+                min = Math.max(0, Math.min(100 - width, min));
+                zone.min = min;
+                zone.max = min + width;
+            } else if (dragging.handleType === 'max') {
                 // Top handle: can't go below min + 5
                 if (pct <= zone.min + 5) pct = zone.min + 5;
                 if (pct > 100) pct = 100;
@@ -376,12 +423,19 @@ var ClassicSettings = {
             dragging.fill.style.height = (zone.max - zone.min) + '%';
             var pctLabel = dragging.fill.querySelector('.classic-tier-pct');
             if (pctLabel) pctLabel.textContent = zone.min + '-' + zone.max;
-
-            if (callbacks.onTierZoneChanged) {
-                callbacks.onTierZoneChanged(dragging.tier, zone.min, zone.max);
-            }
+            // The preview redraws its zone arcs as the bar moves (cheap); the tree is laid out again on release
+            if (callbacks.onTierZoneDragging) callbacks.onTierZoneDragging(dragging.tier, zone.min, zone.max);
         };
-        var onDocUp = function () { dragging = null; };
+        // The change goes out on release, once: the preview lays the tree out again on each one, and doing that on
+        // every move made the drag hitch
+        var onDocUp = function () {
+            if (!dragging) return;
+            var done = dragging;
+            dragging = null;
+            var zone = self._zones()[done.tier];
+            if (!zone || (zone.min === done.startMin && zone.max === done.startMax)) return;
+            if (callbacks.onTierZoneChanged) callbacks.onTierZoneChanged(done.tier, zone.min, zone.max);
+        };
 
         // One document pair at a time: every bind (a rebuilt panel, a preset) used to add one more
         if (this._tierZoneDocDrag) {
@@ -391,6 +445,28 @@ var ClassicSettings = {
         document.addEventListener('mousemove', onDocMove);
         document.addEventListener('mouseup', onDocUp);
         this._tierZoneDocDrag = { move: onDocMove, up: onDocUp };
+    },
+
+    /**
+     * The handle ('max' / 'min') whose grace window holds clientY, or null. A handle's window is its rendered height
+     * plus half its height again on each side, into the bar and out past it; where two windows meet, the nearer
+     * handle wins. Null without a position. @private
+     */
+    _handleNear: function (handles, clientY) {
+        if (typeof clientY !== 'number') return null;
+        var best = null, bestDist = Infinity;
+        for (var i = 0; i < handles.length; i++) {
+            var h = handles[i];
+            if (!h.getBoundingClientRect) continue;
+            var r = h.getBoundingClientRect();
+            if (!(r.height > 0)) continue;
+            var type = h.getAttribute('data-handle');
+            var grace = r.height * this.HANDLE_GRACE;
+            if (clientY < r.top - grace || clientY > r.top + r.height + grace) continue;
+            var dist = Math.abs(clientY - (r.top + r.height / 2));
+            if (dist < bestDist) { best = type; bestDist = dist; }
+        }
+        return best;
     },
 
     /** Re-apply tracked state to freshly built DOM elements. @private */

@@ -110,6 +110,9 @@ function switchScannerMode(mode) {
 
     if (easyContent) easyContent.style.display = (mode === 'easy') ? '' : 'none';
     if (complexContent) complexContent.style.display = (mode === 'complex') ? '' : 'none';
+    // The shared parts marked .complex-only follow it (panel-scan.css)
+    var scanPage = document.getElementById('contentSpellScan');
+    if (scanPage) scanPage.setAttribute('data-scanner-mode', mode);
 
     // Update button active states
     var btns = document.querySelectorAll('.scanner-mode-btn');

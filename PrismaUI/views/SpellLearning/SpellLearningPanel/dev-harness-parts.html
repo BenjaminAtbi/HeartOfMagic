@@ -6,15 +6,16 @@
         /* Harness chrome - toolbar at top */
 
         #harness-toolbar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
-            background: #0d1117; border-bottom: 1px solid #30363d;
-            display: flex; align-items: center; gap: 8px;
-            padding: 4px 12px; height: 36px; font-size: 13px; color: #c9d1d9;
+            /* The top middle third, clear of the panel's own controls at the edges */
+            position: fixed; top: 0; left: 33.333vw; width: 33.334vw; box-sizing: border-box; z-index: 10000;
+            background: #0d1117; border: 1px solid #30363d; border-top: none; border-radius: 0 0 6px 6px;
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; white-space: nowrap;
+            padding: 4px 8px; font-size: 12px; color: #c9d1d9;
         }
-        #harness-toolbar .toolbar-title { font-weight: 600; color: #58a6ff; margin-right: 12px; }
+        #harness-toolbar .toolbar-title { font-weight: 600; color: #58a6ff; margin-right: 4px; }
         #harness-toolbar button {
             background: #21262d; border: 1px solid #30363d; color: #c9d1d9;
-            padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+            padding: 2px 7px; border-radius: 4px; cursor: pointer; font-size: 11px;
         }
         #harness-toolbar button:hover { background: #30363d; border-color: #58a6ff; }
         #harness-toolbar button.active { background: #388bfd33; border-color: #58a6ff; color: #58a6ff; }
@@ -61,6 +62,8 @@
     </style>
     <!-- Mock C++ bridge: before every module script -->
     <script src="dev-harness-bridge.js"></script>
+    <!-- Served by tools/dev-renderer: the game's own data and a reload on every change (a file: page skips it) -->
+    <script src="dev-harness-live.js"></script>
 <!--BODY-TOP-->
     <!-- Harness Toolbar -->
     <div id="harness-toolbar">

@@ -341,9 +341,7 @@ function updatePrimedCount() {
             'Illusion': 'var(--illusion)'
         };
         var html = '';
-        var sortedSchools = Object.keys(schoolCounts).sort(function(a, b) {
-            return schoolCounts[b] - schoolCounts[a];
-        });
+        var sortedSchools = Object.keys(schoolCounts).sort(typeof compareSchools === 'function' ? compareSchools : undefined);   // HoM's order (constants.js)
         sortedSchools.forEach(function(school) {
             var color = schoolColors[school] || 'var(--text-muted)';
             html += '<div class="scan-school-row">' +

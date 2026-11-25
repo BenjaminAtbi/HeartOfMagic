@@ -289,7 +289,8 @@ game the placed references of cells that are not loaded are not in memory:
   marked), and a spell is
   `questOnly` when its segment is switched off (`QuestOnlySpells` reads config.json `tomeSources` on each call;
   defaults in `SegmentSwitches`: ritual quest, standard sale and standard loot on, spellpack vendor, regional
-  loot, unique vendor, unique reward and crafted off; review always on). The scan writes each spell's
+  loot, unique vendor, unique reward, crafted and unreachable off; review has no switch and follows
+  unreachable's). The scan writes each spell's
   `source` object (`SourceJson`: `segment` as `SegmentKey`, `class`, `subtype`, `detail`, `shop` for a
   spellpack vendor's spell). When a plugin is unreadable or the model throws, the pass answers as before,
   with no `source` objects. Archives are read in the game's order (`ArchiveOrder`, TomeReachData.h): the INI
@@ -300,9 +301,9 @@ game the placed references of cells that are not loaded are not in memory:
   (`iniArchives`, lab/tome-reach/make_inputs.py) and `--archives` dumps what it reads. The game's tome pairs (SpellTomes) are the model's tomes: a book teaches its pair's
   spell whatever its DATA says (a non-teaching book Spell Research's Synthesizer pairs, a book a DLL rebinds),
   and a book with no pair is no tome; the harness, with no pairs, goes by DATA. The panel (`modules/tomeSourceSetting.js`, at the top of the
-  Complex tree builder: Where Spells Come From) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
-  `offTree(spell)` is the segment switched off, `tomeUnreachable`, or `questOnly` for a scan without `source`
-  objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).
+  Complex tree builder: Spell Inclusion) has a switch per segment, saved as config.json `tomeSources`, and reads them live:
+  `offTree(spell)` is the spell's category switched off (`categoryOf`: its segment; Unreachable for
+  `tomeUnreachable`, review and unknown segments), or `questOnly` for a scan without `source` objects. Tree Graft's `IsBuildCandidate` reads the same switches (`OffTreeBySource`, GraftCandidates.h).
   Gate Review's "Specialty sources" list shows the spells off by their source with the segment and route
   detail as the reason; Include brings any one back, unreachable ones too (also for Spell Research).
 - What it cannot see: a tome an SKSE plugin or a script hands out through `GetFormFromFile` with no
@@ -1846,7 +1847,7 @@ CommonLib's logger flushes on every info line (`flush_on(info)`), which made eac
 | `canvasRendererV2.js` | Canvas 2D tree renderer (`CanvasRenderer`); its methods are split over `canvasRenderer*.js` (colours, input, selection, data, frame and tree layer, moving parts, dividers, edges, nodes, a single spell, labels, learning paths), see `modules/README.md` |
 | `editMode.js` | Tree editing (add/remove nodes, modify links) |
 | **UI & callbacks** | |
-| `settingsPanel.js` | Settings UI, config persistence, plugin whitelist modal |
+| `settingsPanel.js` | Settings UI, config persistence, the plugin list (on the Plugins tab, `sourceListTabs.js`) |
 | `treeViewerUI.js` | Tree viewer setup, node lookup, Import dialog (split 2026-09-30: `treeLoad.js` loading, `spellCardView.js` the card, `spellProgressView.js` its progress part, `findSpell.js` Find Spell) |
 | `progressionUI.js` | How-to-Learn panel, learning status badges |
 | `cppCallbacks.js` | C++ ↔ JS (e.g. ProceduralTreeGenerate, GetProgress); enables Complex/Simple buttons when spells loaded |
@@ -2974,7 +2975,7 @@ patch").
 
 #### Plugin Whitelist
 - Per-plugin opt-in/out filtering for spell tree generation
-- UI modal in Spell Scan tab for managing plugin list
+- The Plugins tab of Spell Inclusion on the Scan page (a window until 2026-11-16; `sourceListTabs.js`)
 - `pluginWhitelist` array in unified config (persistent)
 - Base game plugins auto-detected and always included by default
 

@@ -128,7 +128,9 @@ namespace
         auto sourced = [&with](const char* segment) { return with("source", { { "segment", segment } }); };
         check.Check(TreeGraft::IsBuildCandidate(sourced("standardSale"), none), "source: standard sale is on by default");
         check.Check(!TreeGraft::IsBuildCandidate(sourced("regionalLoot"), none), "source: regional loot is off by default");
-        check.Check(TreeGraft::IsBuildCandidate(sourced("review"), none), "source: review stays on the tree");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("review"), none), "source: review follows unreachable (off)");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("unreachable"), none), "source: unreachable is off by default");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("noSuchSegment"), none), "source: an unknown segment follows unreachable");
         Json sourcedQuestOnly = sourced("standardLoot");
         sourcedQuestOnly["questOnly"] = true;
         check.Check(TreeGraft::IsBuildCandidate(sourcedQuestOnly, none), "source: the segment decides, not questOnly");
@@ -139,7 +141,13 @@ namespace
         const PlayerRules switched = TreeGraft::PlayerRulesOf(config);
         check.Check(TreeGraft::IsBuildCandidate(sourced("regionalLoot"), switched), "switches: regional loot on");
         check.Check(!TreeGraft::IsBuildCandidate(sourced("standardSale"), switched), "switches: standard sale off");
-        check.Check(TreeGraft::IsBuildCandidate(sourced("review"), switched), "switches: review has no switch");
+        check.Check(!TreeGraft::IsBuildCandidate(sourced("review"), switched), "switches: review has no switch");
+        Json unreachableOn = Json::object();
+        unreachableOn["tomeSources"]["unreachable"] = true;
+        const PlayerRules allowUnreachable = TreeGraft::PlayerRulesOf(unreachableOn);
+        check.Check(TreeGraft::IsBuildCandidate(unreachable, allowUnreachable), "switches: unreachable on takes tomeUnreachable");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("review"), allowUnreachable), "switches: unreachable on takes review");
+        check.Check(TreeGraft::IsBuildCandidate(sourced("noSuchSegment"), allowUnreachable), "switches: unreachable on takes unknown");
         check.Check(TreeGraft::IsBuildCandidate(sourced("crafted"), kept), "gateKept brings a switched-off segment back");
 
         PlayerRules blacklist;

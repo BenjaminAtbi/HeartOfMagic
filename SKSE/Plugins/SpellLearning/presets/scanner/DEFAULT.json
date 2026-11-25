@@ -5,7 +5,7 @@
     "activeMode": "sun",
     "classicSettings": {
       "centerMask": 3,
-      "ghostOpacity": 35,
+      "ghostOpacity": 100,
       "nodeRadius": 5,
       "radialBias": 50,
       "spellMatching": "layered",

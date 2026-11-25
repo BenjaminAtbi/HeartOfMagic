@@ -111,13 +111,15 @@ namespace TreeGraft
             return !Is(spell, "taughtByTome", false) && !Is(spell, "voiceSlot", true) && !Truthy(spell, "duplicateOf");
         }
 
-        /// tomeSourceSetting.js offTree: nothing hands its tomes out (tomeUnreachable), or its source
-        /// segment is switched off; a scan without source objects (the reach pass answered) has questOnly
+        /// tomeSourceSetting.js offTree: its source segment is switched off. Nothing handing its tomes out
+        /// (tomeUnreachable), the review segment and a segment key no switch knows all follow the
+        /// unreachable switch; a scan without source objects (the reach pass answered) has questOnly
         [[nodiscard]] inline bool OffTreeBySource(const nlohmann::json& spell, const TomeReach::SegmentSwitches& switches)
         {
-            if (Is(spell, "tomeUnreachable", true)) return true;
+            if (Is(spell, "tomeUnreachable", true)) return !switches.unreachable;
             if (const auto source = spell.find("source"); source != spell.end() && source->is_object()) {
-                if (const auto segment = TomeReach::SegmentOfKey(Text(*source, "segment"))) return !switches.OnTree(*segment);
+                const auto segment = TomeReach::SegmentOfKey(Text(*source, "segment"));
+                return !switches.OnTree(segment.value_or(TomeReach::Segment::kUnreachable));
             }
             return Is(spell, "questOnly", true);
         }

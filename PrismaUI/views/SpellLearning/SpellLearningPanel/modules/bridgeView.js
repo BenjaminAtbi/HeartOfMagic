@@ -9,8 +9,9 @@
  *  - selecting or hovering it draws its bridges, dashed, in the colour of what
  *    the two spells share
  *  - the spell card lists them, and a click travels there
- *  - the trait filter veils the tree and lights every spell of one trait,
- *    whatever its school; the card's level works the same way ("level.Adept"
+ *  - the trait filter lights every spell of one trait, whatever its school, and
+ *    keeps the rest of the tree as grey lines and dots, known spells a muted dot
+ *    in their school colour; the card's level works the same way ("level.Adept"
  *    lights every Adept spell)
  *
  * Depends on: state, settings, CanvasRenderer, SpellCard (labels), t()
@@ -30,7 +31,9 @@ var BridgeView = {
     DEFAULT_COLOR: '#b8a878',
 
     MARKER_RADIUS: 10,
-    VEIL_ALPHA: 0.62,
+    VEIL_ALPHA: 0.92,          // all but clears the tree's own look; _renderContext redraws its shape
+    // The rest of the tree under a filter: grey lines and dots, known spells a muted school-colour dot
+    CONTEXT: { color: '#8c8c8c', edgeAlpha: 0.35, dotAlpha: 0.55, dotScale: 0.45, knownAlpha: 0.7, knownScale: 0.7 },
     VEIL_EXTENT: 20000,        // larger than any tree, in tree units
     FILTER_DOT: 5,
     FILTER_DOT_SCREEN_PX: 4,   // a lit spell never shrinks below this on screen
@@ -281,8 +284,10 @@ var BridgeView = {
         var zoom = renderer.zoom || 1;
         var dot = Math.max(this.FILTER_DOT, this.FILTER_DOT_SCREEN_PX / zoom);
         var halo = dot + Math.max(3, 3 / zoom);
-        ctx.lineWidth = Math.max(1.5, 1.5 / zoom);
 
+        this._renderContext(ctx, renderer, bounds, trait, dot, zoom);
+
+        ctx.lineWidth = Math.max(1.5, 1.5 / zoom);
         var nodes = renderer.nodes || [];
         for (var i = 0; i < nodes.length; i++) {
             var node = nodes[i];
@@ -298,6 +303,50 @@ var BridgeView = {
             ctx.stroke();
         }
         ctx.restore();
+    },
+
+    /**
+     * The rest of the tree under a filter, drawn over the veil so its shape stays
+     * readable: every line in faint grey, every other spell a small grey dot, and
+     * the spells the player knows a muted dot in their school's colour - plain to
+     * see, but a step below the lit spells, which keep their full colour and halo.
+     */
+    _renderContext: function (ctx, renderer, bounds, trait, dot, zoom) {
+        var C = this.CONTEXT;
+        if (bounds && renderer._cullIndex && renderer._visibleEdges && renderer._lodTier !== 'minimal') {
+            var ix = renderer._cullIndex();
+            var curved = settings.edgeStyle === 'curved';
+            var style = typeof TreeStyle !== 'undefined' ? TreeStyle : null;
+            var bend = (curved ? (renderer.CURVE_BULGE || 0) : 0) + (style && style.bowBulge ? style.bowBulge() : 0);
+            var bows = (!curved && ix.edgeCells && style && style.handAmount && style.handAmount() && renderer._bowsOf)
+                ? renderer._bowsOf(ix) : null;
+            var n = renderer._visibleEdges(ix, bounds.left, bounds.right, bounds.top, bounds.bottom, bend);
+            ctx.strokeStyle = C.color;
+            ctx.lineWidth = Math.max(1, 1 / zoom);
+            ctx.globalAlpha = C.edgeAlpha;
+            ctx.beginPath();
+            for (var v = 0; v < n; v++) {
+                var ei = ix.vis[v], a = ix.from[ei], b = ix.to[ei];
+                if (this.isHidden(renderer, a) || this.isHidden(renderer, b)) continue;
+                renderer._drawEdgePath(ctx, a.x, a.y, b.x, b.y, curved, bows ? bows[ei] : undefined);
+            }
+            ctx.stroke();
+        }
+
+        var nodes = renderer.nodes || [];
+        var small = dot * C.dotScale, known = dot * C.knownScale;
+        for (var i = 0; i < nodes.length; i++) {
+            var node = nodes[i];
+            if (this._nodeHas(node, trait)) continue;
+            if (this.isHidden(renderer, node) || this._outsideView(node, bounds)) continue;
+            var isKnown = node.state === 'unlocked';
+            ctx.globalAlpha = isKnown ? C.knownAlpha : C.dotAlpha;
+            ctx.fillStyle = isKnown ? renderer._getSchoolColor(node.school) : C.color;
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, isKnown ? known : small, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
     },
 
     _redraw: function () {

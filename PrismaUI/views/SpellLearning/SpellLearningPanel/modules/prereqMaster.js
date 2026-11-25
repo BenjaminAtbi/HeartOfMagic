@@ -2200,14 +2200,13 @@
             allTabs[i].classList.toggle('active', t === tabId);
         }
 
-        // Toggle content visibility
-        var locksTab = document.getElementById('prmTabLocks');
-        var coreTab = document.getElementById('prmTabCore');
-        var altTab = document.getElementById('prmTabAltPaths');
-
-        if (locksTab) locksTab.style.display = (tabId === 'locks') ? '' : 'none';
-        if (coreTab) coreTab.style.display = (tabId === 'core') ? '' : 'none';
-        if (altTab) altTab.style.display = (tabId === 'altpaths') ? '' : 'none';
+        // Toggle content visibility: the other pages stay laid out, hidden (prm-page-hidden), so the
+        // page area keeps the tallest page's height and nothing moves on a switch (panel-scan.css)
+        var pages = { locks: 'prmTabLocks', core: 'prmTabCore', altpaths: 'prmTabAltPaths' };
+        for (var key in pages) {
+            var page = document.getElementById(pages[key]);
+            if (page) page.classList.toggle('prm-page-hidden', key !== tabId);
+        }
 
         // Trigger preview re-render for new tab
         _markPreview();
@@ -2218,20 +2217,7 @@
     // =========================================================================
 
     function initPreReqMaster() {
-        // Collapsible header
-        var header = document.getElementById('prmToggleHeader');
-        var content = document.getElementById('prmContent');
-        var collapseIcon = header ? header.querySelector('.prm-collapse-icon') : null;
-
-        if (header && content) {
-            header.addEventListener('click', function() {
-                content.classList.toggle('collapsed');
-                if (collapseIcon) {
-                    if (content.classList.contains('collapsed')) collapseIcon.classList.add('collapsed');
-                    else collapseIcon.classList.remove('collapsed');
-                }
-            });
-        }
+        // Extra Settings is always open (a section title, no collapsible box)
 
         // Tab switching
         initTabs();

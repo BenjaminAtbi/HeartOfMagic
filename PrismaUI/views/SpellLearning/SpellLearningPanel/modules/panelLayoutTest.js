@@ -117,7 +117,7 @@ var PanelLayoutTest = {
         this.failed = 0;
         if (typeof require !== 'function') return { passed: 0, failed: 0 };
         var parts = [['Settings categories', this._categories], ['Settings markup', this._settingsMarkup],
-            ['Scan stage', this._scanStage], ['Scan page', this._scanPage], ['Scan markup', this._scanMarkup], ['Tree frame', this._treeFrame]];
+            ['Scan stage', this._scanStage], ['Scan page', this._scanPage], ['Scan markup', this._scanMarkup], ['Source tabs', this._sourceTabs], ['Tree frame', this._treeFrame]];
         for (var i = 0; i < parts.length; i++) {
             try { parts[i][1].call(this); } catch (e) { this.check(false, parts[i][0] + ' threw: ' + (e && e.stack ? e.stack : e)); }
         }
@@ -251,37 +251,25 @@ var PanelLayoutTest = {
     // ======================================================================= item 7
 
     _scanBox: function(extra) {
-        var box = this._sandbox(['constants.js', 'proceduralTreeBuilder.js', 'scanStage.js'],
+        var box = this._sandbox(['constants.js', 'proceduralTreeBuilder.js', 'spellLists.js', 'scanStage.js'],
             Object.assign({ settings: { spellBlacklist: [], pluginWhitelist: [] }, state: { lastSpellData: null },
                 getLocalFormId: function(f) { return String(f).replace(/^0x/i, '').toLowerCase().slice(-6); } }, extra || {}));
         return box;
     },
 
-    /**
-     * The gap line in every language file: the excluded list as the whole gap reads as that reason alone, and the
-     * lead of two or more ("15 left out:") does not reuse the excluded list's own word ("12개 제외: 제외 목록에 12개")
-     */
-    _checkGapLanguages: function(S) {
+    /** The gap line's keys in English with their number, and the retired ones gone from every language */
+    _checkGapLanguages: function() {
         var fs = require('fs'), path = require('path'), dir = path.join(__dirname, '..', 'lang');
         var files = fs.readdirSync(dir).filter(function(f) { return /^[a-z-]+\.json$/.test(f); });
-        var fill = function(s, p) { for (var k in (p || {})) s = s.split('{{' + k + '}}').join(p[k]); return s; };
-        var alone = [], repeats = [];
-        // The stem each language names the excluded list with (scan.gapExcluded, scan.excludedCount)
-        var EXCLUDED_WORD = { en: 'exclu', de: 'sperr', es: 'exclu', fr: 'exclu', it: 'esclu', ja: '除外', ko: '제외', pl: 'wyklucz',
-            'pt-br': 'exclu', ru: 'исключ', tr: 'dışlan', 'zh-cn': '排除', 'zh-tw': '排除' };
-        // The gap is keys, the same in every language: the excluded list as the whole gap is that one line
-        var one = S.summary('apply', { found: 753, tomeOut: 0, excluded: 12, pluginsOut: 0, inTree: 741 }, 741).gap;
-        this.check(one.length === 1 && one[0][0] === 'scan.gapExcluded', 'Gap line: the excluded list as the whole gap (after a build too) is one line, no lead');
-        files.forEach(function(f) {
+        var en = JSON.parse(fs.readFileSync(path.join(dir, 'en.json'), 'utf8'));
+        this.check(['scan.gapInvalid', 'scan.gapLeftOff', 'scan.gapNotPlaced'].every(function(k) { return String(en[k]).indexOf('{{count}}') !== -1; }),
+            'Gap line: English has its three parts, each with its {{count}}');
+        var RETIRED = ['scan.gapLeftOut', 'scan.gapNotPlayer', 'scan.gapExcluded', 'scan.gapPlugins', 'scan.excludedCount', 'scanner.totalSpells'];
+        var stale = files.filter(function(f) {
             var L = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-            // ...which, standing alone, must carry the number itself
-            if (typeof L['scan.gapExcluded'] !== 'string' || L['scan.gapExcluded'].indexOf('{{count}}') === -1) alone.push(f);
-            var lead = fill(L['scan.gapLeftOut'] || '', { count: 15 }).toLowerCase();
-            var word = EXCLUDED_WORD[f.slice(0, -5)];
-            if (!word || lead.indexOf(word) !== -1) repeats.push(f + ' (' + lead + ')');
+            return RETIRED.some(function(k) { return L.hasOwnProperty(k); });
         });
-        this.check(files.length === 13 && alone.length === 0, 'Gap line, every language: scan.gapExcluded is there and holds its {{count}} (it stands alone)' + (alone.length ? ': ' + alone.join(', ') : ''));
-        this.check(repeats.length === 0, 'Gap line, every language: "N left out:" does not reuse the word of the excluded list' + (repeats.length ? ': ' + repeats.join(', ') : ''));
+        this.check(files.length === 13 && stale.length === 0, 'Gap line, every language: the retired keys are gone' + (stale.length ? ': ' + stale.join(', ') : ''));
     },
 
     _spells: function() {
@@ -309,8 +297,8 @@ var PanelLayoutTest = {
         box.settings.spellBlacklist = [{ plugin: 'Skyrim.esm', localFormId: '010001' }, { formId: '0x00010002' }];
         box.settings.pluginWhitelist = [{ plugin: 'MOD.ESP', enabled: false }, { plugin: 'Skyrim.esm', enabled: true }];
         var c = S.counts(spells);
-        this.check(c.found === 17 && c.tomeOut === 3 && c.excluded === 2 && c.pluginsOut === 4 && c.inTree === 8,
-            'Counts: 17 found, 3 not player spells, 2 excluded (plugin+id and a legacy formId), 4 from the plugin turned off (A-Z folded), 8 in');
+        this.check(c.total === 17 && c.found === 14 && c.invalid === 3 && c.inTree === 8 && c.leftOff === 6,
+            'Counts: 17 scanned, 14 found, 3 invalid (voice slot, no tome, copy), 8 in (2 blacklisted, 4 from the plugin turned off, A-Z folded), 6 left off');
         box.state.lastSpellData = { spells: spells };
         var primed = spells.filter(box.isTaughtByTome);
         primed = box.filterWhitelistedSpells(box.filterBlacklistedSpells(primed));
@@ -318,50 +306,45 @@ var PanelLayoutTest = {
 
         var sum = S.summary('build', c, 0);
         var text = function(list) { return list.map(function(p) { var t = p[2]; for (var k in (p[1] || {})) t = t.split('{{' + k + '}}').join(p[1][k]); return t; }); };
-        this.check(text(sum.parts).join(' | ') === '17 spells found | 8 go in the tree | not built yet', 'Summary before a build: found, in the tree, not built yet');
-        var gap = sum.gap.slice(1).reduce(function(n, p) { return n + p[1].count; }, 0);
-        this.check(sum.gap[0][0] === 'scan.gapLeftOut' && sum.gap[0][1].count === 9 && gap === 9 && sum.gap.length === 4,
-            'Summary: "9 left out" and its three reasons add up to found minus in the tree');
+        this.check(text(sum.parts).join(' | ') === '14 spells found | 8 go in the tree | not built yet', 'Summary before a build: found, in the tree, not built yet');
+        this.check(text(sum.gap).join('; ') === '3 spells invalid (no tome, powers, copies); 6 spells left off the tree',
+            'Summary: the second line says invalid, then left off the tree');
         var built = S.summary('apply', c, 6);
-        this.check(text(built.parts).join(' | ') === '17 spells found | 6 in the new tree | not applied yet' &&
-            built.gap[0][1].count === 11 && built.gap[built.gap.length - 1][0] === 'scan.gapNotPlaced' && built.gap[built.gap.length - 1][1].count === 2,
-            'Summary after a build: the placed count, and the 2 the builder did not place among the 11 left out');
-        this.check(text(S.summary('applied', c, 8).parts).join(' | ') === '17 spells found | 8 in your tree | applied', 'Summary applied: in your tree, applied');
-        var none = S.summary('build', { found: 5, tomeOut: 0, excluded: 0, pluginsOut: 0, inTree: 5 }, 0);
+        this.check(text(built.parts).join(' | ') === '14 spells found | 6 in the new tree | not applied yet' &&
+            built.gap.length === 3 && built.gap[2][0] === 'scan.gapNotPlaced' && built.gap[2][1].count === 2,
+            'Summary after a build: the placed count, and the 2 the builder did not place after the left off');
+        this.check(text(S.summary('applied', c, 8).parts).join(' | ') === '14 spells found | 8 in your tree | applied', 'Summary applied: in your tree, applied');
+        var none = S.summary('build', { total: 5, found: 5, invalid: 0, inTree: 5, leftOff: 0 }, 0);
         this.check(none.gap.length === 0 && S.summary('scan', c, 0).parts[0][0] === 'scan.summaryNoScan', 'Summary: no gap line when nothing is left out; before a scan, one line saying so');
         var saved = S.summary('scan', c, 0, 640);
         this.check(saved.parts.length === 1 && saved.parts[0][0] === 'scan.summaryTreeNoScan' && saved.parts[0][1].count === 640 && saved.gap.length === 0,
             'Summary: a saved tree and no scan this session says the tree is there (640 spells), not "No scan yet"');
-        var one = S.summary('build', { found: 20, tomeOut: 0, excluded: 12, pluginsOut: 0, inTree: 8 }, 0);
-        this.check(one.gap.length === 1 && one.gap[0][0] === 'scan.gapExcluded' && one.gap[0][1].count === 12,
-            'Summary: one reason that is the whole gap says it alone ("12 on your excluded list", no "12 left out:")');
-        this._checkGapLanguages(S);
+        var one = S.summary('build', { total: 20, found: 20, invalid: 0, inTree: 8, leftOff: 12 }, 0);
+        this.check(one.gap.length === 1 && one.gap[0][0] === 'scan.gapLeftOff' && one.gap[0][1].count === 12,
+            'Summary: nothing invalid, only the left off part');
+        this._checkGapLanguages();
+        this.check(['Restoration', 'Mysticism', 'Illusion', 'Conjuration', 'Alteration', 'Arcane', 'Destruction'].sort(box.compareSchools).join() ===
+            'Conjuration,Destruction,Alteration,Illusion,Restoration,Arcane,Mysticism', 'Schools: HoM\'s order, any other after them by name (compareSchools)');
 
-        var p = S.pluginState(spells, box.settings.pluginWhitelist);
-        this.check(p.total === 2 && p.off === 1 && S.pluginLine(p)[0] === 'scan.pluginsSome' && S.pluginLine(p)[1].on === 1,
-            'Plugins line: 1 of 2 (the list\'s entry matched A-Z folded)');
-        this.check(S.pluginLine(S.pluginState(spells, []))[0] === 'scan.pluginsAll' &&
-            S.pluginLine(S.pluginState(spells, [{ plugin: 'Skyrim.esm', enabled: true }]))[0] === 'scan.pluginsAll',
-            'Plugins line: no list, or nothing turned off, reads "all"');
-        this.check(S.pluginLine(S.pluginState(spells, [{ plugin: 'skyrim.esm', enabled: false }, { plugin: 'Mod.esp', enabled: false }]))[0] === 'scan.pluginsNone',
-            'Plugins line: every plugin turned off says no spell goes in the tree');
     },
 
     _scanPage: function() {
         var self = this;
         var ids = ['scanStageBtn', 'scanStageLabel', 'scanBtn', 'scanAgainBtn', 'scanClearDraftBtn', 'tgBuildBtn', 'tgApplyBtn', 'tgClearBtn', 'easyBuildBtn',
-            'scannerComplexContent', 'scanSummary', 'scanSummaryGap', 'scanDetailsToggle', 'scanDetailsArrow', 'scanResultsBody', 'blacklistLabel', 'whitelistLabel'];
+            'scannerComplexContent', 'scanSummary', 'scanSummaryGap', 'statTotalSpells', 'scanBlacklistTitle', 'scanBlacklistPreview', 'scanWhitelistTitle',
+            'scanWhitelistPreview', 'scanSpellListTitle', 'scanSpellListPreview'];
         var els = {};
         ids.forEach(function(id) { els[id] = self.el('div', { id: id }); });
         els.scannerComplexContent.style.display = 'none';
         var growth = { _building: false, _treeBuilt: false, _nodeCount: 0 };
         var box = this._scanBox({ TreeGrowth: growth }), S = box.ScanStage, doc = this.doc(ids.map(function(id) { return els[id]; }));
         S._doc = function() { return doc; };
+        box.SpellLists._doc = function() { return doc; };
         S.init();
         this.check(els.scanStageLabel.getAttribute('data-i18n') === 'buttons.scanSpells' && !els.scanStageBtn.disabled &&
             els.scanAgainBtn.classList.contains('hidden') && els.scanSummary.text().indexOf('No scan yet') === 0 &&
-            els.scanDetailsToggle.classList.contains('hidden'),
-            'Page before a scan: "No scan yet", the main button Scan Spells, no Scan again, no Scan details to unfold');
+            els.statTotalSpells.textContent === '--' && els.scanBlacklistPreview.text() === 'None' && els.scanBlacklistTitle.textContent === 'Blacklisted (0)',
+            'Page before a scan: "No scan yet", the main button Scan Spells, no Scan again; Scan details shown, empty');
         box.state.treeData = { nodes: [{}, {}, {}] };
         S.refresh();
         this.check(els.scanSummary.text() === 'Your tree has 3 spells · scan to build a new one' && els.scanStageLabel.getAttribute('data-i18n') === 'buttons.scanSpells',
@@ -388,11 +371,14 @@ var PanelLayoutTest = {
         box.settings.spellBlacklist = [{ formId: '0x00010003' }];
         S.refresh();
         this.check(els.scanStageLabel.getAttribute('data-i18n') === 'buttons.buildTree' && !els.scanAgainBtn.classList.contains('hidden') &&
-            els.scanSummary.text() === '17 spells found · 13 go in the tree · not built yet' &&
-            !els.scanSummaryGap.classList.contains('hidden') && els.scanSummaryGap.text().indexOf('4 left out:') === 0,
-            'Page scanned: Build Tree, Scan again shown, the summary line, the gap line with 4 left out');
-        this.check(els.blacklistLabel.textContent === 'Excluded spells: 1' && els.whitelistLabel.textContent === 'Plugins: all',
-            'Page: the filter lines say their state (1 excluded, plugins all)');
+            els.scanSummary.text() === '14 spells found · 13 go in the tree · not built yet' &&
+            !els.scanSummaryGap.classList.contains('hidden') &&
+            els.scanSummaryGap.text() === '3 spells invalid (no tome, powers, copies); 1 spells left off the tree.',
+            'Page scanned: Build Tree, Scan again shown, the summary line, the gap line (invalid; left off.)');
+        this.check(els.statTotalSpells.textContent === '14' && els.scanBlacklistTitle.textContent === 'Blacklisted (1)' &&
+            els.scanBlacklistPreview.text().indexOf('A3?Skyrim.esm') === 0 && els.scanWhitelistPreview.text() === 'None' &&
+            els.scanSpellListTitle.textContent === 'Spell list: All (13)',
+            'Page: Spells found, the Spells tab painted (1 blacklisted, named by the scan; none whitelisted; 13 in the Spell list)');
         els.scanStageBtn.click();
         this.check(els.easyBuildBtn.clicks === 1 && els.tgBuildBtn.clicks === 0, 'Page Easy: Build presses Easy\'s Build (it applies the chosen preset first)');
         els.easyBuildBtn.disabled = true;
@@ -430,14 +416,6 @@ var PanelLayoutTest = {
         els.tgClearBtn.disabled = true;
         S.refresh();
         this.check(els.scanClearDraftBtn.classList.contains('hidden'), 'Page: no Clear draft tree while the real Clear is off');
-
-        this.check(els.scanResultsBody.classList.contains('hidden') && els.scanDetailsToggle.getAttribute('aria-expanded') === 'false',
-            'Details: folded at first');
-        els.scanDetailsToggle.click();
-        this.check(!els.scanResultsBody.classList.contains('hidden') && els.scanDetailsToggle.getAttribute('aria-expanded') === 'true' &&
-            els.scanDetailsArrow.textContent === '▾', 'Details: a click opens them (arrow down)');
-        S.refresh();
-        this.check(!els.scanResultsBody.classList.contains('hidden'), 'Details: a refresh keeps them open');
     },
 
     _scanMarkup: function() {
@@ -460,6 +438,107 @@ var PanelLayoutTest = {
         var css = this._file('../panel-scan.css');
         this.check(/\.scan-relay-target \{ display: none; \}/.test(css) && !/border-right: 1px/.test(css),
             'Scan CSS: relays out of sight, no vertical rule added');
+        var details = scan.substring(scan.indexOf('id="scanResultsSection"'), scan.indexOf('id="scannerComplexContent"'));
+        this.check(/<div class="tree-preview-header settings-block-header">\s*<span class="tree-preview-title scan-section-title scan-details-title" data-i18n="scan.details"/.test(details) && !/scanDetailsToggle|scan-results-body hidden/.test(details) &&
+            !/id="scan(Black|White)listPreview"|scan-split-right/.test(details) &&
+            details.indexOf('id="scanResultsBody"') < details.indexOf('id="blacklistBtn"') && !/id="whitelistBtn"/.test(details),
+            'Scan markup: Scan details has a section bar (folds like the others, scanSections.js); the counts, then the override button (no plugin line, no list previews)');
+        var sourcesBox = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
+        var left = sourcesBox.indexOf('class="tome-sources-left"'), right = sourcesBox.indexOf('class="tome-sources-right"');
+        this.check(left > 0 && right > sourcesBox.indexOf('id="tomeSourceUnreachableToggle"') && sourcesBox.indexOf('settings.tomeSources.note') > left &&
+            sourcesBox.indexOf('id="scanBlacklistPreview"') > right && sourcesBox.indexOf('id="scanWhitelistPreview"') > right &&
+            /\.tome-sources-split \{ display: flex;/.test(css) && /\.tome-sources-left, \.tome-sources-right \{ flex: 1 1 0;/.test(css),
+            'Spell Inclusion: the categories\' stack in the left half, the Blacklisted and Whitelisted previews sharing the right half');
+        this.check(/id="contentSpellScan" data-scanner-mode="easy"/.test(scan) &&
+            /#contentSpellScan\[data-scanner-mode="easy"\] \.complex-only \{ display: none; \}/.test(css) &&
+            /function switchScannerMode\(mode\) \{[\s\S]{0,700}getElementById\('contentSpellScan'\)[\s\S]{0,80}setAttribute\('data-scanner-mode', mode\)/.test(this._file('easyMode.js')),
+            'Scan markup: the Scan page carries its mode (Easy hides any shared part marked .complex-only)');
+        var extra = scan.substring(scan.indexOf('id="prereqMasterSection"'), scan.indexOf('<!-- Shared Build/Apply/Clear'));
+        this.check(/^id="prereqMasterSection"[^>]*>\s*<div class="tree-preview-header settings-block-header">\s*<span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">/.test(extra) &&
+            !/prmToggleHeader|prm-collapse-icon|prm-block/.test(extra) && !/prmToggleHeader/.test(this._file('prereqMaster.js')) &&
+            /scan-section-title">' \+ t\('preview\.title'\)/.test(this._file('treePreview.js')) && /scan-section-title">' \+ t\('treeViewer\.treeGrowthPreview'\)/.test(this._file('treeGrowth.js')) &&
+            /#prereqMasterSection \.prm-split \{ height: auto;/.test(css) && /#prereqMasterSection \.prm-split-left \{ height: auto; overflow: visible; \}/.test(css),
+            'Scan markup: Extra Settings a section title like Scaffold Preview and Tree Growth Preview (one bar and title style, folded by scanSections.js), no PRM collapsible box, pages as tall as their content');
+        var prm = this._file('prereqMaster.js');
+        this.check(/id="prmTabLocks">/.test(extra) && /class="prm-tab-content prm-page-hidden" id="prmTabCore">/.test(extra) &&
+            /class="prm-tab-content prm-page-hidden" id="prmTabAltPaths">/.test(extra) && !/id="prmTab\w+" style="display:none/.test(extra) &&
+            /classList\.toggle\('prm-page-hidden', key !== tabId\)/.test(prm) && !/prmTab\w+'\)[\s\S]{0,40}style\.display/.test(prm) &&
+            /#prereqMasterSection \.prm-split-left \{ display: grid;/.test(css) && /#prereqMasterSection \.prm-tab-content \{ grid-area: 1 \/ 1;/.test(css) &&
+            /\.prm-tab-content\.prm-page-hidden \{ visibility: hidden;/.test(css),
+            'Extra Settings: the tab pages share one cell, the hidden ones kept in the layout (as tall as the tallest, no movement on a switch)');
+        var sources = scan.substring(scan.indexOf('id="tomeSourcesContent"'), scan.indexOf('id="treeBuildSection"'));
+        var rows = sources.match(/id="tomeSource\w+Toggle"[^>]*>/g) || [];
+        this.check(rows.length === 9 && /id="tomeSourceUnreachableToggle">$/.test(rows[8]) &&
+            /class="setting-row tome-source-warning">[\s\S]*settings\.tomeSources\.unreachableDesc/.test(sources),
+            'Scan markup: Unreachable is the ninth row, last, off by default, a warning row');
+    },
+
+    /** Spell Inclusion's right half: Spells and Plugins (sourceListTabs.js), the plugin list there, not a window */
+    _sourceTabs: function() {
+        var self = this, filled = 0, wired = 0, saved = 0, counted = 0;
+        var tabs = ['spells', 'plugins'].map(function(t) { return self.el('button', { 'data-source-tab': t, 'class': t === 'spells' ? 'active' : '' }); });
+        var spells = this.el('div', { id: 'sourceListSpells' }), plugins = this.el('div', { id: 'pluginListPanel', 'class': 'source-list-hidden' });
+        var search = this.el('input', { id: 'whitelist-search' });
+        search.value = 'old';
+        var doc = this.doc([spells, plugins, search]);
+        doc.querySelectorAll = function(sel) { return sel === '#sourceListTabs [data-source-tab]' ? tabs : []; };
+        var box = this._sandbox(['sourceListTabs.js'], {
+            renderWhitelistEntries: function() { filled++; }, setupWhitelistListeners: function() { wired++; },
+            autoSaveSettings: function() { saved++; }, updatePrimedCount: function() { counted++; }
+        });
+        var T = box.SourceListTabs;
+        T._doc = function() { return doc; };
+        T.init();
+        T.refresh();
+        this.check(filled === 0 && !spells.classList.contains('source-list-hidden') && plugins.classList.contains('source-list-hidden'),
+            'Source tabs: Spells first, the plugin list not filled while hidden');
+        tabs[1].click();
+        this.check(T.current === 'plugins' && filled === 1 && wired === 1 && search.value === '' && tabs[1].classList.contains('active') &&
+            !tabs[0].classList.contains('active') && spells.classList.contains('source-list-hidden') && !plugins.classList.contains('source-list-hidden'),
+            'Source tabs: Plugins shows the plugin list, filled and wired as it opens, the filter cleared');
+        T.refresh();
+        tabs[0].click();
+        T.refresh();
+        T.show('nope');
+        this.check(filled === 2 && T.current === 'spells' && !spells.classList.contains('source-list-hidden'),
+            'Source tabs: a scan fills the plugin list again only while it shows; an unknown tab changes nothing');
+        box.pluginListChanged();
+        this.check(saved === 1 && counted === 1, 'Source tabs: a change on the plugin list saves and counts at once (no Done button)');
+        var html = this._file('../index.html'), panel = this._file('settingsPanel.js');
+        var right = html.substring(html.indexOf('class="tome-sources-right"'), html.indexOf('id="treeBuildSection"'));
+        this.check(!/whitelist-modal|whitelist-done/.test(html) && !/showWhitelistModal|hideWhitelistModal|#whitelist-modal/.test(panel) &&
+            ['sourceListTabs', 'scanBlacklistPreview', 'pluginListPanel', 'whitelist-search', 'whitelist-all', 'whitelist-none', 'whitelist-base-only',
+                'whitelist-base-entries', 'whitelist-mod-entries'].every(function(id) { return right.indexOf('id="' + id + '"') !== -1; }) &&
+            !/whitelistBtn|whitelistLabel|showPluginList|pluginLine|pluginState/.test(html + this._file('../script.js') + this._file('scanStage.js') + this._file('sourceListTabs.js')) &&
+            (panel.match(/if \(typeof pluginListChanged === 'function'\) pluginListChanged\(\);/g) || []).length === 3,
+            'Source tabs: the plugin list lives on the Plugins tab (the window and the plugin line gone), a click and All / None / Base Only save');
+        var css = this._file('../panel-scan.css');
+        this.check(/#tomeSourcesBlock \.source-list-page\.source-list-hidden \{ display: none; \}/.test(css) && /#pluginListPanel \{ display: flex;/.test(css),
+            'Source tabs: a hidden page stays hidden (the class rule outranks #pluginListPanel\'s display: flex)');
+        this._wheelCapture(right);
+    },
+
+    /** The list boxes keep the wheel at their ends (wheelScroll.js wheel-capture), so the page does not scroll under them */
+    _wheelCapture: function(right) {
+        var self = this, listened = 0;
+        var box = this._sandbox(['wheelScroll.js'], {
+            document: { documentElement: {}, readyState: 'complete', addEventListener: function() { listened++; } },
+            window: { getComputedStyle: function(e) { return { overflowY: e.overflowY || 'visible' }; } }
+        });
+        var W = box.WheelScroll;
+        var page = this.el('div'), list = this.el('ul', { 'class': 'wheel-capture' }), plain = this.el('ul'), item = this.el('li');
+        [page, list, plain].forEach(function(e) { e.nodeType = 1; e.overflowY = 'auto'; e.clientHeight = 100; e.scrollHeight = 300; });
+        item.nodeType = 1;
+        page.appendChild(list); page.appendChild(plain); list.appendChild(item);
+        page.scrollTop = 50;
+        list.scrollTop = 200;   // at its end
+        plain.scrollTop = 200;
+        this.check(W._scrollableFrom(item, 10) === list && W._scrollableFrom(plain, 10) === page && W._scrollableFrom(list, -10) === list,
+            'Wheel: a wheel-capture box at its end keeps the wheel (the page does not move); a plain one hands it on');
+        list.scrollHeight = 100;
+        this.check(W._scrollableFrom(item, 10) === page, 'Wheel: a wheel-capture box with nothing to scroll lets the page scroll');
+        var boxes = (right.match(/class="wheel-capture [^"]*"/g) || []).length;
+        this.check(boxes === 5, 'Wheel: the five list boxes (Spell list, Blacklisted, Whitelisted, Base Game, Mod Plugins) capture the wheel (' + boxes + ')');
     },
 
     // ======================================================================= item 9

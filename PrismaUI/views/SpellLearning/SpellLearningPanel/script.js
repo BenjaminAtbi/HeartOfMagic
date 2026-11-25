@@ -46,7 +46,6 @@ function initializePanel() {
     // Button event listeners (some may be removed during UI revamp)
     safeAddListener('scanBtn', 'click', onScanClick);
     safeAddListener('blacklistBtn', 'click', showBlacklistModal);
-    safeAddListener('whitelistBtn', 'click', showWhitelistModal);
     safeAddListener('saveBtn', 'click', onSaveClick);
 
     safeAddListener('fullscreenBtn', 'click', toggleFullscreen);

@@ -243,6 +243,23 @@ var ConfigSaveTest = {
             var kept = g.filterWhitelistedSpells(spells).map(function(s) { return s.formId; });
             this.check(kept.join() === '0x02000802,0x03000803,0x04000804',
                 'plugin list filter: a lowered "off" entry still leaves its plugin out; others and plugin-less spells stay');
+
+            // The Plugins tab's counts: spells that could go on the tree (isTomeCandidate), Unreachable included
+            var oldData = g.state.lastSpellData;
+            g.state.lastSpellData = { spells: [
+                { formId: '0x00000101', plugin: 'Skyrim.esm', taughtByTome: true },
+                { formId: '0x00000102', plugin: 'Skyrim.esm', taughtByTome: true, tomeUnreachable: true },
+                { formId: '0x00000103', plugin: 'Skyrim.esm', taughtByTome: false },
+                { formId: '0x00000104', plugin: 'Skyrim.esm', taughtByTome: true, voiceSlot: true },
+                { formId: '0x00000105', plugin: 'Skyrim.esm', taughtByTome: true, duplicateOf: '0x00000101' },
+                { formId: '0x05000106', plugin: 'Creatures.esp', taughtByTome: false }] };
+            try {
+                var counts = g.buildPluginSpellCounts();
+                this.check(counts['Skyrim.esm'] === 2 && counts['Creatures.esp'] === 0,
+                    'plugin counts: only spells that could go on the tree (Unreachable counted; no tome, voice slot, copy not); a plugin with none listed at 0');
+            } finally {
+                g.state.lastSpellData = oldData;
+            }
         });
     },
 

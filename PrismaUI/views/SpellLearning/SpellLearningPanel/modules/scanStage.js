@@ -1,11 +1,13 @@
 /**
  * ScanStage - the Scan tab's summary line and its one main button (2.0 review, item 7)
  *
- * One line says where the player is: "753 spells found · 681 go in the tree · not built
- * yet". A difference between found and in-the-tree is never hidden: a second line says
- * how many were left out and why, in the order the build filters them (getPrimedSpells:
- * the tome filter, the excluded list, the plugin list) and, once built, the ones the
- * builder did not place.
+ * One line says where the player is: "1812 spells found · 1735 go in the tree · not built
+ * yet". Found counts the spells that could go on the tree (isTomeCandidate: a tome teaches
+ * it, not a voice slot spell, not another plugin's copy), whatever the player's choices;
+ * the scan's other spells are invalid (no whitelist brings them in). A second line says
+ * "X spells invalid (no tome, powers, copies); X spells left off the tree." Left off is
+ * found minus in the tree: off by a source switch (Spell Inclusion), the
+ * blacklist or a plugin turned off; once built, the ones the builder did not place follow.
  *
  * The main button follows the stage: Scan Spells, Build Tree, Apply Tree (Build and Apply
  * stay two steps: the player looks at the preview before applying), then "Tree applied".
@@ -13,8 +15,9 @@
  * (#scanBtn, the Easy or Complex Build, #tgApplyBtn), whose handlers, guards and the build
  * at game start (autoBuild.js) stay as they were. The other actions are small text
  * buttons: Scan again, Import, Clear draft tree (it clears the built draft, not anyone's
- * progress). "Scan details" folds the counts per school; the filters read as lines with
- * their state ("Excluded spells: 12", "Plugins: all").
+ * progress). "Scan details" is a section: the counts per school and the override button (the blacklist
+ * window for now). Each refresh repaints Spell Inclusion's Spells tab (spellLists.js: the Spell list,
+ * Blacklisted and Whitelisted columns) when what it shows changed.
  *
  * "Applied" is this module's own flag: set when Apply (or the build at game start) saved
  * the draft (TreeGrowthClassic.applyTree calls markApplied), dropped when the draft changes
@@ -24,15 +27,16 @@
  * tree - shown whenever a draft exists - is the way back to Build.
  *
  * Depends on: state (lastSpellData), settings (spellBlacklist, pluginWhitelist),
- * isTaughtByTome / filterBlacklistedSpells / filterWhitelistedSpells / spellPluginName
- * (proceduralTreeBuilder.js), foldPluginName (constants.js), TreeGrowth, setI18n / tOr
- * (i18n.js), HomIcons (the relayed buttons' labels are left alone).
+ * isTomeCandidate / isTaughtByTome / filterBlacklistedSpells / filterWhitelistedSpells /
+ * spellPluginName (proceduralTreeBuilder.js), foldPluginName (constants.js), GateReview.key
+ * and TomeSourceSetting.renderCounts (optional), TreeGrowth, setI18n / tOr (i18n.js),
+ * HomIcons (the relayed buttons' labels are left alone).
  */
 var ScanStage = {
     SEPARATOR: ' · ',
+    GAP_SEPARATOR: '; ',
 
     _applied: false,
-    _detailsOpen: false,
     _initialized: false,
 
     /** The page's document (a stand-in under node tests) */
@@ -44,21 +48,25 @@ var ScanStage = {
     // =========================================================================
 
     /**
-     * The spells at each filter, in the build's order (getPrimedSpells).
+     * total: every scanned spell (not shown); found: the ones that could go on the tree
+     * (isTomeCandidate); invalid: total minus found; inTree: found through the build's filters
+     * (getPrimedSpells: the source switches and Include, the blacklist, the plugin list);
+     * leftOff: found minus inTree.
      * @param {Array} spells - the scan's spells
-     * @returns {{found:number, tomeOut:number, excluded:number, pluginsOut:number, inTree:number}}
+     * @returns {{total:number, found:number, invalid:number, inTree:number, leftOff:number}}
      */
     counts: function(spells) {
         var all = Array.isArray(spells) ? spells : [];
-        var a = (typeof isTaughtByTome === 'function') ? all.filter(isTaughtByTome) : all.slice();
+        var found = (typeof isTomeCandidate === 'function') ? all.filter(isTomeCandidate) : all.slice();
+        var a = (typeof isTaughtByTome === 'function') ? found.filter(isTaughtByTome) : found;
         var b = (typeof filterBlacklistedSpells === 'function') ? filterBlacklistedSpells(a) : a;
         var c = (typeof filterWhitelistedSpells === 'function') ? filterWhitelistedSpells(b) : b;
         return {
-            found: all.length,
-            tomeOut: all.length - a.length,
-            excluded: a.length - b.length,
-            pluginsOut: b.length - c.length,
-            inTree: c.length
+            total: all.length,
+            found: found.length,
+            invalid: all.length - found.length,
+            inTree: c.length,
+            leftOff: found.length - c.length
         };
     },
 
@@ -102,16 +110,12 @@ var ScanStage = {
             apply: ['scan.summaryNotApplied', 'not applied yet'], applied: ['scan.summaryApplied', 'applied'] }[stage];
         if (state) parts.push([state[0], null, state[1]]);
 
+        // "3070 spells invalid (no tome, powers, copies); 77 spells left off the tree." (refresh joins them)
         var gap = [];
-        if (c.tomeOut > 0) gap.push(['scan.gapNotPlayer', { count: c.tomeOut }, '{{count}} not player spells (no tome, powers, copies)']);
-        if (c.excluded > 0) gap.push(['scan.gapExcluded', { count: c.excluded }, '{{count}} on your excluded list']);
-        if (c.pluginsOut > 0) gap.push(['scan.gapPlugins', { count: c.pluginsOut }, '{{count}} from plugins turned off']);
+        if (c.invalid > 0) gap.push(['scan.gapInvalid', { count: c.invalid }, '{{count}} spells invalid (no tome, powers, copies)']);
+        if (c.leftOff > 0) gap.push(['scan.gapLeftOff', { count: c.leftOff }, '{{count}} spells left off the tree']);
         var notPlaced = built ? c.inTree - placed : 0;
         if (notPlaced > 0) gap.push(['scan.gapNotPlaced', { count: notPlaced }, '{{count}} not placed by the builder']);
-        var left = c.found - inTree;
-        // "72 left out:" leads two or more reasons; one reason that is the whole gap says it alone
-        if (!gap.length || left <= 0) gap = [];
-        else if (gap.length > 1 || gap[0][1].count !== left) gap.unshift(['scan.gapLeftOut', { count: left }, '{{count}} left out:']);
         return { parts: parts, gap: gap };
     },
 
@@ -126,37 +130,6 @@ var ScanStage = {
         }
     },
 
-    /**
-     * The plugin list's state: plugins the scan found, and how many of them are turned off.
-     * @param {Array} spells
-     * @param {Array} whitelist - settings.pluginWhitelist ({plugin, enabled})
-     * @returns {{total:number, off:number}}
-     */
-    pluginState: function(spells, whitelist) {
-        var fold = (typeof foldPluginName === 'function') ? foldPluginName : function(s) { return String(s).toLowerCase(); };
-        var nameOf = (typeof spellPluginName === 'function') ? spellPluginName : function(s) { return s.plugin || ''; };
-        var off = {};
-        (whitelist || []).forEach(function(e) { if (e && e.plugin && e.enabled === false) off[fold(e.plugin)] = true; });
-        var seen = {}, total = 0, offCount = 0;
-        (spells || []).forEach(function(s) {
-            var name = nameOf(s);
-            if (!name) return;
-            var k = fold(name);
-            if (seen[k]) return;
-            seen[k] = true;
-            total++;
-            if (off[k]) offCount++;
-        });
-        return { total: total, off: offCount };
-    },
-
-    /** [key, params, English] for the plugin line */
-    pluginLine: function(p) {
-        if (p.off === 0) return ['scan.pluginsAll', null, 'Plugins: all'];
-        if (p.off >= p.total) return ['scan.pluginsNone', null, 'Plugins: none (no spell goes in the tree)'];
-        return ['scan.pluginsSome', { on: p.total - p.off, total: p.total }, 'Plugins: {{on}} of {{total}}'];
-    },
-
     // =========================================================================
     // THE PAGE
     // =========================================================================
@@ -169,7 +142,6 @@ var ScanStage = {
         bind('scanStageBtn', function() { self.onMainClick(); });
         bind('scanAgainBtn', function() { self._click('scanBtn'); });
         bind('scanClearDraftBtn', function() { self._click('tgClearBtn'); });
-        bind('scanDetailsToggle', function() { self.toggleDetails(); });
         this.refresh();
     },
 
@@ -230,20 +202,7 @@ var ScanStage = {
     onScanned: function() {
         this._applied = false;
         this.refresh();
-    },
-
-    toggleDetails: function() {
-        this._detailsOpen = !this._detailsOpen;
-        this._renderDetails();
-    },
-
-    _renderDetails: function() {
-        var body = this._el('scanResultsBody');
-        var toggle = this._el('scanDetailsToggle');
-        var arrow = this._el('scanDetailsArrow');
-        if (body) body.classList.toggle('hidden', !this._detailsOpen);
-        if (toggle) toggle.setAttribute('aria-expanded', this._detailsOpen ? 'true' : 'false');
-        if (arrow) arrow.textContent = this._detailsOpen ? '▾' : '▸';
+        if (typeof SourceListTabs !== 'undefined') SourceListTabs.refresh();   // the plugin list, when it shows
     },
 
     /** Write a list of [key, params, English] as spans joined by sep */
@@ -275,15 +234,8 @@ var ScanStage = {
         this._writeParts(this._el('scanSummary'), s.parts, this.SEPARATOR);
         var gapEl = this._el('scanSummaryGap');
         if (gapEl) {
-            // "72 left out:" then the reasons, comma separated (or one reason alone)
-            var lead = s.gap.length > 0 && s.gap[0][0] === 'scan.gapLeftOut';
-            this._writeParts(gapEl, s.gap.slice(0, 1), '');
-            if (lead && s.gap.length > 1) {
-                gapEl.appendChild(doc.createTextNode(' '));
-                var rest = doc.createElement('span');
-                this._writeParts(rest, s.gap.slice(1), ', ');
-                gapEl.appendChild(rest);
-            }
+            this._writeParts(gapEl, s.gap, this.GAP_SEPARATOR);
+            if (s.gap.length > 0) gapEl.appendChild(doc.createTextNode('.'));
             gapEl.classList.toggle('hidden', s.gap.length === 0);
         }
 
@@ -302,18 +254,14 @@ var ScanStage = {
         var clearBtn = this._el('tgClearBtn');
         // While a draft exists (also once applied): clearing it is the way back to Build
         this._show('scanClearDraftBtn', inputs.built && !!clearBtn && !clearBtn.disabled);
-        // Nothing to unfold before a scan
-        this._show('scanDetailsToggle', inputs.hasSpells);
-        if (!inputs.hasSpells) this._detailsOpen = false;
+        // Scan details: the spells found (the counts per school are updatePrimedCount's)
+        var foundEl = this._el('statTotalSpells');
+        if (foundEl) foundEl.textContent = inputs.scanned ? String(c.found) : '--';
 
-        // The filter lines
-        var excluded = (typeof settings !== 'undefined' && settings && settings.spellBlacklist) ? settings.spellBlacklist.length : 0;
-        setI18n(this._el('blacklistLabel'), 'scan.excludedCount', { count: excluded }, 'Excluded spells: {{count}}');
-        // Plugins with player spells only, as the build counts them (the tome filter comes first)
-        var playerSpells = (typeof isTaughtByTome === 'function') ? spells.filter(isTaughtByTome) : spells;
-        var plugins = this.pluginLine(this.pluginState(playerSpells, (typeof settings !== 'undefined' && settings) ? settings.pluginWhitelist : null));
-        setI18n(this._el('whitelistLabel'), plugins[0], plugins[1], plugins[2]);
-        this._renderDetails();
+        // The Spells tab's three columns (spellLists.js: painted only when what they show changed)
+        var opts = (typeof settings !== 'undefined' && settings) ? settings : {};
+        if (typeof SpellLists !== 'undefined') SpellLists.render(spells, opts);
+        if (typeof TomeSourceSetting !== 'undefined' && TomeSourceSetting.renderCounts) TomeSourceSetting.renderCounts(spells);
     },
 
     _show: function(id, on) {

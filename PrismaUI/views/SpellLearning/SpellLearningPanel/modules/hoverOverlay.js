@@ -178,7 +178,7 @@ var HoverOverlay = {
             }
         }
         // The most a spell draws past its centre (a focused spell's halo, as LayerScroll._worldBox)
-        var pad = Math.max(this.SPOT_PAD, r.HALO_SCALE * (r._minSize(r.KNOWN_SIZE) + r.FOCUS_GROW)) + this.SPOT_PAD_PX / z;
+        var pad = Math.max(this.SPOT_PAD, r.HALO_SCALE * (r._minSize((r._largestSpellSize ? r._largestSpellSize() : r.KNOWN_SIZE)) + r.FOCUS_GROW)) + this.SPOT_PAD_PX / z;
         return { l: x0 - pad, r: x1 + pad, t: y0 - pad, b: y1 + pad };
     },
 

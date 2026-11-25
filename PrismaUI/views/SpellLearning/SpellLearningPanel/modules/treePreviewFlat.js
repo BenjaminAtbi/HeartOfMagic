@@ -75,12 +75,13 @@ var TreePreviewFlat = {
             '</div>' +
 
             // --- Numeric inputs in responsive grid ---
+            // Each with a "?" saying what it does to the build (read from render() and ClassicLayout)
             '<div class="tree-preview-settings-grid">' +
-                H(t('preview.flat.lineLength'), 'tpFlatLength', 5, 9999, 5, s.linePoints) +
-                H(t('preview.nodeSize'), 'tpFlatNodeSize', 1, 9999, 1, s.nodeSize) +
-                H(t('preview.rootsPerSchool'), 'tpFlatRoots', 1, 9999, 1, s.rootsPerSchool) +
-                H(t('preview.clumping'), 'tpFlatClump', 0, 100, 1, s.rootClumping, '%') +
-                H(t('preview.randomness'), 'tpFlatRand', 0, 100, 1, s.rootRandomness, '%') +
+                H(t('preview.flat.lineLength'), 'tpFlatLength', 5, 9999, 5, s.linePoints, '', t('preview.flat.lineLengthHint')) +
+                H(t('preview.rootSize'), 'tpFlatNodeSize', 1, 9999, 1, s.nodeSize, '', t('preview.flat.rootSizeHint')) +
+                H(t('preview.rootsPerSchool'), 'tpFlatRoots', 1, 9999, 1, s.rootsPerSchool, '', t('preview.flat.rootsPerSchoolHint')) +
+                H(t('preview.clumping'), 'tpFlatClump', 0, 100, 1, s.rootClumping, '%', t('preview.flat.clumpingHint')) +
+                H(t('preview.randomness'), 'tpFlatRand', 0, 100, 1, s.rootRandomness, '%', t('preview.flat.randomnessHint')) +
             '</div>';
     },
 

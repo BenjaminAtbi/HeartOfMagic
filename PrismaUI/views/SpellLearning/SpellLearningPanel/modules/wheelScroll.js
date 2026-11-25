@@ -9,7 +9,9 @@
  *
  * A box is scrollable when its overflow-y is auto or scroll and it has more to
  * show in the wheel's direction; otherwise its parents are tried, so a list
- * scrolled to its end hands the wheel to the page around it, as before.
+ * scrolled to its end hands the wheel to the page around it, as before -
+ * except a box marked wheel-capture (the Scan page's list boxes): one that
+ * overflows keeps the wheel at its ends too, so the page never moves under it.
  * Form fields keep the wheel (a number field or a list box may use it).
  *
  * Depends on: nothing
@@ -54,7 +56,7 @@ var WheelScroll = {
                 var oy = window.getComputedStyle(el).overflowY;
                 if (oy === 'auto' || oy === 'scroll') {
                     var room = dy > 0 ? el.scrollHeight - el.clientHeight - el.scrollTop : el.scrollTop;
-                    if (room > 0) return el;
+                    if (room > 0 || (el.classList && el.classList.contains('wheel-capture'))) return el;
                 }
             }
             el = el.parentNode;

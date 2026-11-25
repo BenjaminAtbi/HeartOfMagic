@@ -397,7 +397,7 @@
         CHAPTER_BOX_PAD: 1,         // css px round a title's box for antialiasing
         CHAPTER_GAP: 14,            // css px between a title's box and the spells nearest it
         CHAPTER_BIN_DEG: 2,         // the outer edge is kept per this many degrees round the heart
-        CHAPTER_NODE_WORLD: 12,     // a spell's largest radius in world units (CanvasRenderer.KNOWN_SIZE)
+        CHAPTER_NODE_WORLD: 12,     // a spell's largest radius in world units when the renderer has no KNOWN_SIZE
 
         /** How far out the spells reach from the heart, once per tree: per school (returned), and per CHAPTER_BIN_DEG
          *  whatever the school (_chapterBins: the outer ring at a school's spoke is often another school's).
@@ -509,7 +509,7 @@
             var reach = this._schoolReach(r, gd.x, gd.y);
             var zoom = r.zoom || 1;
             var halfH = this.tokens.chapterSize * this.CHAPTER_HALF_HEIGHT;
-            var nodeR = Math.max(this.CHAPTER_NODE_WORLD * zoom, r.MIN_NODE_SCREEN_RADIUS || 0);
+            var nodeR = Math.max((r.KNOWN_SIZE || this.CHAPTER_NODE_WORLD) * zoom, r.MIN_NODE_SCREEN_RADIUS || 0);
             ctx.save();
             this._chapterFont(ctx);
             for (var i = 0; i < names.length; i++) {
@@ -567,7 +567,8 @@
                 var ang = (s.startAngle !== undefined ? s.startAngle : (i * (360 / names.length) - 90)) * Math.PI / 180;
                 var ux = Math.cos(ang), uy = Math.sin(ang), px = -uy * off, py = ux * off;
                 var sx = gd.x + ux * 60, sy = gd.y + uy * 60;
-                var ex = gd.x + ux * length, ey = gd.y + uy * length;
+                var len = typeof length === 'number' ? length : length[i];   // one per divider, or one for all
+                var ex = gd.x + ux * len, ey = gd.y + uy * len;
                 ctx.moveTo(sx + px, sy + py); ctx.lineTo(ex + px, ey + py);
                 ctx.moveTo(sx - px, sy - py); ctx.lineTo(ex - px, ey - py);
                 ends.push(ex + ux * mark, ey + uy * mark, ux, uy);

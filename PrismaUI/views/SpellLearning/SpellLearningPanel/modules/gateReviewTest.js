@@ -67,8 +67,9 @@ var GateReviewTest = {
             this.check(g.isTaughtByTome(spells[1]) === true && g.isTaughtByTome(spells[0]) === true,
                 'the tree takes review and gate "out" spells: the gate only flags');
             var unclear = { formId: '0x01000807', plugin: 'Magic.esp', taughtByTome: true, source: { segment: 'review' } };
-            this.check(ids(R.pending([unclear], [], [])) === '7' && g.isTaughtByTome(unclear) &&
-                R._reasons(unclear, false).join() === 'source unclear', 'a spell with no clear source is flagged and stays in');
+            this.check(!g.isTaughtByTome(unclear) && ids(R.offSource([unclear], [], [])) === '7' &&
+                R._reasons(unclear, true).join() === 'source unclear',
+                'a spell with no clear source goes with Unreachable: off the tree, listed with the source ones');
             var oldSettings = g.settings;
             g.settings = { gateReviewed: ['mounts.esp:000802'] };
             try {

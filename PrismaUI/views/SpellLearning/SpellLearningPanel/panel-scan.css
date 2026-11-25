@@ -116,19 +116,182 @@
 #contentSpellScan .scan-text-btn .hom-icon { display: none; }
 #contentSpellScan .scan-text-btn.hidden { display: none; }
 
-/* ---- Scan details and the filter lines: one column of lines, no rule between ---- */
+/* ---- Scan details: a section title, the counts at the left, the list previews and the lines at the right ---- */
 #contentSpellScan #scanResultsSection {
+    display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 4px 16px 12px;
 }
 
+/* The right column starts right after the counts (a gap, not half the page) and is as tall as the left one */
+#contentSpellScan #scanResultsSection .scan-split {
+    gap: 32px;
+    align-items: stretch;
+}
+
 #contentSpellScan .scan-split-left,
 #contentSpellScan .scan-split-right {
-    flex: none;
+    min-width: 0;
     padding: 0;
     border: 0;
 }
+
+/* Left: the counts, then (spaced off) Override spells and the plugin line; right: the list boxes */
+#contentSpellScan .scan-split-left { flex: 0 1 30em; display: flex; flex-direction: column; gap: 18px; }
+#contentSpellScan .scan-split-right { flex: 1 1 0; display: flex; flex-direction: column; gap: 10px; }
+
+/* The page's sections (scanSections.js): boxes stacked flush, each edge one shared line (margin-top -1px), a
+   full-width header bar that folds the box; the content keeps the old 16px side margin, inside the box. A section
+   with nothing in it shows nothing */
+#contentSpellScan .scan-section {
+    padding: 0 16px 16px; margin: -1px 0 0; min-height: 0;
+    border: 1px solid var(--divider, rgba(255, 255, 255, 0.12));
+}
+#contentSpellScan .scan-section + .scan-section { margin-top: -1px; padding-top: 0; border-top: 1px solid var(--divider, rgba(255, 255, 255, 0.12)); }
+#contentSpellScan .scan-section:empty { display: none; }
+#contentSpellScan .scan-section > .tree-preview-header {
+    margin: 0 -16px 12px; padding: 8px 16px;
+    cursor: pointer; user-select: none; border-bottom: 1px solid var(--divider, rgba(255, 255, 255, 0.12));
+}
+#contentSpellScan .scan-section > .tree-preview-header::after {
+    content: '\25BE'; margin-left: auto; padding-left: 12px; color: var(--text-muted); font-size: 0.85em;
+}
+#contentSpellScan .scan-section.scan-section-folded { padding-bottom: 0; }
+#contentSpellScan .scan-section.scan-section-folded > .tree-preview-header { margin-bottom: 0; border-bottom-color: transparent; }
+#contentSpellScan .scan-section.scan-section-folded > .tree-preview-header::after { content: '\25B8'; }
+#contentSpellScan .scan-section.scan-section-folded > :not(.tree-preview-header) { display: none !important; }
+
+/* Section titles (Scan details, Spell Inclusion, Root Base Preview, Tree Growth Preview, Extra Settings) */
+#contentSpellScan .scan-section-title {
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--accent-gold);
+    text-transform: none;
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+}
+
+/* Root Base Preview: the settings as tall as the tallest mode's (treePreviewFit.js lays the other modes' settings,
+   hidden, in the same grid cell), no inner scroll; the preview at least 400px and as tall as the settings (its
+   canvas follows the box, treePreview.js ResizeObserver) */
+.tree-preview-split.tree-preview-fit { height: auto; min-height: 400px; }
+.tree-preview-fit .tree-preview-left { height: auto; overflow: visible; display: grid; align-items: start; }
+.tree-preview-fit .tree-preview-right { height: auto; }
+.tree-preview-fit .tp-page { grid-area: 1 / 1; min-width: 0; }
+.tree-preview-fit .tp-page-ghost { visibility: hidden; pointer-events: none; }
+
+/* Extra Settings: each tab's page as tall as its content, no inner scroll; the preview at least 400px and as tall
+   as the page beside it (its canvas follows the box, prereqMaster.js ResizeObserver) */
+#prereqMasterSection .prm-split { height: auto; min-height: 400px; }
+#prereqMasterSection .prm-split-left { height: auto; overflow: visible; }
+/* The tab pages share one grid cell, the hidden ones kept in the layout: the area is as tall as the tallest
+   page, so switching tabs moves nothing */
+#prereqMasterSection .prm-split-left { display: grid; align-items: start; }
+#prereqMasterSection .prm-tab-content { grid-area: 1 / 1; min-width: 0; }
+#prereqMasterSection .prm-tab-content.prm-page-hidden { visibility: hidden; pointer-events: none; }
+/* Children with "transition: all" (buttons, slider thumbs) would animate the inherited visibility and stay
+   shown for their transition's length: on a page being hidden nothing animates */
+#prereqMasterSection .prm-tab-content.prm-page-hidden *,
+#prereqMasterSection .prm-tab-content.prm-page-hidden *::before,
+#prereqMasterSection .prm-tab-content.prm-page-hidden *::after,
+#prereqMasterSection .prm-tab-content.prm-page-hidden input[type="range"]::-webkit-slider-thumb { transition: none; }
+#prereqMasterSection .prm-split-right { height: auto; }
+
+/* Parts of the shared Scan page shown in Complex mode only (switchScannerMode sets data-scanner-mode) */
+#contentSpellScan[data-scanner-mode="easy"] .complex-only { display: none; }
+
+/* The boxes from the left, each a fixed width; they fill the column's height down to the section's padding
+   (height 0 plus flex: the list's length never makes the row taller, it scrolls) */
+.scan-lists { display: flex; justify-content: flex-start; gap: 16px; flex: 1 1 auto; min-height: 0; }
+.scan-list { flex: 0 1 18em; min-width: 0; display: flex; flex-direction: column; }
+.scan-list-title { color: var(--text-secondary, #A8A898); font-size: 0.9em; font-weight: 600; margin-bottom: 4px; }
+/* The view buttons right of the spell filter (spellLists.js: All, Flagged) */
+.spell-list-views { flex: 0 0 auto; display: flex; gap: 8px; }
+/* Sized by .btn like the Plugins tab's All / None / Base Only; their own outline and gold for the active view */
+.btn.spell-view-btn {
+    border-radius: 2px;
+    background: transparent; color: var(--text-secondary, #A8A898); border: 1px solid var(--divider, rgba(255, 255, 255, 0.2));
+}
+.btn.spell-view-btn:hover { color: var(--text-primary); }
+.btn.spell-view-btn.active { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
+
+.scan-list-items {
+    list-style: none;
+    margin: 0;
+    padding: 4px 8px;
+    flex: 1 1 0;
+    height: 0;
+    min-height: 6em;
+    overflow-y: auto;
+    border: 1px solid var(--divider, rgba(255, 255, 255, 0.2));
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.scan-list-items li { padding: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scan-list-items li.scan-list-empty { color: var(--text-muted, #6A6A5A); font-style: italic; }
+
+/* The Spells tab's rows (spellLists.js): the name with its description under it, as the blacklist window's rows
+   (.blacklist-entry-name / -school), and the move buttons on the right in the columns' left-to-right order */
+.scan-list-items li.spell-list-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0; white-space: normal; overflow: visible;
+    border-bottom: 1px solid var(--divider, rgba(255, 255, 255, 0.12));
+}
+.scan-list-items li.spell-list-item:last-child { border-bottom: none; }
+.spell-list-info { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.spell-list-name { color: var(--text-primary); }
+.spell-list-desc { font-size: 0.83em; color: var(--text-muted); }
+.spell-list-moves { flex: 0 0 auto; display: flex; gap: 3px; }
+.spell-move {
+    width: 1.5em; height: 1.5em; padding: 0; margin: 0;
+    font-size: 0.8em; font-weight: bold; line-height: 1;
+    border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 2px; cursor: pointer;
+}
+.spell-move:disabled { opacity: 0.35; cursor: default; }
+.spell-move-spells { background: #A02828; color: #FFFFFF; }
+.spell-move-blacklisted { background: #000000; color: #FFFFFF; }
+.spell-move-whitelisted { background: #FFFFFF; color: #000000; border-color: rgba(0, 0, 0, 0.5); }
+.spell-move:not(:disabled):hover { filter: brightness(1.25); }
+/* The Flagged view's reasons for a look, in their own colour */
+.spell-list-reasons { color: #D0A060; }
+/* The "?" beside a spell's name, and the card it shows on hover (spellPeek.js), like the tree's spell card */
+.spell-list-help {
+    display: inline-block; width: 1.25em; height: 1.25em; margin-left: 6px; vertical-align: middle;
+    font-size: 0.75em; line-height: 1.25em; text-align: center; cursor: help;
+    color: var(--text-secondary, #A8A898); border: 1px solid var(--divider, rgba(255, 255, 255, 0.3)); border-radius: 50%;
+}
+.tree-preview-help {
+    display: inline-block; width: 1.25em; height: 1.25em; margin-left: 6px; vertical-align: middle;
+    font-size: 0.8em; line-height: 1.25em; text-align: center; cursor: help; text-transform: none;
+    color: var(--text-secondary, #A8A898); border: 1px solid var(--divider, rgba(255, 255, 255, 0.3)); border-radius: 50%;
+}
+.tree-preview-help:hover { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
+.spell-peek-hint { line-height: 1.4; color: var(--text-secondary, #A8A898); }
+.spell-list-help:hover { color: var(--accent-gold, #C8A050); border-color: var(--accent-gold, #C8A050); }
+.spell-peek {
+    position: fixed; z-index: 10050; max-width: 24em; padding: 10px 12px; pointer-events: none;
+    background: var(--panel-bg-solid, #12110e); border: 1px solid var(--accent-gold, #C8A050); border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6); font-size: 0.85em; color: var(--text-primary);
+}
+.spell-peek.hidden { display: none; }
+.spell-peek-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.spell-peek-name { font-size: 1.1em; font-weight: 600; color: var(--text-bright, var(--text-primary)); }
+.spell-peek-row { display: flex; gap: 8px; }
+.spell-peek-label { color: var(--text-muted); min-width: 4.5em; }
+.spell-peek-effects { margin-top: 6px; }
+.spell-peek-section { font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.spell-peek-table { width: 100%; border-collapse: collapse; color: var(--text-secondary, #A8A898); }
+.spell-peek-table th { font-weight: normal; color: var(--text-muted); text-align: right; padding: 1px 0 1px 8px; border-bottom: 1px solid var(--divider, var(--panel-border, rgba(255, 255, 255, 0.12))); }
+.spell-peek-table td { text-align: right; padding: 1px 0 1px 8px; white-space: nowrap; }
+.spell-peek-table th:first-child, .spell-peek-table td:first-child { text-align: left; padding-left: 0; white-space: normal; }
+.spell-peek-chips { margin: 6px 0 0; }
+.spell-peek-desc-part + .spell-peek-desc-part {
+    margin-top: 4px; padding-top: 4px;
+    border-top: 1px solid var(--divider, var(--panel-border, rgba(255, 255, 255, 0.12)));
+}
+.spell-peek-desc { margin-top: 6px; line-height: 1.4; color: var(--text-secondary, #A8A898); }
 
 .scan-row-link {
     display: inline-flex;
@@ -159,12 +322,7 @@
 
 #contentSpellScan .scan-filter-controls { gap: 10px; align-items: flex-start; }
 
-.scan-results-body {
-    padding: 8px 0 4px 16px;
-    max-width: 30em;
-}
-
-.scan-results-body.hidden { display: none; }
+.scan-results-body { max-width: 30em; }
 
 /* ---- The Easy page: presets and the status at the left, the preview at the right, no rule ---- */
 #contentSpellScan .easy-panel-left { border-right: 0; }
@@ -183,9 +341,57 @@
    scrolled under it showed through its Presets row (2.0 audit) */
 #contentSpellScan .scan-actions-bottom { background: var(--panel-bg-solid, #0a0a0a); }
 
-/* Where Spells Come From (tomeSourceSetting.js): folds like Extra Settings, but opens to its full length (no
-   inner scroll); each row is its switch, so the whole row takes the pointer */
-.tome-sources-content.collapsed { display: none; }
+/* Spell Inclusion (tomeSourceSetting.js): its full length (no inner scroll); each row is its switch, so the whole
+   row takes the pointer */
 .tome-sources-content { max-height: none; overflow: visible; }
 #tomeSourcesBlock .setting-row { cursor: pointer; user-select: none; }
 #tomeSourcesBlock .setting-row:hover { background: rgba(255, 255, 255, 0.04); }
+
+/* Each row's count column ("345 spells (2 Whitelisted / 5 Blacklisted)") and the scoped override button
+   (hidden until its menu exists), between the row's text and its switch */
+/* Spell Inclusion: the categories' stack in the left half, the Blacklisted and Whitelisted boxes sharing the
+   right half, as tall as the stack (the boxes scroll; a long list never makes the section taller) */
+.tome-sources-split { display: flex; gap: 32px; align-items: stretch; }
+.tome-sources-left, .tome-sources-right { flex: 1 1 0; min-width: 0; }
+.tome-sources-right .scan-list { flex: 1 1 0; }
+
+/* The right half's tabs (sourceListTabs.js): one page at a time, filling the half's height */
+.tome-sources-right { display: flex; flex-direction: column; }
+.source-list-tabs { flex: 0 0 auto; margin-bottom: 10px; }
+.source-list-page { flex: 1 1 auto; min-height: 0; }
+#tomeSourcesBlock .source-list-page.source-list-hidden { display: none; }   /* over #pluginListPanel's flex */
+
+/* Plugins: the note, the filter with All / None / Base Only, Base Game at its size, Mod Plugins taking the rest
+   (it scrolls; a long list never makes the section taller) */
+#pluginListPanel { display: flex; flex-direction: column; gap: 8px; }
+#pluginListPanel .whitelist-info { margin-bottom: 0; }
+/* Spells: the note, then the three columns taking the rest */
+#sourceListSpells { display: flex; flex-direction: column; gap: 8px; }
+#sourceListSpells .whitelist-info { margin-bottom: 0; flex: 0 0 auto; }
+.plugin-list-tools, .spell-list-tools { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.plugin-list-tools .spawn-search, .spell-list-tools .spawn-search { flex: 1 1 auto; min-width: 0; }
+.plugin-list-tools .btn { flex: 0 0 auto; }
+#pluginListPanel .whitelist-section { margin: 0; }
+#pluginListPanel .plugin-list-base .whitelist-entries { max-height: 9em; }
+#pluginListPanel .plugin-list-mods { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+#pluginListPanel .plugin-list-mods .whitelist-entries { flex: 1 1 0; height: 0; min-height: 6em; max-height: none; }
+
+/* Rows: the switch, then the text and the count sharing the rest evenly at any width or text size (so the counts
+   line up in one column); both wrap rather than overrun */
+#tomeSourcesBlock .setting-row { justify-content: flex-start; flex-wrap: nowrap; }
+#tomeSourcesBlock .setting-row > .toggle-switch { flex: 0 0 auto; margin: 0 24px 0 0; }
+#tomeSourcesBlock .setting-row > .setting-info { flex: 1 1 0; min-width: 0; max-width: none; }
+.tome-source-count-cell { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 12px 0 24px; }
+.tome-source-count { color: var(--text-secondary, #A8A898); white-space: normal; overflow-wrap: break-word; }
+.tome-source-scoped.hidden { display: none; }
+/* The thin last column: View spells shows the category in the Spell list (SpellLists.showCategory) */
+.tome-source-view-cell { flex: 0 0 auto; margin-left: 8px; }
+.tome-source-view { white-space: nowrap; }
+
+/* Unreachable: a warning row, red tinted */
+#tomeSourcesBlock .setting-row.tome-source-warning { background: rgba(170, 40, 40, 0.16); }
+#tomeSourcesBlock .setting-row.tome-source-warning:hover { background: rgba(170, 40, 40, 0.24); }
+.tome-source-warning .setting-desc { color: #D08A80; }
+
+/* List boxes that keep the wheel at their ends (wheelScroll.js does it in game; this for a browser) */
+.wheel-capture { overscroll-behavior: contain; }

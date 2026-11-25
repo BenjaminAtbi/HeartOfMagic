@@ -21,15 +21,16 @@
         /* Harness chrome - toolbar at top */
 
         #harness-toolbar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
-            background: #0d1117; border-bottom: 1px solid #30363d;
-            display: flex; align-items: center; gap: 8px;
-            padding: 4px 12px; height: 36px; font-size: 13px; color: #c9d1d9;
+            /* The top middle third, clear of the panel's own controls at the edges */
+            position: fixed; top: 0; left: 33.333vw; width: 33.334vw; box-sizing: border-box; z-index: 10000;
+            background: #0d1117; border: 1px solid #30363d; border-top: none; border-radius: 0 0 6px 6px;
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; white-space: nowrap;
+            padding: 4px 8px; font-size: 12px; color: #c9d1d9;
         }
-        #harness-toolbar .toolbar-title { font-weight: 600; color: #58a6ff; margin-right: 12px; }
+        #harness-toolbar .toolbar-title { font-weight: 600; color: #58a6ff; margin-right: 4px; }
         #harness-toolbar button {
             background: #21262d; border: 1px solid #30363d; color: #c9d1d9;
-            padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+            padding: 2px 7px; border-radius: 4px; cursor: pointer; font-size: 11px;
         }
         #harness-toolbar button:hover { background: #30363d; border-color: #58a6ff; }
         #harness-toolbar button.active { background: #388bfd33; border-color: #58a6ff; color: #58a6ff; }
@@ -76,6 +77,8 @@
     </style>
     <!-- Mock C++ bridge: before every module script -->
     <script src="dev-harness-bridge.js"></script>
+    <!-- Served by tools/dev-renderer: the game's own data and a reload on every change (a file: page skips it) -->
+    <script src="dev-harness-live.js"></script>
 </head>
 <body>
     <!-- Harness Toolbar -->
@@ -124,7 +127,7 @@
             <!-- ============================================================ -->
             <!-- PANEL: Spell Scan (toggled from header) -->
             <!-- ============================================================ -->
-            <div class="tab-content" id="contentSpellScan">
+            <div class="tab-content" id="contentSpellScan" data-scanner-mode="easy">
                 <!-- Mode Toggle Bar -->
                 <div class="scanner-mode-bar">
                     <button class="scanner-mode-btn active" data-scanner-mode="easy" data-i18n="scanner.modeEasy">Easy</button>
@@ -165,16 +168,21 @@
                     <button type="button" id="scanClearDraftBtn" class="btn scan-text-btn hidden" data-i18n="scan.clearDraft">Clear draft tree</button>
                 </div>
 
-                <!-- Section 1: scan details (folded) and the filters, as lines -->
-                <div class="scan-section scan-split" id="scanResultsSection">
-                    <!-- Scan details: totals and spells per school, opened by its line -->
+                <!-- Section 1: Scan details - the counts and Override spells (scanStage.js); the list previews are in Spell Inclusion.
+                     Every section folds by its header bar (modules/scanSections.js) -->
+                <div class="scan-section" id="scanResultsSection">
+                    <div class="tree-preview-header settings-block-header">
+                        <span class="tree-preview-title scan-section-title scan-details-title" data-i18n="scan.details">Scan details</span>
+                    </div>
+                    <div class="scan-split">
+                    <!-- Spells found (could go on the tree), mods, primed, and the primed spells per school; then the override
+                         button (opens the blacklist window until the override menu exists) -->
                     <div class="scan-split-left">
-                        <button type="button" id="scanDetailsToggle" class="scan-row-link" aria-expanded="false"><span data-i18n="scan.details">Scan details</span> <span id="scanDetailsArrow" class="scan-row-arrow" aria-hidden="true">&#9656;</span></button>
-                        <div class="scan-results-body hidden" id="scanResultsBody">
+                        <div class="scan-results-body" id="scanResultsBody">
                             <div class="scan-stats-grid" id="scanStatsGrid">
                                 <div class="scan-stat">
                                     <span class="scan-stat-value" id="statTotalSpells">--</span>
-                                    <span class="scan-stat-label" data-i18n="scanner.totalSpells">Total Spells</span>
+                                    <span class="scan-stat-label" data-i18n="scan.spellsFound">Spells found</span>
                                 </div>
                                 <div class="scan-stat">
                                     <span class="scan-stat-value" id="statTotalMods">--</span>
@@ -189,18 +197,12 @@
                                 <!-- Populated after scan -->
                             </div>
                         </div>
-                    </div>
-
-                    <!-- The filters: each line says its state and opens its list (scanStage.js writes the labels) -->
-                    <div class="scan-split-right">
                         <div class="scan-filter-controls">
                             <button id="blacklistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
-                                <span class="hom-label" id="blacklistLabel" data-i18n="scan.excludedCount" data-i18n-params='{"count":0}'>Excluded spells: 0</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
-                            </button>
-                            <button id="whitelistBtn" class="btn btn-secondary btn-filter scan-row-link" disabled>
-                                <span class="hom-label" id="whitelistLabel" data-i18n="scan.pluginsAll">Plugins: all</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
+                                <span class="hom-label" id="blacklistLabel" data-i18n="scan.override">Override spells</span> <span class="scan-row-arrow" aria-hidden="true">&#8250;</span>
                             </button>
                         </div>
+                    </div>
                     </div>
                 </div>
 
@@ -248,96 +250,171 @@
                 <!-- ============================================================ -->
                 <div class="scanner-mode-content" id="scannerComplexContent" style="display:none;">
 
-                <!-- Where spells come from: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
-                <!-- Shown after a scan like the sections below (cppCallbacks.js); folds by its header, open by default, never scrolls inside -->
+                <!-- Spell Inclusion: which distribution segments put spells on the tree (modules/tomeSourceSetting.js) -->
+                <!-- Shown after a scan like the sections below (cppCallbacks.js); folds by its header (scanSections.js), never scrolls inside -->
                 <div class="scan-section" id="tomeSourcesSection" style="display:none;">
-                    <div class="settings-block" id="tomeSourcesBlock">
-                        <div class="settings-block-header prm-header tome-sources-header" id="tomeSourcesHeader" aria-expanded="true">
-                            <span class="hom-icon settings-block-icon" data-icon="tome" aria-hidden="true"></span>
-                            <span class="settings-block-title" data-i18n="settings.tomeSources.title">Where Spells Come From</span>
-                            <span class="prm-collapse-icon" aria-hidden="true"></span>
-                        </div>
-                        <div class="settings-block-content tome-sources-content" id="tomeSourcesContent">
-                            <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule their spell tomes match, from top to bottom. Activate a category to include its spells on the tree. Spells whose tomes can't be accessed in-game never appear on the tree.</p>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.spellpackVendor">Spellpack mod vendors</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.spellpackVendorDesc">Sold by 1-3 vendors that collectively sell the majority of one mod's tomes.</span>
+                    <div class="tree-preview-header settings-block-header" id="tomeSourcesHeader">
+                        <span class="tree-preview-title scan-section-title" data-i18n="settings.tomeSources.title">Spell Inclusion</span>
+                    </div>
+                    <div id="tomeSourcesBlock">
+                        <div class="tome-sources-content" id="tomeSourcesContent">
+                            <!-- The categories' stack at the left; the right half, as tall as the stack (panel-scan.css), has two
+                                 tabs (modules/sourceListTabs.js): Spells, three columns (modules/spellLists.js: Spell list, Blacklisted, Whitelisted / Include; X B W move a row),
+                                 and Plugins, the plugin list (settingsPanel.js renderWhitelistEntries; it was a window). The
+                                 override button stays in Scan details. The list boxes keep the wheel (wheel-capture, wheelScroll.js) -->
+                            <div class="tome-sources-split">
+                            <div class="tome-sources-left">
+                                <p class="setting-note" style="margin: 0 0 12px 0;" data-i18n="settings.tomeSources.note">Spells are sorted into the following categories, based on the first rule their spell tomes match, from top to bottom. Spells whose tomes nothing hands out, or that match no rule, go under Unreachable at the bottom. Activate a category to include its spells on the tree.</p>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceSpellpackVendorToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.spellpackVendor">Spellpack mod vendors</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.spellpackVendorDesc">Sold by 1-3 vendors that collectively sell the majority of one mod's tomes.</span>
+                                    </div>
                                 </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceSpellpackVendorToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceRitualQuestToggle" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.ritualQuest">Ritual Quest</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.ritualQuestDesc">Sold by vendors only after the Winterhold master ritual quests.</span>
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceStandardSaleToggle" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.standardSale">Standard Vendors</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.standardSaleDesc">Sold by 3 or more vendors.</span>
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceStandardLootToggle" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.standardLoot">Standard Loot</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.standardLootDesc">Looted from NPCs and Containers in 20+ locations or 5+ regions, or NPCs belonging to broad categories such as factions and races.</span>
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceRegionalLootToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.regionalLoot">Regional Loot</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.regionalLootDesc">Looted from NPCs and Containers in 2+ locations.</span>
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceUniqueVendorToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.uniqueVendor">Unique vendors</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.uniqueVendorDesc">Sold by 1 or 2 vendors, or only after a quest completes.</span>
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceUniqueRewardToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.uniqueReward">Unique rewards</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.uniqueRewardDesc">Hand-placed in the world, looted at one location (such as a boss or unique encounter), or handed out by a quest.</span>
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceCraftedToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.crafted">Crafted</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.craftedDesc">Made with a crafting recipe.</span>
+                                    </div>
+                                </div>
+                                <div class="setting-row tome-source-warning">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="tomeSourceUnreachableToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <span class="setting-label" data-i18n="settings.tomeSources.unreachable">Unreachable</span>
+                                        <span class="setting-desc" data-i18n="settings.tomeSources.unreachableDesc">WARNING: spells not usually accessible in game (Through Tomes). May be unfinished or bugged.</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.ritualQuest">Ritual Quest</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.ritualQuestDesc">Sold by vendors only after the Winterhold master ritual quests.</span>
+                            <div class="tome-sources-right">
+                                <div class="tree-preview-tabs source-list-tabs" id="sourceListTabs">
+                                    <button type="button" class="tree-preview-tab active" data-source-tab="spells" data-i18n="scan.tabSpells">Spells</button>
+                                    <button type="button" class="tree-preview-tab" data-source-tab="plugins" data-i18n="scan.tabPlugins">Plugins</button>
                                 </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceRitualQuestToggle" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
+                                <div class="source-list-page" id="sourceListSpells">
+                                    <div class="whitelist-info">
+                                        <span class="whitelist-info-text" data-i18n="scan.spellsInfo">Manually sort spells, regardless of their category's state. Flagged spells are less likely to be tree-worthy spells, for the reason given.</span>
+                                    </div>
+                                    <div class="spell-list-tools">
+                                        <input type="text" id="spellListSearch" class="spawn-search" placeholder="Filter spells..." data-i18n-placeholder="scan.filterSpells">
+                                        <div class="spell-list-views" id="spellListViews">
+                                            <button type="button" class="btn spell-view-btn active" data-spell-view="all" data-i18n="scan.viewAll">All</button>
+                                            <button type="button" class="btn spell-view-btn" data-spell-view="flagged" data-i18n="scan.viewFlagged">Flagged</button>
+                                        </div>
+                                    </div>
+                                    <div class="scan-lists">
+                                        <div class="scan-list">
+                                            <div class="scan-list-title" id="scanSpellListTitle" data-i18n="scan.spellList" data-i18n-params='{"count":0}'>Spell list (0)</div>
+                                            <ul class="wheel-capture scan-list-items" id="scanSpellListPreview"></ul>
+                                        </div>
+                                        <div class="scan-list">
+                                            <div class="scan-list-title" id="scanBlacklistTitle" data-i18n="scan.blacklisted" data-i18n-params='{"count":0}'>Blacklisted (0)</div>
+                                            <ul class="wheel-capture scan-list-items" id="scanBlacklistPreview"></ul>
+                                        </div>
+                                        <div class="scan-list">
+                                            <div class="scan-list-title" id="scanWhitelistTitle" data-i18n="scan.whitelisted" data-i18n-params='{"count":0}'>Whitelisted (0)</div>
+                                            <ul class="wheel-capture scan-list-items" id="scanWhitelistPreview"></ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="source-list-page source-list-hidden" id="pluginListPanel">
+                                    <div class="whitelist-info">
+                                        <span class="whitelist-info-text" data-i18n="modals.whitelist.info">Select plugins to include in spell scanning. If none selected, all plugins are scanned.</span>
+                                    </div>
+                                    <div class="plugin-list-tools">
+                                        <input type="text" id="whitelist-search" class="spawn-search" placeholder="Filter plugins..." data-i18n-placeholder="modals.whitelist.filterPlaceholder">
+                                        <button type="button" id="whitelist-all" class="btn btn-secondary" data-i18n="modals.whitelist.all">All</button>
+                                        <button type="button" id="whitelist-none" class="btn btn-secondary" data-i18n="modals.whitelist.none">None</button>
+                                        <button type="button" id="whitelist-base-only" class="btn btn-secondary" data-i18n="modals.whitelist.baseOnly">Base Only</button>
+                                    </div>
+                                    <div class="whitelist-section plugin-list-base">
+                                        <div class="whitelist-section-header">
+                                            <span data-i18n="modals.whitelist.baseGame">Base Game</span>
+                                            <span id="whitelist-base-count" class="whitelist-count">0</span>
+                                        </div>
+                                        <div id="whitelist-base-entries" class="wheel-capture whitelist-entries whitelist-base"></div>
+                                    </div>
+                                    <div class="whitelist-section plugin-list-mods">
+                                        <div class="whitelist-section-header">
+                                            <span data-i18n="modals.whitelist.modPlugins">Mod Plugins</span>
+                                            <span id="whitelist-mod-count" class="whitelist-count">0</span>
+                                        </div>
+                                        <div id="whitelist-mod-entries" class="wheel-capture whitelist-entries whitelist-mods">
+                                            <div class="whitelist-empty" data-i18n="modals.whitelist.emptyMods">Scan spells first to see plugins</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.standardSale">Standard Vendors</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.standardSaleDesc">Sold by 3 or more vendors.</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceStandardSaleToggle" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.standardLoot">Standard Loot</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.standardLootDesc">Looted from NPCs and Containers in 20+ locations or 5+ regions, or NPCs belonging to broad categories such as factions and races.</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceStandardLootToggle" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.regionalLoot">Regional Loot</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.regionalLootDesc">Looted from NPCs and Containers in 2+ locations.</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceRegionalLootToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.uniqueVendor">Unique vendors</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.uniqueVendorDesc">Sold by 1 or 2 vendors, or only after a quest completes.</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceUniqueVendorToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.uniqueReward">Unique rewards</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.uniqueRewardDesc">Hand-placed in the world, looted at one location (such as a boss or unique encounter), or handed out by a quest.</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceUniqueRewardToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <span class="setting-label" data-i18n="settings.tomeSources.crafted">Crafted</span>
-                                    <span class="setting-desc" data-i18n="settings.tomeSources.craftedDesc">Made with a crafting recipe.</span>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="tomeSourceCraftedToggle">
-                                    <span class="toggle-slider"></span>
-                                </label>
                             </div>
                         </div>
                     </div>
@@ -352,8 +429,7 @@
                 </div>
 
                 <!-- Section 3: Output / Details -->
-                <div class="scan-section" id="scanDetailsSection">
-                </div>
+                <div class="scan-section" id="scanDetailsSection"></div>
 
                 <!-- Hidden output area used by Export Scan and C++ callbacks -->
                 <textarea id="outputArea" style="display:none;"></textarea>
@@ -361,15 +437,13 @@
                 <!-- ============================================================ -->
                 <!-- Section 4: EXTRA SETTINGS (PRM + Alternate Pathways) -->
                 <!-- ============================================================ -->
+                <!-- Laid out like Scaffold Preview and Tree Growth Preview: a header bar, then the content; folds by the bar;
+                     each tab's page as tall as its content (no inner scroll) -->
                 <div class="scan-section" id="prereqMasterSection" style="display:none;">
-                    <div class="settings-block prm-block">
-                        <div class="settings-block-header prm-header" id="prmToggleHeader">
-                            <span class="hom-icon settings-block-icon" data-icon="prereq" aria-hidden="true"></span>
-                            <span class="settings-block-title" data-i18n="prm.extraSettings">Pre Req Master</span>
-                            <span class="prm-collapse-icon" aria-hidden="true"></span>
-                        </div>
-                        <div class="settings-block-content prm-content" id="prmContent">
-
+                    <div class="tree-preview-header settings-block-header">
+                        <span class="tree-preview-title scan-section-title" data-i18n="prm.extraSettings">Extra Settings</span>
+                    </div>
+                    <div class="prm-content" id="prmContent">
                             <!-- Tab Bar (outside scroll zone) -->
                             <div class="prm-tabs">
                                 <span class="prm-tab active" data-prm-tab="locks">
@@ -520,7 +594,7 @@
                                     </div><!-- /prmTabLocks -->
 
                                     <!-- TAB: Core Settings (Globe) -->
-                                    <div class="prm-tab-content" id="prmTabCore" style="display:none;">
+                                    <div class="prm-tab-content prm-page-hidden" id="prmTabCore">
                                         <div class="settings-subsection">
                                             <span class="subsection-title" data-i18n="prm.globePosition">Globe Position</span>
                                         </div>
@@ -554,7 +628,7 @@
                                     </div><!-- /prmTabCore -->
 
                                     <!-- TAB: Alternate Pathways (placeholder) -->
-                                    <div class="prm-tab-content" id="prmTabAltPaths" style="display:none;">
+                                    <div class="prm-tab-content prm-page-hidden" id="prmTabAltPaths">
                                         <div class="not-implemented-overlay">
                                             <span class="not-implemented-badge" data-i18n="prm.notImplemented">Not Yet Implemented</span>
                                             <span class="not-implemented-desc" data-i18n="prm.altPathsPlanned">Alternate pathway features are planned for a future update</span>
@@ -567,12 +641,9 @@
                                 <div class="prm-split-right" id="prmPreviewWrap">
                                     <!-- Canvas created dynamically by prereqMaster.js -->
                                 </div>
-
                             </div><!-- /prm-split -->
-
-                        </div>
-                    </div>
-                </div>
+                    </div><!-- /prmContent -->
+                </div><!-- /prereqMasterSection -->
 
                 <!-- Shared Build/Apply/Clear - Sticky at bottom -->
                 <div class="scan-actions-sticky scan-actions-bottom">
@@ -2104,57 +2175,12 @@
                     <span data-i18n="modals.gateReview.sourceHeader">Specialty sources</span>
                     <span id="tome-source-count" class="blacklist-count">0</span>
                 </div>
-                <div class="blacklist-empty" data-i18n="modals.gateReview.sourceDescription">Spells whose tomes only come from a source switched off in Where Spells Come From (Complex tree builder), or that nothing hands out. Include one to let it into the tree.</div>
+                <div class="blacklist-empty" data-i18n="modals.gateReview.sourceDescription">Spells whose tomes only come from a source switched off in Spell Inclusion (Complex tree builder), or that nothing hands out. Include one to let it into the tree.</div>
                 <div id="tome-source-entries" class="blacklist-entries"></div>
             </div>
             <div class="modal-footer">
                 <button id="blacklist-clear-all" class="btn btn-secondary" data-i18n="modals.blacklist.clearAll">Clear All</button>
                 <button id="blacklist-done" class="btn btn-primary" data-i18n="modals.blacklist.done">Done</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Whitelist Plugin Modal -->
-    <div id="whitelist-modal" class="modal hidden">
-        <div class="modal-backdrop"></div>
-        <div class="modal-content whitelist-modal">
-            <div class="modal-header">
-                <h3 data-i18n="modals.whitelist.title">Plugin Whitelist</h3>
-                <button class="modal-close" id="whitelist-modal-close"><span class="hom-icon" data-icon="close" aria-hidden="true"></span></button>
-            </div>
-            <div class="modal-body">
-                <div class="whitelist-info">
-                    <span class="whitelist-info-text" data-i18n="modals.whitelist.info">Select plugins to include in spell scanning. If none selected, all plugins are scanned.</span>
-                </div>
-                <div class="whitelist-search-section">
-                    <input type="text" id="whitelist-search" class="spawn-search" placeholder="Filter plugins..." data-i18n-placeholder="modals.whitelist.filterPlaceholder">
-                </div>
-                <div class="whitelist-divider"></div>
-                <div class="whitelist-section">
-                    <div class="whitelist-section-header">
-                        <span data-i18n="modals.whitelist.baseGame">Base Game</span>
-                        <span id="whitelist-base-count" class="whitelist-count">0</span>
-                    </div>
-                    <div id="whitelist-base-entries" class="whitelist-entries whitelist-base">
-                        <!-- Base game plugins rendered here -->
-                    </div>
-                </div>
-                <div class="whitelist-divider"></div>
-                <div class="whitelist-section">
-                    <div class="whitelist-section-header">
-                        <span data-i18n="modals.whitelist.modPlugins">Mod Plugins</span>
-                        <span id="whitelist-mod-count" class="whitelist-count">0</span>
-                    </div>
-                    <div id="whitelist-mod-entries" class="whitelist-entries whitelist-mods">
-                        <div class="whitelist-empty" data-i18n="modals.whitelist.emptyMods">Scan spells first to see plugins</div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="whitelist-all" class="btn btn-secondary" data-i18n="modals.whitelist.all">All</button>
-                <button id="whitelist-none" class="btn btn-secondary" data-i18n="modals.whitelist.none">None</button>
-                <button id="whitelist-base-only" class="btn btn-secondary" data-i18n="modals.whitelist.baseOnly">Base Only</button>
-                <button id="whitelist-done" class="btn btn-primary" data-i18n="modals.whitelist.done">Done</button>
             </div>
         </div>
     </div>
@@ -2276,6 +2302,7 @@
     <script src="modules/layerBuild.js"></script>
     <script src="modules/fxLayer.js"></script>
     <script src="modules/canvasRendererV2.js"></script>
+    <script src="modules/treeNodeScale.js"></script>
     <!-- CanvasRenderer's methods, split by what they do: right after canvasRendererV2.js -->
     <script src="modules/canvasRendererColors.js"></script>
     <script src="modules/canvasRendererInput.js"></script>
@@ -2313,6 +2340,7 @@
     <script src="modules/settingsPanel.js"></script>
     <script src="modules/settingsCategories.js"></script>
     <script src="modules/gateReview.js"></script>
+    <script src="modules/sourceListTabs.js"></script>
     <script src="modules/spellCard.js"></script>
     <script src="modules/treeViewerUI.js"></script>
     <script src="modules/treeStatusLine.js"></script>
@@ -2333,7 +2361,10 @@
     <script src="modules/settingsPresets.js"></script>
     <script src="modules/scannerPresets.js"></script>
     <script src="modules/easyMode.js"></script>
+    <script src="modules/spellPeek.js"></script>
+    <script src="modules/spellLists.js"></script>
     <script src="modules/scanStage.js"></script>
+    <script src="modules/scanSections.js"></script>
     <script src="modules/buttonHandlers.js"></script>
     
     <!-- 5b. Tree Preview -->
@@ -2344,6 +2375,7 @@
     <script src="modules/sunGridSquare.js"></script>
     <script src="modules/treePreviewSun.js"></script>
     <script src="modules/treePreviewFlat.js"></script>
+    <script src="modules/treePreviewFit.js"></script>
     <script src="modules/treePreview.js"></script>
     <script src="modules/treePreviewHidden.js"></script>
     <script src="modules/schoolBridges.js"></script>

@@ -205,8 +205,9 @@ window.updateSpellData = function(jsonStr) {
 
         // Populate scan stats panel early — before downstream code that might throw
         if (data.spells && data.spells.length > 0) {
+            // Spells found: the ones that could go on the tree (ScanStage.counts, which refresh writes too)
             var totalEl = document.getElementById('statTotalSpells');
-            if (totalEl) totalEl.textContent = data.spells.length;
+            if (totalEl) totalEl.textContent = typeof isTomeCandidate === 'function' ? data.spells.filter(isTomeCandidate).length : data.spells.length;
 
             var modSet = {};
             data.spells.forEach(function(s) { if (s.plugin) modSet[s.plugin] = true; });
@@ -218,7 +219,7 @@ window.updateSpellData = function(jsonStr) {
 
         // Enable scan-dependent buttons after successful scan
         if (data.spells && data.spells.length > 0) {
-            var postScanBtns = ['blacklistBtn', 'whitelistBtn', 'saveBtn'];
+            var postScanBtns = ['blacklistBtn', 'saveBtn'];
             postScanBtns.forEach(function(id) {
                 var btn = document.getElementById(id);
                 if (btn) btn.disabled = false;
@@ -281,7 +282,7 @@ window.updateSpellData = function(jsonStr) {
     // Show Extra Settings section after scan (preview renders empty state until tree is built)
     var prmSection = document.getElementById('prereqMasterSection');
     if (prmSection) prmSection.style.display = '';
-    // Where Spells Come From (tomeSourceSetting.js), at the top of the page, after a scan too
+    // Spell Inclusion (tomeSourceSetting.js), at the top of the page, after a scan too
     var tomeSourcesSection = document.getElementById('tomeSourcesSection');
     if (tomeSourcesSection) tomeSourcesSection.style.display = '';
 
@@ -295,7 +296,7 @@ window.updateSpellData = function(jsonStr) {
         var spells = state.lastSpellData.spells;
         try {
             var totalEl = document.getElementById('statTotalSpells');
-            if (totalEl) totalEl.textContent = spells.length;
+            if (totalEl) totalEl.textContent = typeof isTomeCandidate === 'function' ? spells.filter(isTomeCandidate).length : spells.length;
 
             var modSet2 = {};
             spells.forEach(function(s) { if (s.plugin) modSet2[s.plugin] = true; });

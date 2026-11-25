@@ -27,7 +27,7 @@ var TreeGrowthClassic = {
     // =========================================================================
 
     settings: {
-        ghostOpacity: 35,
+        ghostOpacity: 100,
         nodeRadius: 5,
         spread: 50,
         radialBias: 50,
@@ -79,11 +79,20 @@ var TreeGrowthClassic = {
             onSettingChanged: function (key, value) {
                 self.settings[key] = value;
                 // Layout-affecting settings: invalidate cached layout so it recomputes
-                if (key === 'spread' || key === 'radialBias' || key === 'centerMask' || key === 'spellMatching') {
+                if (key === 'spread' || key === 'radialBias' || key === 'centerMask' || key === 'spellMatching' ||
+                    key === 'dynamicGridExpansion') {
                     if (self._treeData) {
                         self._layoutData = null; // triggers lazy re-layout on next render
                     }
                 }
+                TreeGrowth._markDirty();
+            },
+            // While a bar is dragged: the zone arcs follow it, the layout stays until release
+            onTierZoneDragging: function (tier, min, max) {
+                if (!self.settings.tierZones) self.settings.tierZones = {};
+                var zone = self.settings.tierZones[tier];
+                if (zone) { zone.min = min; zone.max = max; }
+                else self.settings.tierZones[tier] = { min: min, max: max };
                 TreeGrowth._markDirty();
             },
             onTierZoneChanged: function (tier, min, max) {
@@ -235,40 +244,38 @@ var TreeGrowthClassic = {
                 var arcStart = avgAngle - arcSpan / 2;
                 var arcEnd = avgAngle + arcSpan / 2;
 
+                // Solid, bright arcs in two passes: every tier's inner arc first, then the outer arcs and names over
+                // them (where one tier's inner edge meets another's outer edge, the outer one shows)
+                ctx.setLineDash([]);
+                ctx.lineWidth = 1.5;
+                for (var ivi = 0; ivi < tierVis.length; ivi++) {
+                    var iZone = this.settings.tierZones[tierVis[ivi].key];
+                    if (!iZone) continue;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, zi.ringRadius + (iZone.min / 100) * growRange, arcStart, arcEnd);
+                    ctx.strokeStyle = tierVis[ivi].color + '0.75)';
+                    ctx.stroke();
+                }
                 for (var tvi = 0; tvi < tierVis.length; tvi++) {
                     var tv = tierVis[tvi];
                     var zone = this.settings.tierZones[tv.key];
                     if (!zone) continue;
 
-                    var innerR = zi.ringRadius + (zone.min / 100) * growRange;
                     var outerR = zi.ringRadius + (zone.max / 100) * growRange;
-
-                    // Outer boundary arc
                     ctx.beginPath();
                     ctx.arc(cx, cy, outerR, arcStart, arcEnd);
-                    ctx.strokeStyle = tv.color + '0.3)';
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([3, 4]);
+                    ctx.strokeStyle = tv.color + '0.95)';
                     ctx.stroke();
 
-                    // Inner boundary arc
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, innerR, arcStart, arcEnd);
-                    ctx.strokeStyle = tv.color + '0.2)';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-
-                    // Label at the midpoint of the outer arc
-                    if (tvi === 0 || tvi === 4) { // Only label Novice and Master to avoid clutter
-                        ctx.setLineDash([]);
-                        var labelAngle = avgAngle;
-                        var labelR = outerR + 6;
-                        ctx.font = '8px sans-serif';
-                        ctx.fillStyle = tv.color + '0.5)';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(tv.key, cx + Math.cos(labelAngle) * labelR, cy + Math.sin(labelAngle) * labelR);
-                    }
+                    // Every tier named just outside its outer arc; the names step across the wedge so tiers whose
+                    // outer arcs lie close do not print on top of each other
+                    var labelAngle = arcStart + arcSpan * (tvi + 0.5) / tierVis.length;
+                    var labelR = outerR + 7;
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.fillStyle = tv.color + '1)';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(tv.key, cx + Math.cos(labelAngle) * labelR, cy + Math.sin(labelAngle) * labelR);
                 }
             }
             ctx.setLineDash([]);
@@ -518,6 +525,7 @@ var TreeGrowthClassic = {
         if (this._treeData && typeof AutoBuild !== 'undefined') AutoBuild.yieldTo('clear');
         this._treeData = null;
         this._layoutData = null;
+        this._viewFitted = false;
 
         ClassicSettings.setTreeBuilt(false);
         if (typeof updateScanStatus === 'function') updateScanStatus(t('status.treeCleared'), '', 'status.treeCleared');
@@ -529,9 +537,16 @@ var TreeGrowthClassic = {
     // ZOOM TO FIT
     // =========================================================================
 
-    /** Fit the Growth canvas to the whole tree (classicZoomFit.js). */
+    /**
+     * Fit the Growth canvas to the whole tree (classicZoomFit.js), once: a rebuild or a re-layout after a setting
+     * keeps the player's view. Clear lets the next tree fit again.
+     */
     _zoomToFit: function () {
+        if (this._viewFitted) return;
         ClassicZoomFit.fit(this._layoutData);
+        // Done only on a measured canvas with a laid-out tree (a fit on the default size would stick)
+        this._viewFitted = !!(this._layoutData && this._layoutData.schools &&
+            typeof TreeGrowth !== 'undefined' && TreeGrowth._width > 0);
     },
 
     // =========================================================================

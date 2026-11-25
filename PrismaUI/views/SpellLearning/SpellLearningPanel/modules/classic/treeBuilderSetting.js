@@ -52,10 +52,8 @@ var TreeBuilderSetting = {
         return '' +
             '<div class="tree-preview-settings-grid">' +
                 TreePreviewUtils.settingHTML(t('preview.classic.typeGrouping'), 'tgClassicTypeGrouping',
-                    0, this.MAX_TYPE_GROUPING, this.TYPE_GROUPING_STEP, this.typeGrouping().toFixed(1)) +
-            '</div>' +
-            '<div class="tree-preview-hint">' +
-                t('preview.classic.typeGroupingHint') +
+                    0, this.MAX_TYPE_GROUPING, this.TYPE_GROUPING_STEP, this.typeGrouping().toFixed(1), '',
+                    t('preview.classic.typeGroupingHint')) +
             '</div>' +
             '<div class="tree-preview-option">' +
                 '<label>' +

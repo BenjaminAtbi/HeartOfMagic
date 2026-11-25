@@ -372,7 +372,7 @@ var LayerScroll = {
         }
         // The largest thing a spell draws past its centre: the halo of a
         // selected spell (a little bigger than the others)
-        var pad = r.HALO_SCALE * (r._minSize(r.KNOWN_SIZE) + r.FOCUS_GROW) + this.CULL_PAD_PX / z;
+        var pad = r.HALO_SCALE * (r._minSize((r._largestSpellSize ? r._largestSpellSize() : r.KNOWN_SIZE)) + r.FOCUS_GROW) + this.CULL_PAD_PX / z;
         return { l: x0 - pad, r: x1 + pad, t: y0 - pad, b: y1 + pad };
     },
 

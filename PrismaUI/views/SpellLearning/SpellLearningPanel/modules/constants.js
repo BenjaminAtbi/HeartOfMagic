@@ -57,6 +57,22 @@ function foldPluginName(name) {
 
 window.foldPluginName = foldPluginName;
 
+/**
+ * Heart of Magic's school order (the order a vanilla scan meets them in): lists of schools
+ * follow it, any other school after them, by name (Scan details' counts per school)
+ */
+var HOM_SCHOOL_ORDER = ['Conjuration', 'Destruction', 'Alteration', 'Illusion', 'Restoration'];
+
+function compareSchools(a, b) {
+    var ia = HOM_SCHOOL_ORDER.indexOf(a), ib = HOM_SCHOOL_ORDER.indexOf(b);
+    if (ia === -1) ia = HOM_SCHOOL_ORDER.length;
+    if (ib === -1) ib = HOM_SCHOOL_ORDER.length;
+    return ia !== ib ? ia - ib : String(a).localeCompare(String(b));
+}
+
+window.HOM_SCHOOL_ORDER = HOM_SCHOOL_ORDER;
+window.compareSchools = compareSchools;
+
 // =============================================================================
 // DEFAULT TREE RULES PROMPT
 // =============================================================================
