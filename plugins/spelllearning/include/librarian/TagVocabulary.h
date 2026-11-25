@@ -26,7 +26,8 @@ namespace Librarian
     // =========================================================================
     //
     // The 34 from Spell Research, plus four the load order's own keyword
-    // frameworks distinguish and Spell Research cannot express.
+    // frameworks distinguish and Spell Research cannot express, plus five
+    // aspects of a spell-aspect patch (artifice, chaos, cosmic, mirage, psychic).
 
     inline constexpr std::string_view ELEMENTS[] = {
         "acid",
@@ -34,8 +35,11 @@ namespace Librarian
         "apparition",
         "arcane",
         "armor",
+        "artifice",    // beyond Spell Research (spell aspects, 2026-11-24)
         "blood",       // beyond Spell Research
+        "chaos",       // beyond Spell Research (spell aspects)
         "construct",
+        "cosmic",      // beyond Spell Research (spell aspects)
         "creature",
         "daedra",
         "disease",
@@ -52,9 +56,11 @@ namespace Librarian
         "light",
         "magicka",
         "metal",
+        "mirage",      // beyond Spell Research (spell aspects)
         "nature",
         "necrotic",    // beyond Spell Research
         "poison",
+        "psychic",     // beyond Spell Research (spell aspects)
         "resistance",
         "shadow",
         "shield",

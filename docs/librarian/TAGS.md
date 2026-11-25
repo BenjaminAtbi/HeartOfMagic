@@ -1,6 +1,6 @@
 # 태그 어휘 — tags-v1
 
-> 2026-09-09 확정. 원소 38종 / 기법 18종.
+> 2026-09-09 확정. 원소 38종 / 기법 18종. 2026-11-24: 주문 측면(spell aspect) 패치의 원소 다섯 개를 더해 원소 43종.
 > 정본은 이 문서. 코드 쪽 거울은 `include/librarian/TagVocabulary.h` 와
 > `PrismaUI/.../modules/tagVocabulary.js` — **셋 다 같아야 하고 수동 동기화다.**
 > `librarian-test --check-vocab` 이 룰 파일의 모든 태그가 어휘 안에 있는지 검사한다.
@@ -24,7 +24,7 @@ M2 측정에서 MGEF 구조만으로 실제 붙은 것은 원소 24종 / 기법 
 
 ---
 
-## 1. 원소 (38) — 마법이 무엇으로 되어 있는가
+## 1. 원소 (43) — 마법이 무엇으로 되어 있는가
 
 | 태그 | 정의 | 예시 |
 |---|---|---|
@@ -33,8 +33,11 @@ M2 측정에서 MGEF 구조만으로 실제 붙은 것은 원소 24종 / 기법 
 | `apparition` | 유령·혼령 형태의 존재 | Summon Arniel's Shade |
 | `arcane` | 속성 없는 순수 마력 피해 | Freeze / Ignite / Arniel's Convection |
 | `armor` | 방어도 자체를 올리고 내리는 것 | Oakflesh / Stoneflesh / Ironflesh |
+| **`artifice`** | 만듦과 기계. 드워머와 그 오토마톤, 톤 장치, 연금·마법 공예. **SR 에 없음** — KIT `KIT_MagicElement_Dwarven`, OCF `OCF_MgefClassArtificer` (2026-11-24, 그 전에는 `construct`) | Dwarven 소환 (모드) |
 | **`blood`** | 피를 대가로 쓰거나 피로 해치거나 피(생명)를 빨아들이는 마법. 흡혈 포함(2026-09-30). 소환·되살림·방어는 혈이 아니다 — KIT 의 Blood·Vampiric 표시는 같은 이펙트가 체력(Health)에 작용할 때만 혈이다(2026-10-10). **SR 에 없음** — KIT `SpellDamageType_Blood`, `SpellSacrificeType_Blood`, `MagicElement_Vampiric`, OCF `MgefClassBlood`, 바닐라 `MagicVampireDrain`, 통째로 혈마법인 모드(Bloodmoon·Sacrilege·Hemomancy·Everdamned)의 적대 Health 이펙트 — 플러그인 이름 룰 `70_mods.json`(2026-10-10) | Vampiric Drain |
-| `construct` | 세상에 남는 물체를 만든다. 룬·수호진·촛불 | Ash Rune / Conjure Ash Guardian / Candlelight |
+| **`chaos`** | 여러 원소를 한꺼번에 묶는 거친 원소 마법(불·냉기·번개를 함께). **SR 에 없음** (2026-11-24) | (모드 전용) |
+| `construct` | 세상에 남는 물체를 만든다. 룬·수호진·촛불. 드워머 기계는 `artifice` (2026-11-24) | Ash Rune / Conjure Ash Guardian / Candlelight |
+| **`cosmic`** | 하늘: 별·별자리·달·혜성·운석·일식·중력·성계. **SR 에 없음** (2026-11-24) | (모드 전용. Astral Magic) |
 | `creature` | 생물을 대상으로 거는 것(되살리는 시체 포함). 소환에는 붙지 않는다(2026-09-30) | Frenzy Rune / Raise Zombie / Detect Life |
 | `daedra` | 데이드라 존재와 그 권능. 아트로나크·바운드 무기 | Bound Sword / Conjure Seeker / Bound Dagger |
 | `disease` | 질병과 그 치료 | Vampiric Drain |
@@ -51,9 +54,11 @@ M2 측정에서 MGEF 구조만으로 실제 붙은 것은 원소 24종 / 기법 
 | `light` | 빛과 조명 | Candlelight / Magelight |
 | `magicka` | 마력 자원 | Equilibrium |
 | `metal` | 금속 재질 | Ironflesh / Ebonyflesh / Transmute |
+| **`mirage`** | 투영과 속임수: 환영·미끼·거울 분신·가짜 피해·빛 굴절. **SR 에 없음** (2026-11-24) | (모드 전용) |
 | `nature` | 식물·자연 | Oakflesh |
 | **`necrotic`** | 산 것을 시들게 하는 죽음의 힘. 언데드라는 존재(`undead`)와 다르다. **SR 에 없음** — OCF `MgefClassNecromancy`, `SpellDamage_Necrotic` | (모드 전용) |
 | `poison` | 독 | Poison Rune |
+| **`psychic`** | 정신을 다루는 모든 것: 진정·매혹·공포·광란·침묵·혼란. **SR 에 없음** (2026-11-24) | Calm / Fear / Fury |
 | `resistance` | 저항 수치 자체를 다루는 것 | (바닐라 없음) |
 | `shadow` | 그림자·은신 | (바닐라 없음. KIT `SpellDamageType_Shadow`) |
 | `shield` | 막아내는 장벽 | Lesser Ward / Steadfast Ward / Greater Ward |

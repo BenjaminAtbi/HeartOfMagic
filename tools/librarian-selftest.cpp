@@ -326,6 +326,61 @@ namespace
             "catalog: the stage's drops are counted");
     }
 
+    // A file whose tagging replaces the librarian's elements (replaceElements),
+    // with keepElements left beside it - a load order's own aspect keywords
+    void ReplaceElements()
+    {
+        std::printf("replaceElements\n");
+
+        Librarian::RuleSet rules = MakeRules();
+        Librarian::AppendRules(json::parse(R"({ "rules": [
+            { "match": { "archetype": "SpawnHazard" }, "add": { "elements": ["construct"] } },
+            { "match": { "mgefKeyword": "TestUndead" }, "add": { "elements": ["undead"] } }
+        ] })"), "01_test.json", rules);
+        const std::size_t rejectedBefore = rules.rejectedTags;
+        Librarian::AppendRules(json::parse(R"({ "tier": "manual", "replaceElements": true,
+            "keepElements": ["construct", "undead", "nonsense"], "rules": [
+            { "match": { "mgefKeyword": "ASP_Shadow" }, "add": { "elements": ["shadow"] } },
+            { "match": { "mgefKeyword": "ASP_Psychic" }, "add": { "elements": ["psychic"], "techniques": ["fear"] } },
+            { "match": { "mgefKeyword": "ASP_NotFire" }, "remove": { "elements": ["shadow"] } },
+            { "match": { "mgefKeyword": "Plain" }, "add": { "elements": ["fire"] }, "replaceElements": false }
+        ] })"), "95_test.json", rules);
+        Check(rules.keepElements == std::set<std::string>{ "construct", "undead" }
+            && rules.rejectedTags == rejectedBefore + 1, "keepElements: merged, a name outside the vocabulary refused");
+
+        // Poison by its resistance, shadow by its aspect: shadow alone
+        auto tags = Librarian::Classify(Spell(json::array({ Effect({ "KIT_MagicElement_Poison", "ASP_Shadow" },
+            "PoisonResist") })), rules);
+        Check(tags.elements == std::set<std::string>{ "shadow" } && SourceOf(tags, "shadow") == "manual"
+            && tags.elementSource == "manual", "the aspect replaces the librarian's poison");
+
+        tags = Librarian::Classify(Spell(json::array({ Effect({ "MagicDamageFire", "ASP_Psychic", "TestUndead" },
+            "FireResist", "SpawnHazard") })), rules);
+        Check(tags.elements == std::set<std::string>{ "psychic", "construct", "undead" }
+            && SourceOf(tags, "construct") == "mgef", "keepElements stay beside it with their own sources");
+        Check(tags.techniques.contains("fear"), "a replacing rule's techniques join the librarian's");
+
+        tags = Librarian::Classify(Spell(json::array({ Effect({ "KIT_MagicElement_Fire", "KIT_TechCurse" }) })), rules);
+        Check(tags.elements == std::set<std::string>{ "fire" } && tags.techniques.contains("curse"),
+            "no aspect: the librarian's own tagging");
+
+        tags = Librarian::Classify(Spell(json::array({ Effect({ kUnspecifiedApo, "ASP_Shadow",
+            "KIT_MagicElement_Fire" }) })), rules);
+        Check(tags.elements == std::set<std::string>{ "shadow" } && tags.conflictDropped.empty(),
+            "replaced: the conflict stage's drops are not reported");
+
+        tags = Librarian::Classify(Spell(json::array({ Effect({ "KIT_MagicElement_Frost", "ASP_Shadow",
+            "ASP_NotFire" }) })), rules);
+        Check(tags.elements == std::set<std::string>{ "frost" }, "a replacing rule's remove that empties it: the librarian's");
+
+        tags = Librarian::Classify(Spell(json::array({ Effect({ "KIT_MagicElement_Poison" }, "PoisonResist"),
+            HiddenHelper({ "ASP_Shadow" }) })), rules);
+        Check(tags.elements == std::set<std::string>{ "shadow" }, "an aspect on a hidden holder effect counts");
+
+        tags = Librarian::Classify(Spell(json::array({ Effect({ "Plain", "ASP_Shadow" }) })), rules);
+        Check(tags.elements == std::set<std::string>{ "shadow" }, "a rule can opt out of its file's replaceElements");
+    }
+
     void BadInput(const Librarian::RuleSet& rules)
     {
         std::printf("bad input\n");
@@ -357,6 +412,7 @@ int RunLibrarianSelfTest()
     ConflictApplies(rules);
     ConflictKeeps(rules);
     Sources(rules);
+    ReplaceElements();
     BadInput(rules);
     RunAdapterSelfTest(g_passed, g_failed);
     RunEnvironmentSelfTest(g_passed, g_failed);

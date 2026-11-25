@@ -160,7 +160,7 @@ namespace Librarian
         // One rule object. Returns false when it would never do anything, so
         // the caller can count it as skipped instead of carrying dead weight.
         bool ParseRule(const json& ruleObject, const std::string& originFile,
-            std::size_t index, const std::string& defaultSource, Rule& target,
+            std::size_t index, const std::string& defaultSource, bool defaultReplaces, Rule& target,
             std::size_t& rejectedTags)
         {
             if (!ruleObject.is_object()) {
@@ -208,6 +208,15 @@ namespace Librarian
             if (target.match.noElement &&
                 (!target.removeElements.empty() || !target.removeTechniques.empty())) {
                 logger::warn("Librarian: '{}' rule {} has noElement with remove - skipped", originFile, index);
+                return false;
+            }
+
+            target.replacesElements = defaultReplaces;
+            const auto replaces = ruleObject.find("replaceElements");
+            if (replaces != ruleObject.end() && replaces->is_boolean()) target.replacesElements = replaces->get<bool>();
+            // The noElement pass belongs to the librarian's own tagging
+            if (target.replacesElements && target.match.noElement) {
+                logger::warn("Librarian: '{}' rule {} has noElement with replaceElements - skipped", originFile, index);
                 return false;
             }
 
@@ -269,6 +278,7 @@ namespace Librarian
         // "rules" array, so it can carry a version or a comment alongside them.
         const json* ruleArray = nullptr;
         std::string defaultSource = SOURCE_MGEF;
+        bool defaultReplaces = false;
         if (document.is_array()) {
             ruleArray = &document;
         } else if (document.is_object()) {
@@ -286,6 +296,20 @@ namespace Librarian
                 auto& known = target.unspecifiedDamageKeywords;
                 if (std::find(known.begin(), known.end(), keyword) == known.end()) known.push_back(std::move(keyword));
             }
+            // A file whose tagging replaces the librarian's elements, and the
+            // librarian's elements that stay beside it
+            const auto replaces = document.find("replaceElements");
+            if (replaces != document.end() && replaces->is_boolean()) defaultReplaces = replaces->get<bool>();
+            std::vector<std::string> keep;
+            ReadStringList(document, "keepElements", keep);
+            for (auto& element : keep) {
+                if (IsElement(element)) {
+                    target.keepElements.insert(std::move(element));
+                } else {
+                    logger::warn("Librarian: '{}' keepElements names '{}', not an element - ignored", originFile, element);
+                    ++target.rejectedTags;
+                }
+            }
         }
 
         if (!ruleArray) {
@@ -293,7 +317,8 @@ namespace Librarian
             // and it is not a rule file; a file of conflict marks alone is
             // fine too. Anything else without rules is a mistake worth mentioning.
             if (!document.is_object() || (document.find("adapters") == document.end()
-                    && document.find("unspecifiedDamageKeywords") == document.end())) {
+                    && document.find("unspecifiedDamageKeywords") == document.end()
+                    && document.find("keepElements") == document.end())) {
                 logger::warn("Librarian: '{}' has no rules array - ignored", originFile);
             }
             return;
@@ -302,7 +327,7 @@ namespace Librarian
         std::size_t index = 0;
         for (const auto& ruleObject : *ruleArray) {
             Rule rule;
-            if (ParseRule(ruleObject, originFile, index, defaultSource, rule, target.rejectedTags)) {
+            if (ParseRule(ruleObject, originFile, index, defaultSource, defaultReplaces, rule, target.rejectedTags)) {
                 target.rules.push_back(std::move(rule));
             } else {
                 ++target.skipped;

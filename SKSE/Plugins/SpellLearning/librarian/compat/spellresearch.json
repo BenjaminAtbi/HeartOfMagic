@@ -153,10 +153,11 @@
     },
     {
       "formList": "SpellResearch.esp|0xD81",
-      "why": "construct",
+      "why": "construct: placed objects, and Dwemer machinery (artifice)",
       "tags": {
         "any": [
-          "construct"
+          "construct",
+          "artifice"
         ]
       }
     },

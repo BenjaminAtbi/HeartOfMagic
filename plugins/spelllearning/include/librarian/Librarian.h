@@ -199,6 +199,14 @@ namespace Librarian
         std::vector<std::string> removeElements;
         std::vector<std::string> removeTechniques;
 
+        // "replaceElements": true (on the rule, or as its file's default) - a
+        // spell any such rule gives an element has exactly the elements these
+        // rules give it: every other rule's elements are dropped, except the
+        // rule set's keepElements. Techniques are not affected. For a load order
+        // that tags its spells itself (keywords from its own patch) and wants
+        // that tagging in place of the librarian's.
+        bool replacesElements = false;
+
         // Evidence tier, from the rule's "tier" field. Defaults to mgef.
         std::string source;
 
@@ -220,6 +228,12 @@ namespace Librarian
         // carries one, a framework keyword naming fire, frost, shock or poison
         // is contradicted by the record.
         std::vector<std::string> unspecifiedDamageKeywords;
+
+        // Elements the other rules give that stay on a spell whose elements the
+        // replaceElements rules set (a rule file's top-level "keepElements",
+        // merged from every file): what a spell acts on or leaves in the world
+        // (construct, trap, undead ...) rather than what it is made of.
+        std::set<std::string> keepElements;
 
         // Rules skipped because they had no conditions or added no tags.
         std::size_t skipped = 0;
@@ -257,7 +271,9 @@ namespace Librarian
     // effect a different engine damage element; a cloak-like carrier that
     // deals no damage is judged by the damage it applies) and drops the
     // element when no evidence is left, then the noElement rules run (a tag
-    // a "remove" took stays off). Sources are settled last, over the tags left.
+    // a "remove" took stays off). Then, if the replaceElements rules give the
+    // spell an element (after their own removes), those elements replace the
+    // rest but for keepElements. Sources are settled last, over the tags left.
     TagSet Classify(const json& spell, const RuleSet& rules);
 
     // Whether one effect satisfies a rule's effect level conditions. Exposed
@@ -337,9 +353,10 @@ namespace Librarian
     // Holy stays out too: nearly every holy spell is Restoration, so within a
     // school it groups nothing the school does not (decided 2026-09-27).
     inline constexpr std::string_view TREE_ELEMENTS[] = {
-        "acid", "air", "arcane", "blood", "disease", "earth", "eldritch", "fire",
-        "force", "frost", "light", "metal", "nature", "necrotic", "poison",
-        "shadow", "shock", "soul", "sun", "time", "water",
+        "acid", "air", "arcane", "artifice", "blood", "chaos", "cosmic", "disease",
+        "earth", "eldritch", "fire", "force", "frost", "light", "metal", "mirage",
+        "nature", "necrotic", "poison", "psychic", "shadow", "shock", "soul", "sun",
+        "time", "water",
     };
 
     // Spell Research files every conjured thing under soul. On a summon, bound

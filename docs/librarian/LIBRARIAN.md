@@ -76,6 +76,16 @@ creature·human·armor·health 같은 대상 쪽 원소는 스캐너의 `kind.*`
 **룰은 코드가 아니라 데이터다.** 사용자나 다른 모더가 패치 없이 `90_user.json` 을 얹어 분류를
 추가할 수 있다. 이게 호환성 전략의 핵심이다.
 
+**원소를 통째로 바꾸는 파일 (2026-11-24).** 로드오더가 제 주문을 스스로 태그해 두었으면(제 패치의
+키워드) 사서의 원소 대신 그것을 쓸 수 있다. 룰 파일 최상위의 `"replaceElements": true` 는 그 파일 룰의 기본값이고
+(룰마다 `"replaceElements": false` 로 뺄 수 있다), `"keepElements": [...]` 는 모든 파일에서 합쳐진다. 이런 룰이
+원소를 하나라도 준 주문은(그 룰들의 `remove` 뒤) 그 원소만 가진다. 나머지 룰의 원소는 `keepElements` 에 든 것만
+남고(주문이 거는 대상·세상에 남기는 것: `construct`, `trap`, `undead` ...), 증거 충돌 단계가 뗀 것도 보고하지 않는다.
+기법은 바뀌지 않는다. 바꾸는 룰은 숨은 이펙트도 증거로 읽는다: 그런 패치는 키워드를 숨은 보관 이펙트(holder)에
+싣기도 한다. 이런 룰이 맞지 않은 주문은 사서의 분류 그대로다. 예: 주문 측면 패치의 `ASP_*` 키워드를 원소로
+옮기는 `95_aspects.json` (Nolvus Awakening 인스턴스의 Custom - HoM Aspect Elements). 자가 시험: `librarian-test
+--self-test` 의 replaceElements.
+
 **룰은 집합이다 (2026-09-30).** 룰 하나는 스캔이 기록한 필드(archetype, 키워드, actor value, `applies`)로
 정의되는 주문의 집합이다. 소환수 종족(`summonedAny`/`summonedNone`)과 거는 대상(`targetRequires`)도 조건이다. `match` 안의 조건들은 교집합, 같은 태그를 붙이는 여러
 룰은 합집합, `remove` 는 차집합이다(모든 룰이 붙인 뒤에 뗀다). "참나무 피부는 자연이다" 같은 판단은

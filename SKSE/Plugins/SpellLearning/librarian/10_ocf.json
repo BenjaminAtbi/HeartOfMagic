@@ -11,7 +11,7 @@
 
     { "_": "OCF_MgefClass* - the tradition the effect belongs to",
       "match": { "mgefKeyword": "OCF_MgefClassArcane" },     "add": { "elements": ["arcane"] } },
-    { "match": { "mgefKeyword": "OCF_MgefClassArtificer" },  "add": { "elements": ["construct"] } },
+    { "match": { "mgefKeyword": "OCF_MgefClassArtificer" },  "add": { "elements": ["artifice"] } },
     { "match": { "mgefKeyword": "OCF_MgefClassAsh" },        "add": { "elements": ["fire", "earth"] } },
     { "match": { "mgefKeyword": "OCF_MgefClassAstral" },     "add": { "elements": ["holy"] } },
     { "match": { "mgefKeyword": "OCF_MgefClassBlood" },      "add": { "elements": ["blood"] } },
@@ -31,7 +31,7 @@
       "match": { "mgefKeywordPrefix": "OCF_MgefSpellDamage_Arcane" },  "add": { "elements": ["arcane"] } },
     { "match": { "mgefKeywordPrefix": "OCF_MgefSpellDamage_AshFire" }, "add": { "elements": ["fire", "earth"] } },
     { "match": { "mgefKeywordPrefix": "OCF_MgefSpellDamage_Blood" },   "add": { "elements": ["blood"] } },
-    { "match": { "mgefKeyword": "OCF_MgefSpellDamage_Deconstruct" },   "add": { "elements": ["construct"] } },
+    { "match": { "mgefKeyword": "OCF_MgefSpellDamage_Deconstruct" },   "add": { "elements": ["artifice"] } },
     { "match": { "mgefKeywordPrefix": "OCF_MgefSpellDamage_Earth" },   "add": { "elements": ["earth"] } },
     { "match": { "mgefKeywordPrefix": "OCF_MgefSpellDamage_Fire" },    "add": { "elements": ["fire"] } },
     { "match": { "mgefKeyword": "OCF_MgefSpellDamage_Force" },         "add": { "elements": ["force"] } },
@@ -54,7 +54,7 @@
 
     { "_": "OCF_MgefSpellSummon_*",
       "match": { "mgefKeyword": "OCF_MgefSpellSummon_Construct" },
-      "add": { "elements": ["construct"], "techniques": ["summoning"] } },
+      "add": { "elements": ["artifice"], "techniques": ["summoning"] } },
     { "match": { "mgefKeyword": "OCF_MgefSpellSummon_Creature" },
       "add": { "techniques": ["summoning"] } },
     { "match": { "mgefKeyword": "OCF_MgefSpellSummon_Daedra" },

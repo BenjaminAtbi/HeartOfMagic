@@ -15,7 +15,8 @@
 // ELEMENTS - what the magic is made of
 // =============================================================================
 // The 34 from Spell Research, plus four the load order's own keyword
-// frameworks distinguish and Spell Research cannot express.
+// frameworks distinguish and Spell Research cannot express, plus five
+// aspects of a spell-aspect patch (artifice, chaos, cosmic, mirage, psychic).
 
 var TAG_ELEMENTS = [
     'acid',
@@ -23,8 +24,11 @@ var TAG_ELEMENTS = [
     'apparition',
     'arcane',
     'armor',
+    'artifice',
     'blood',
+    'chaos',
     'construct',
+    'cosmic',
     'creature',
     'daedra',
     'disease',
@@ -41,9 +45,11 @@ var TAG_ELEMENTS = [
     'light',
     'magicka',
     'metal',
+    'mirage',
     'nature',
     'necrotic',
     'poison',
+    'psychic',
     'resistance',
     'shadow',
     'shield',

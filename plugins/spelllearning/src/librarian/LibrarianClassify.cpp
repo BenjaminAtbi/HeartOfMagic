@@ -447,6 +447,10 @@ namespace Librarian
         EvidenceMap elementEvidence;
         EvidenceMap techniqueEvidence;
         std::vector<std::size_t> effectIds;
+        // The replaceElements rules' elements, kept apart until the end
+        std::set<std::string> replacing;
+        std::set<std::string> removeReplacing;
+        EvidenceMap replacingEvidence;
 
         for (std::size_t order = 0; order < rules.rules.size(); ++order) {
             const Rule& rule = rules.rules[order];
@@ -454,7 +458,17 @@ namespace Librarian
                 continue;  // waits for the last pass
             }
             effectIds.clear();
-            if (!SpellMatches(spell, rule.match, sifted, &effectIds)) {
+            // A replacing file's keywords are its own marks, often on a hidden
+            // holder effect riding in the spell: every effect counts for it
+            if (!SpellMatches(spell, rule.match, sifted && !rule.replacesElements, &effectIds)) {
+                continue;
+            }
+
+            if (rule.replacesElements) {
+                removeReplacing.insert(rule.removeElements.begin(), rule.removeElements.end());
+                AddEvidence(rule.addElements, rule, order, effectIds, none, replacing, replacingEvidence);
+                removeTechniques.insert(rule.removeTechniques.begin(), rule.removeTechniques.end());
+                AddEvidence(rule.addTechniques, rule, order, effectIds, none, tags.techniques, techniqueEvidence);
                 continue;
             }
 
@@ -484,6 +498,21 @@ namespace Librarian
                 AddEvidence(rule.addTechniques, rule, order, effectIds, removeTechniques, tags.techniques,
                     techniqueEvidence);
             }
+        }
+
+        // A spell the replaceElements rules gave an element: theirs, and of
+        // the rest only keepElements (no conflict stage on theirs: the file
+        // that replaces is the say on what the spell is made of)
+        RemoveTags(removeReplacing, replacing, replacingEvidence);
+        if (!replacing.empty()) {
+            for (const auto& element : tags.elements) {
+                if (!rules.keepElements.contains(element) || replacing.contains(element)) continue;
+                replacing.insert(element);
+                replacingEvidence[element] = elementEvidence[element];
+            }
+            tags.elements = std::move(replacing);
+            elementEvidence = std::move(replacingEvidence);
+            tags.conflictDropped.clear();
         }
 
         SettleSources(elementEvidence, &tags.elementSources, tags.elementSource);
