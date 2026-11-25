@@ -25,6 +25,23 @@ var BridgeView = {
         'element.shock': '#b48cf0',
         'element.poison': '#7fc25a',
         'element.sun': '#f0c850',
+        'element.arcane': '#3c56fc',
+        'element.artifice': '#a88c01',
+        'element.blood': '#db2602',
+        'element.chaos': '#fc9fa0',
+        'element.cosmic': '#fbfcc7',
+        'element.daedra': '#ef7f07',
+        'element.necrotic': '#7b2fd6',
+        'element.earth': '#9c5f1a',
+        'element.eldritch': '#3f8048',
+        'element.life': '#efe251',
+        'element.mirage': '#fcbafb',
+        'element.nature': '#5ef920',
+        'element.psychic': '#f920f9',
+        'element.shadow': '#a5a5a5',
+        'element.soul': '#a4f9fc',
+        'element.water': '#09f4c9',
+        'element.air': '#cfe7f7',
         'kind.bound': '#c8a0e0',
         'kind.summon': '#a080e0'
     },
@@ -264,9 +281,9 @@ var BridgeView = {
         var intoLayer = ctx !== renderer.ctx;
         if (intoLayer) {
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.fillStyle = '#000000';
+            ctx.fillStyle = '#a5a5a5';
         } else {
-            ctx.fillStyle = (renderer._backdrop && renderer._backdrop()) || '#000000';
+            ctx.fillStyle = (renderer._backdrop && renderer._backdrop()) || '#a5a5a5';
         }
         if (bounds) {
             // The bounds are axis-aligned in tree space while the wheel is turned,

@@ -266,6 +266,24 @@ button.easy-preset-chip {
 .spell-chip.chip-element-shock   { color: var(--conjuration, #a855f7); }
 .spell-chip.chip-element-poison  { color: var(--alteration, #22c55e); }
 .spell-chip.chip-element-disease { color: var(--alteration, #22c55e); }
+.spell-chip.chip-element-sun      { color: #f0c850; }
+.spell-chip.chip-element-arcane   { color: #3c56fc; }
+.spell-chip.chip-element-artifice { color: #a88c01; }
+.spell-chip.chip-element-blood    { color: #db2602; }
+.spell-chip.chip-element-chaos    { color: #fc9fa0; }
+.spell-chip.chip-element-cosmic   { color: #fbfcc7; }
+.spell-chip.chip-element-daedra   { color: #ef7f07; }
+.spell-chip.chip-element-necrotic { color: #7b2fd6; }
+.spell-chip.chip-element-earth    { color: #9c5f1a; }
+.spell-chip.chip-element-eldritch { color: #3f8048; }
+.spell-chip.chip-element-life     { color: #efe251; }
+.spell-chip.chip-element-mirage   { color: #fcbafb; }
+.spell-chip.chip-element-nature   { color: #5ef920; }
+.spell-chip.chip-element-psychic  { color: #f920f9; }
+.spell-chip.chip-element-shadow   { color: #a5a5a5; }
+.spell-chip.chip-element-soul     { color: #a4f9fc; }
+.spell-chip.chip-element-water    { color: #09f4c9; }
+.spell-chip.chip-element-air      { color: #cfe7f7; }
 .spell-chip.chip-school { color: var(--text-muted, #6A6A5A); }
 .spell-chip.hidden-info { font-style: italic; }
 
