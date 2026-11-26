@@ -11,6 +11,9 @@
  *   does. A file the server does not have falls back on the mock.
  * - LoadPresets { type: 'design' } answers with the design add-ons (addons/designs/, /__live/designs),
  *   whose stylesheets and icons the server lays under the panel, so they show in Settings > Design.
+ * - ProceduralTreeGenerate and DeclutterTree go to the server, which runs the plugin's own tree
+ *   builder and declutter (/__live/build, /__live/declutter), so a tree has the game's layout;
+ *   without the built tools the mock answers as before.
  * - Saves (the tree, the config) stay in memory: the game's files are never written from here,
  *   and the mock's download of spell_tree.json is skipped.
  * - The page reloads when the server says a panel file changed (/__live/events), and when it comes
@@ -23,9 +26,23 @@
     var LIVE = { ScanSpells: ['scan', 'updateSpellData'], LoadUnifiedConfig: ['config', 'onUnifiedConfigLoaded'],
         LoadSpellTree: ['tree', 'updateTreeData'] };
     var IN_MEMORY = { SaveSpellTree: true, SaveBuiltSpellTree: true, SaveImportedSpellTree: true, SaveUnifiedConfig: true };
+    // Built by the plugin's own C++ on the server (tools/dev-renderer/native.js), not the mock's stand-ins
+    var NATIVE = { ProceduralTreeGenerate: ['build', 'onProceduralTreeComplete'], DeclutterTree: ['declutter', 'onDeclutterResult'] };
     window._liveSaves = {};
 
     window.callCpp = function(method, data) {
+        var native = NATIVE[method];
+        if (native) {
+            logCppCall('out', method, (data || '').length + ' bytes to the native ' + native[0]);
+            fetch('/__live/' + native[0], { method: 'POST', body: data, cache: 'no-store' })
+                .then(function(r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+                .then(function(text) {
+                    logCppCall('in', native[1], 'native ' + native[0] + ', ' + text.length + ' bytes');
+                    if (typeof window[native[1]] === 'function') window[native[1]](text);
+                })
+                .catch(function(e) { console.log('[DevLive] no native ' + native[0] + ' (' + e.message + '): mock'); mock(method, data); });
+            return;
+        }
         var live = LIVE[method];
         if (live) {
             logCppCall('out', method, data);

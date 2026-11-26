@@ -15,6 +15,8 @@
  *   the working tree lacks is looked up in each add-on's PrismaUI/views/SpellLearning/SpellLearningPanel,
  *   and GET /__live/designs lists every add-on's SKSE/Plugins/SpellLearning/presets/design/*.json as
  *   [{ key, data }], the answer C++ gives to LoadPresets { type: 'design' }.
+ * - POST /__live/build and /__live/declutter build and declutter trees with the plugin's C++ (native.js),
+ *   so a tree built in the harness has the game's layout.
  * - GET /__live/events is a server-sent event stream: "reload" after any file under the panel folder
  *   or the add-ons changes (debounced), and the page reloads itself.
  *
@@ -26,6 +28,7 @@ var http = require('http');
 var fs = require('fs');
 var path = require('path');
 var harness = require('../make-dev-harness.js');
+var native = require('./native.js');
 
 var PANEL = path.resolve(__dirname, '..', '..', 'PrismaUI', 'views', 'SpellLearning', 'SpellLearningPanel');
 var ADDONS = path.resolve(__dirname, '..', '..', 'addons', 'designs');
@@ -163,6 +166,10 @@ function main() {
             return;
         }
         if (url === '/__live/designs') return send(res, 200, TYPES['.json'], JSON.stringify(addonDesigns()));
+        var nativeKind = /^\/__live\/(\w+)$/.exec(url);
+        if (req.method === 'POST' && nativeKind && native.kinds[nativeKind[1]]) {
+            return native.handle(nativeKind[1], req, res, send);
+        }
         var live = /^\/__live\/(\w+)$/.exec(url);
         if (live) {
             if (!opt.data || !LIVE_FILES[live[1]]) return send(res, 404, 'text/plain', 'no live data');
