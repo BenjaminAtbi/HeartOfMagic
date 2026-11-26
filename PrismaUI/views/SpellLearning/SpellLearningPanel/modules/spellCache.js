@@ -137,5 +137,24 @@ var SpellCache = {
         this._cache.clear();
         this._pending.clear();
         this._callbacks.clear();
+    },
+
+    /**
+     * A scan came in, so C++ holds a new catalog: the card data kept here
+     * (the elements on each card's keyword line above all) may be from the
+     * one before. Without this a rescan showed on the cards only after a
+     * restart. Forgets it all and asks again for the loaded tree's spells;
+     * the batch reply updates every tree node and repaints (cppCallbacks.js).
+     */
+    refetchAfterScan: function() {
+        this.clear();
+        var tree = (typeof state !== 'undefined') ? state.treeData : null;
+        if (tree && tree.allFormIds && tree.allFormIds.length) this.requestBatch(tree.allFormIds);
     }
+};
+
+// C++: a scan outside the panel (AutoScan at game start) wrote a new catalog.
+// The panel's own scans come in through updateSpellData (cppCallbacks.js).
+window.onCatalogWritten = function() {
+    SpellCache.refetchAfterScan();
 };

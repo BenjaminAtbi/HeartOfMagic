@@ -145,6 +145,9 @@ public:
     // The tome pairs changed (SpellTomes.h) to the panel (onSpellTomesChanged): a stale
     // scan is marked, a build at game start that failed is tried once more (autoBuild.js)
     void NotifySpellTomesChanged(const std::string& payload);
+    // A scan outside the panel (AutoScan) wrote a new catalog (onCatalogWritten): the card
+    // data the panel holds may have the old one's elements. Any thread.
+    void NotifyCatalogWritten();
     // A game is played: a save loaded or a new game started, until the main menu. Game thread.
     [[nodiscard]] bool IsInGame() const { return m_saveLoaded || m_newGameStarted; }
     // A save is loaded (kPostLoadGame, until the main menu). Game thread.

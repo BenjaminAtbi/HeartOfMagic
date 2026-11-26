@@ -7,6 +7,7 @@
 #include "librarian/SpellResearchPatch.h"
 #include "librarian/SpellResearchMemory.h"
 #include "ProgressionManager.h"
+#include "ThreadUtils.h"
 
 // =============================================================================
 // SEND DATA TO SCANNER TAB
@@ -284,6 +285,17 @@ void UIManager::NotifyModdedSourceRegistered(const std::string& sourceId,
 
     logger::info("UIManager: Notifying UI - modded XP source registered: '{}' ('{}')", sourceId, displayName);
     CallView("onModdedXPSourceRegistered", JsonText::Dump(j).c_str());
+}
+
+void UIManager::NotifyCatalogWritten()
+{
+    // AutoScan writes on its own thread; the panel is called from the game thread only
+    AddTaskToGameThread("CatalogWritten", []() {
+        auto* instance = GetSingleton();
+        if (!instance || !instance->ViewReady()) return;
+        logger::info("UIManager: Notifying UI - new catalog, the cards' spell data is asked for again");
+        instance->CallView("onCatalogWritten", "");
+    });
 }
 
 void UIManager::NotifyMainMenuLoaded()

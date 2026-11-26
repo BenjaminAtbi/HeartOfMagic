@@ -408,6 +408,10 @@ namespace
         // The tree graft reads the dump only when it is this scan's (a panel scan records no dump)
         if (wrote && !dumpPath.empty() && !recordId.empty()) ScanRecord::DumpWritten(recordId, text);
         turn.Release();
+        // The panel may have fetched its cards from the catalog this one replaces
+        if (wrote) {
+            if (auto* ui = UIManager::GetSingleton(); ui && ui->IsInitialized()) ui->NotifyCatalogWritten();
+        }
         logger::info("{} {} in {:.0f} ms; {} {} (total {:.1f} s since the main menu)", kPrefix,
             wrote ? "catalog written" : "catalog NOT written (see Librarian above)", MsSince(textStarted),
             dumpPath.empty() ? "spell_scan_output.json NOT written" : "scan output written to", dumpPath,

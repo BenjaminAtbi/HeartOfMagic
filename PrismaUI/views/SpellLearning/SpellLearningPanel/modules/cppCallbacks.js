@@ -182,6 +182,7 @@ window.updateSpellData = function(jsonStr) {
 
     if (data) try {
         ScanRef.reset(data);
+        SpellCache.refetchAfterScan();   // the cards' elements come from the catalog this scan made
         // The Scan page: a draft from before this scan is stale, nothing is applied (scanStage.js)
         if (typeof ScanStage !== 'undefined') ScanStage.onScanned();
         // Spell gate keys saved before 2026-10-17 become the DLL's (gateReview.js)
