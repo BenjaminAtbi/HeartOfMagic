@@ -11,9 +11,10 @@
  *   does. A file the server does not have falls back on the mock.
  * - LoadPresets { type: 'design' } answers with the design add-ons (addons/designs/, /__live/designs),
  *   whose stylesheets and icons the server lays under the panel, so they show in Settings > Design.
- * - ProceduralTreeGenerate and DeclutterTree go to the server, which runs the plugin's own tree
- *   builder and declutter (/__live/build, /__live/declutter), so a tree has the game's layout;
- *   without the built tools the mock answers as before.
+ * - ProceduralTreeGenerate, DeclutterTree and PreReqMasterScore go to the server, which runs the
+ *   plugin's own tree builder, declutter and Pre Req Master scorer (/__live/build, /__live/declutter,
+ *   /__live/prmscore), so a tree has the game's layout and locks; without the built tools the mock
+ *   answers as before.
  * - Saves (the tree, the config) stay in memory: the game's files are never written from here,
  *   and the mock's download of spell_tree.json is skipped.
  * - The page reloads when the server says a panel file changed (/__live/events), and when it comes
@@ -27,7 +28,8 @@
         LoadSpellTree: ['tree', 'updateTreeData'] };
     var IN_MEMORY = { SaveSpellTree: true, SaveBuiltSpellTree: true, SaveImportedSpellTree: true, SaveUnifiedConfig: true };
     // Built by the plugin's own C++ on the server (tools/dev-renderer/native.js), not the mock's stand-ins
-    var NATIVE = { ProceduralTreeGenerate: ['build', 'onProceduralTreeComplete'], DeclutterTree: ['declutter', 'onDeclutterResult'] };
+    var NATIVE = { ProceduralTreeGenerate: ['build', 'onProceduralTreeComplete'], DeclutterTree: ['declutter', 'onDeclutterResult'],
+        PreReqMasterScore: ['prmscore', 'onPreReqMasterComplete'] };
     window._liveSaves = {};
 
     window.callCpp = function(method, data) {
@@ -51,6 +53,12 @@
                 .then(function(text) {
                     logCppCall('in', live[1], 'game file, ' + text.length + ' bytes');
                     if (typeof window[live[1]] === 'function') window[live[1]](text);
+                    // The mock answers GetSpellInfo(Batch) from _mockSpellData: without the game's
+                    // spells there every node of a tree built from them was "not found", nameless
+                    if (method === 'ScanSpells' && typeof state !== 'undefined' && state.lastSpellData) {
+                        window._mockSpellData = state.lastSpellData.spells || [];
+                        if (typeof updateHarnessStatus === 'function') updateHarnessStatus();
+                    }
                 })
                 .catch(function() { console.log('[DevLive] no game ' + live[0] + ': mock'); mock(method, data); });
             return;

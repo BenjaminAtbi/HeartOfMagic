@@ -275,44 +275,31 @@ window.callCpp = function(method, data) {
             })();
             break;
 
+        case 'PreReqMasterScore':
+            // No C++ scorer here (the dev renderer runs the plugin's own, dev-harness-live.js): the
+            // panel waited for onPreReqMasterComplete for good and the build stalled at Pre Req
+            // Master. A failure, as the plugin answers one, makes it score with its JavaScript scorer.
+            setTimeout(function() {
+                logCppCall('in', 'onPreReqMasterComplete', 'no C++ scorer in the dev harness');
+                if (typeof window.onPreReqMasterComplete === 'function') {
+                    window.onPreReqMasterComplete(JSON.stringify({ success: false, error: 'no C++ scorer in the dev harness' }));
+                }
+            }, 0);
+            break;
+
         case 'ProceduralTreeGenerate':
-            // Try dev server first (localhost:5556), fall back to a mock tree
+            // A stand-in tree: the plugin's own builder runs only under the dev renderer
+            // (dev-harness-live.js). The probe of a build server on port 5556 went: nothing serves it.
             (function() {
                 var request;
-                try { request = JSON.parse(data); } catch(e) { request = { spells: [], config: {} }; }
-
-                var spells = request.spells || [];
-                var config = request.config || {};
-
-                console.log('[Bridge] ProceduralTreeGenerate: ' + spells.length + ' spells');
-
-                // Try dev server
-                fetch('http://localhost:5556/build', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: data
-                }).then(function(resp) {
-                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                    return resp.json();
-                }).then(function(result) {
-                    console.log('[Bridge] Dev server returned result');
-                    logCppCall('in', 'onProceduralTreeComplete', 'Dev server: ' + (result.success ? 'OK' : 'FAIL'));
+                try { request = JSON.parse(data); } catch(e) { request = { spells: [] }; }
+                var treeData = mockTreeFromSpells(request.spells || []);
+                setTimeout(function() {
+                    logCppCall('in', 'onProceduralTreeComplete', 'mock tree: ' + Object.keys(treeData.schools).length + ' schools');
                     if (typeof window.onProceduralTreeComplete === 'function') {
-                        window.onProceduralTreeComplete(JSON.stringify(result));
+                        window.onProceduralTreeComplete(JSON.stringify({ success: true, treeData: treeData, elapsed: 0.1 }));
                     }
-                }).catch(function(err) {
-                    console.log('[Bridge] Dev server not available (' + err.message + '), using JS fallback');
-                    var treeData = mockTreeFromSpells(spells);
-                    var result = {
-                        success: true,
-                        treeData: treeData,
-                        elapsed: '0.1'
-                    };
-                    logCppCall('in', 'onProceduralTreeComplete', 'JS fallback: ' + Object.keys(treeData.schools || {}).length + ' schools');
-                    if (typeof window.onProceduralTreeComplete === 'function') {
-                        window.onProceduralTreeComplete(JSON.stringify(result));
-                    }
-                });
+                }, 0);
             })();
             break;
 
@@ -583,32 +570,6 @@ window.addEventListener('load', function() {
             logCppCall('in', 'onPanelShowing', '');
             window.onPanelShowing();
         }
-
-        // Probe dev server -- report real status to UI
-        window._devServerAvailable = false;
-        fetch('http://localhost:5556/build', { method: 'OPTIONS' })
-            .then(function(r) {
-                window._devServerAvailable = true;
-                console.log('[DevHarness] Dev server ONLINE (port 5556)');
-                // Show in toolbar
-                var statusEl = document.getElementById('harness-status');
-                if (statusEl) {
-                    var tag = document.createElement('span');
-                    tag.style.cssText = 'color:#3fb950;font-weight:600;';
-                    tag.textContent = 'Server: LIVE';
-                    statusEl.appendChild(tag);
-                }
-            })
-            .catch(function() {
-                console.log('[DevHarness] Dev server offline -- JS fallback active');
-                var statusEl = document.getElementById('harness-status');
-                if (statusEl) {
-                    var tag = document.createElement('span');
-                    tag.style.cssText = 'color:#d29922;';
-                    tag.textContent = 'Server: offline (JS fallback)';
-                    statusEl.appendChild(tag);
-                }
-            });
     }, 500);
 });
 

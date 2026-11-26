@@ -96,45 +96,24 @@
         });
     }
 
-    // Build tree from loaded spell data
+    // Build tree: the panel's own Build button (Tree Growth's active mode, Classic by default),
+    // from whatever scan the panel holds (the game's scan under the dev renderer, or the test
+    // data). It sends ProceduralTreeGenerate, which the dev renderer answers with the plugin's
+    // own builder (dev-harness-live.js), then lays the tree out and runs Pre Req Master as in
+    // game. Before, it drew the bridge's stand-in chain tree (mockTreeFromSpells) straight into
+    // the panel, skipping the builder, the layout and the locks.
     if (btnBuildTree) {
         btnBuildTree.addEventListener('click', function() {
-            if (!window._mockSpellData || window._mockSpellData.length === 0) {
-                alert('Load test data first!');
+            if (typeof state === 'undefined' || !state.lastSpellData || !(state.lastSpellData.spells || []).length) {
+                alert('Scan or load test data first!');
                 return;
             }
-
-            btnBuildTree.textContent = 'Building...';
-            btnBuildTree.disabled = true;
-
-            setTimeout(function() {
-                try {
-                    // The panel's Classic build goes through C++; here the bridge's mock tree stands in
-                    var treeData = mockTreeFromSpells(window._mockSpellData);
-
-                    if (treeData && treeData.schools) {
-                        var schoolNames = Object.keys(treeData.schools);
-                        var totalNodes = 0;
-                        schoolNames.forEach(function(s) { totalNodes += treeData.schools[s].nodes.length; });
-                        console.log('[Harness] Built tree: ' + schoolNames.length + ' schools, ' + totalNodes + ' nodes');
-
-                        // The panel's own path, as a tree the game sends: loadTreeData
-                        // (treeLoad.js) parses it and draws it with the canvas renderer
-                        loadTreeData(treeData, true, false);
-                        if (typeof TreeGrowth !== 'undefined' && TreeGrowth.setTreeBuilt) {
-                            TreeGrowth.setTreeBuilt(true, totalNodes, totalNodes);
-                        }
-                    } else {
-                        console.error('[Harness] Build returned no data');
-                    }
-                } catch(e) {
-                    console.error('[Harness] Build failed:', e);
-                    alert('Build failed: ' + e.message);
-                } finally {
-                    btnBuildTree.textContent = 'Build Tree';
-                    btnBuildTree.disabled = false;
-                }
-            }, 100);
+            var panelBuild = document.getElementById('tgBuildBtn');
+            if (!panelBuild) {
+                alert('The panel has no Build button (tgBuildBtn)');
+                return;
+            }
+            panelBuild.click();
         });
     }
 

@@ -8,9 +8,16 @@
 //   treebuilder-test -i spells.json -o tree.json -t classic
 //   treebuilder-test --input spells.json --output tree.json --type classic --seed 42
 //   treebuilder-test -i spells.json -o tree.json -t classic -c config.json
+//   treebuilder-test -i prm-request.json -o prm-reply.json -t prm
 //
 // Input JSON: either a raw array of spell objects, or an object with a
 // "spells" key (matches the in-game UIManager format).
+//
+// -t prm scores Pre Req Master candidates instead: the input is the panel's
+// PreReqMasterScore request ({ requestId, pairs, settings }) and the output what
+// onPreReqMasterComplete gets, as UIManager::OnPreReqMasterScore answers it
+// (TreeNLP::ProcessPRMRequest with the requestId copied in, { success: false,
+// error } when it throws). The dev renderer runs it (tools/dev-renderer/native.js).
 // ============================================================================
 
 #include "Common.h"
@@ -26,6 +33,7 @@
 #include <nlohmann/json.hpp>
 
 #include "treebuilder/TreeBuilder.h"
+#include "treebuilder/TreeNLP.h"
 
 using json = nlohmann::json;
 
@@ -41,7 +49,7 @@ static void PrintUsage(const char* argv0)
         << "Required:\n"
         << "  -i, --input  <file>   Input spell JSON file\n"
         << "  -o, --output <file>   Output tree JSON file\n"
-        << "  -t, --type   <type>   Builder type: classic\n"
+        << "  -t, --type   <type>   Builder type: classic, or prm (score a PreReqMasterScore request)\n"
         << "\n"
         << "Optional:\n"
         << "  -s, --seed   <n>      Random seed (default: 0)\n"
@@ -138,6 +146,32 @@ static bool CheckStructure(const json& treeData, int maxChildrenPerNode)
     return ok;
 }
 
+/** -t prm: the reply UIManager::OnPreReqMasterScore sends, from the request in inputPath */
+static int ScorePRM(const std::string& inputPath, const std::string& outputPath)
+{
+    json reply;
+    try {
+        const json request = ReadJsonFile(inputPath);
+        try {
+            reply = TreeNLP::ProcessPRMRequest(request);
+        } catch (const std::exception& e) {
+            reply = { {"success", false}, {"error", e.what()} };
+        }
+        if (request.contains("requestId")) reply["requestId"] = request["requestId"];
+    } catch (const std::exception& e) {
+        std::cerr << "Error reading input: " << e.what() << "\n";
+        return 1;
+    }
+    try {
+        WriteJsonFile(outputPath, reply);
+    } catch (const std::exception& e) {
+        std::cerr << "Error writing output: " << e.what() << "\n";
+        return 1;
+    }
+    std::cout << "Scored " << reply.value("count", 0) << " PRM pairs -> " << outputPath << "\n";
+    return 0;
+}
+
 // ============================================================================
 // Main
 // ============================================================================
@@ -178,6 +212,10 @@ int main(int argc, char* argv[])
         std::cerr << "Error: --input, --output, and --type are required.\n\n";
         PrintUsage(argv[0]);
         return 1;
+    }
+
+    if (type == "prm") {
+        return ScorePRM(inputPath, outputPath);
     }
 
     // ----- Map type to command string ----------------------------------------

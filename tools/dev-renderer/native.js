@@ -1,19 +1,22 @@
 /**
  * native.js - the dev renderer's tree builds and declutter passes, made by the plugin's own C++.
  *
- * The game answers ProceduralTreeGenerate with TreeBuilder::Build and DeclutterTree with
- * LayoutDeclutter::Run. The harness alone has neither: it built a stand-in tree
- * (dev-harness-bridge.js mockTreeFromSpells) and declined the declutter, so the panel laid the tree
- * out with its JavaScript fallback - a different layout from the game's. Here the same C++ runs
+ * The game answers ProceduralTreeGenerate with TreeBuilder::Build, DeclutterTree with
+ * LayoutDeclutter::Run and PreReqMasterScore with TreeNLP::ProcessPRMRequest. The harness alone has
+ * none of them: it built a stand-in tree (dev-harness-bridge.js mockTreeFromSpells), declined the
+ * declutter, so the panel laid the tree out with its JavaScript fallback - a different layout from
+ * the game's - and left Pre Req Master waiting for scores that never came. Here the same C++ runs
  * through the build's command-line tools:
  *
  *   POST /__live/build      body: the ProceduralTreeGenerate request ({ spells, config })
  *                           reply: what onProceduralTreeComplete gets ({ success, treeData, elapsed }
  *                           or { success: false, error })
  *   POST /__live/declutter  body: the DeclutterTree request; reply: what onDeclutterResult gets
+ *   POST /__live/prmscore   body: the PreReqMasterScore request; reply: what onPreReqMasterComplete
+ *                           gets ({ success, scores, count, requestId } or { success: false, error })
  *
- * Tools: build/tools/Release/treebuilder-test.exe and declutter-test.exe (BuildRelease.ps1 makes
- * them). Without them the server answers 503 and the harness falls back on its mock.
+ * Tools: build/tools/Release/treebuilder-test.exe (builds; -t prm scores) and declutter-test.exe
+ * (BuildRelease.ps1 makes them). Without them the server answers 503 and the harness falls back on its mock.
  */
 'use strict';
 
@@ -23,7 +26,7 @@ var os = require('os');
 var path = require('path');
 
 var TOOLS = path.resolve(__dirname, '..', '..', 'build', 'tools', 'Release');
-var EXE = { build: 'treebuilder-test.exe', declutter: 'declutter-test.exe' };
+var EXE = { build: 'treebuilder-test.exe', declutter: 'declutter-test.exe', prmscore: 'treebuilder-test.exe' };
 var MAX_BODY = 256 * 1024 * 1024;   // a full scan's spells are 9-20 MB
 
 function readBody(req, done) {
@@ -44,6 +47,10 @@ function toolArgs(kind, body, dir, output) {
         fs.writeFileSync(input, body);
         return ['-i', input, '-o', output];
     }
+    if (kind === 'prmscore') {
+        fs.writeFileSync(input, body);
+        return ['-i', input, '-o', output, '-t', 'prm'];
+    }
     // As UIManager::OnProceduralTreeGenerate: the classic builder, the request's config as it is.
     // A config without a seed gets 0 from the tool, which the builder takes as time-based, as in game.
     var request = JSON.parse(body);
@@ -58,6 +65,11 @@ function reply(kind, body, out, failure, seconds) {
     if (kind === 'build') {
         if (out === null) return JSON.stringify({ success: false, error: 'native build failed: ' + failure });
         return '{"success":true,"elapsed":' + seconds + ',"treeData":' + out + '}';
+    }
+    if (kind === 'prmscore') {
+        if (out !== null) return out;
+        // As UIManager::FinishPRMScore's failure: the panel then scores with its JavaScript scorer
+        return JSON.stringify({ success: false, error: 'native PRM scoring failed: ' + failure });
     }
     if (out !== null) return out;
     var id = null;
