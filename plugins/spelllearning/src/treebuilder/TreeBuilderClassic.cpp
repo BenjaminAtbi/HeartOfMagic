@@ -18,6 +18,14 @@ namespace
     // the element bonus, so a mod's fire spell still goes to fire first.
     constexpr float kSameModBonus = 20.0f;
 
+    // A spell whose lower tiers have no room left takes a parent of its own tier
+    // (ParentInTier); this much less per link the candidate is from the root. A
+    // child costs a parent 8, so a parent with one child still wins over the
+    // spell linked just before it: the tier branches instead of growing one
+    // spell under the last into a chain. Similar spells still chain (effect,
+    // theme and name scores are worth far more).
+    constexpr float kSameTierDepthPenalty = 10.0f;
+
     // The spell's Magicka cost when it has one above 0 (the scan writes a
     // number, or a numeric string)
     std::optional<float> SpellMagickaCost(const json& spell)
@@ -374,6 +382,19 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
         std::unordered_map<int, std::vector<TreeNode*>> available;
         available[0].push_back(&root);
 
+        // Links from the root, for the same-tier depth penalty
+        std::unordered_map<std::string, int> linkDepth{ { rootFormId, 0 } };
+        const auto link = [&](TreeNode& parent, TreeNode& child, int tierIdx) {
+            LinkNodes(parent, child);
+            child.depth = tierIdx;
+            connected.insert(child.formId);
+            linkDepth[child.formId] = linkDepth[parent.formId] + 1;
+            // A full parent is no longer available
+            if (static_cast<int>(parent.children.size()) >= maxChildren) {
+                for (auto& [d, plist] : available) std::erase(plist, &parent);
+            }
+        };
+
         for (int tierIdx = 0; tierIdx < TIER_COUNT; ++tierIdx) {
             auto tierName = std::string(TIER_NAMES[tierIdx]);
             auto it = byTier.find(tierName);
@@ -391,6 +412,7 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
             }
 
             std::vector<TreeNode*> placedThisTier;
+            std::vector<TreeNode*> noRoom;   // no lower tier had room for them
 
             for (const auto& spell : tierSpells) {
                 auto fid = spell.value("formId", std::string(""));
@@ -401,26 +423,43 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
 
                 auto* parent = FindBestClassicParent(
                     nodeIt->second, available, tierIdx, maxChildren, sims, grouping, &rng, nullptr, costs);
-
-                if (parent) {
-                    LinkNodes(*parent, nodeIt->second);
-                    nodeIt->second.depth = tierIdx;
-                    connected.insert(fid);
-                    placedThisTier.push_back(&nodeIt->second);
-
-                    // Update availability
-                    if (static_cast<int>(parent->children.size()) >= maxChildren) {
-                        for (auto& [d, plist] : available) {
-                            plist.erase(
-                                std::remove_if(plist.begin(), plist.end(),
-                                    [&](TreeNode* p) { return p->formId == parent->formId; }),
-                                plist.end());
-                        }
-                    }
-                    // By cost a placed spell is a parent for the rest of its tier at
-                    // once (they cost the same or more); by level once the tier is done
-                    if (costs) available[tierIdx].push_back(&nodeIt->second);
+                if (!parent) {
+                    noRoom.push_back(&nodeIt->second);
+                    continue;
                 }
+                link(*parent, nodeIt->second, tierIdx);
+                placedThisTier.push_back(&nodeIt->second);
+                // By cost a placed spell is a parent for the rest of its tier at
+                // once (they cost the same or more); by level once the tier is done
+                if (costs) available[tierIdx].push_back(&nodeIt->second);
+            }
+
+            // Every lower tier full (the Novice tier has only the root): a parent of the
+            // spell's own tier, scored as above, less kSameTierDepthPenalty per link from the
+            // root, so the tier branches. Linked here, the spell is a parent for the next tier;
+            // the force-connect pass below linked it only after the last tier, so no spell of a
+            // higher tier could hang under it, and its scores (+100 same tier, -8 a child)
+            // put every such spell under the one linked just before it: Novice chains ten deep
+            std::vector<TreeNode*> inTier;   // this tier's spells that can take a child
+            for (auto* pn : placedThisTier) {
+                if (static_cast<int>(pn->children.size()) < maxChildren) inTier.push_back(pn);
+            }
+            for (auto* node : noRoom) {
+                std::erase_if(inTier, [maxChildren](const TreeNode* p) {
+                    return static_cast<int>(p->children.size()) >= maxChildren;
+                });
+                if (inTier.empty()) break;   // left to the force-connect pass
+                std::unordered_map<std::string, float> depthBonus;
+                for (const auto* p : inTier) depthBonus[p->formId] = -kSameTierDepthPenalty * linkDepth[p->formId];
+                const std::unordered_map<int, std::vector<TreeNode*>> sameTier{ { 0, inTier } };
+                // As tier 0: FindBestClassicParent's same-tier step takes candidates from sameTier[0]
+                auto* parent = FindBestClassicParent(
+                    *node, sameTier, 0, maxChildren, sims, grouping, &rng, &depthBonus, costs);
+                if (!parent) continue;
+                link(*parent, *node, tierIdx);
+                placedThisTier.push_back(node);
+                inTier.push_back(node);
+                if (costs) available[tierIdx].push_back(node);
             }
 
             // Add placed nodes as available parents
@@ -431,13 +470,18 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
             }
         }
 
-        // Force-connect unconnected nodes
+        // Force-connect what is left (a tier none of whose spells found a parent): lowest
+        // tier first, so a spell can hang under one linked here before it
         std::vector<std::string> unconnectedIds;
         for (const auto& [nid, nd] : nodes) {
             if (!connected.contains(nid)) {
                 unconnectedIds.push_back(nid);
             }
         }
+        std::ranges::sort(unconnectedIds, [&tierIndexOf](const std::string& a, const std::string& b) {
+            const int ta = tierIndexOf(a), tb = tierIndexOf(b);
+            return ta != tb ? ta < tb : a < b;
+        });
 
         for (const auto& orphanId : unconnectedIds) {
             auto& orphanNode = nodes[orphanId];
@@ -467,6 +511,7 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
                 if (SharesModPlugin(orphanNode, cnode)) score += kSameModBonus;
 
                 score -= static_cast<float>(cnode.children.size()) * 8.0f;
+                if (cnodeTierIdx == nodeTierIdx) score -= kSameTierDepthPenalty * static_cast<float>(linkDepth[cid]);
 
                 if (score > bestScore) {
                     bestScore = score;
@@ -474,11 +519,7 @@ TreeBuilder::BuildResult TreeBuilder::BuildClassic(
                 }
             }
 
-            if (bestParent) {
-                LinkNodes(*bestParent, orphanNode);
-                orphanNode.depth = nodeTierIdx;
-                connected.insert(orphanId);
-            }
+            if (bestParent) link(*bestParent, orphanNode, nodeTierIdx);
         }
 
         // Serialize nodes
