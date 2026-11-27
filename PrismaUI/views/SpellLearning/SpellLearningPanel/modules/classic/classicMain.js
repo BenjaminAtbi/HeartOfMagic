@@ -34,6 +34,7 @@ var TreeGrowthClassic = {
         centerMask: 3,
         spellMatching: 'layered',
         dynamicGridExpansion: true,  // Expand grid when schools run out of space
+        fillLayout: false,           // Slot-first fill (ClassicFillLayout) instead of the tree walk
         tierZones: {
             Novice:     { min: 0,  max: 40 },
             Apprentice: { min: 10, max: 55 },
@@ -80,7 +81,7 @@ var TreeGrowthClassic = {
                 self.settings[key] = value;
                 // Layout-affecting settings: invalidate cached layout so it recomputes
                 if (key === 'spread' || key === 'radialBias' || key === 'centerMask' || key === 'spellMatching' ||
-                    key === 'dynamicGridExpansion') {
+                    key === 'dynamicGridExpansion' || key === 'fillLayout') {
                     if (self._treeData) {
                         self._layoutData = null; // triggers lazy re-layout on next render
                     }

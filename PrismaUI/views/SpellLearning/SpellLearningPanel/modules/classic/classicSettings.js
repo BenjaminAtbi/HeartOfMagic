@@ -70,6 +70,7 @@ var ClassicSettings = {
         var centerMask = s.centerMask !== undefined ? s.centerMask : 3;
         var spellMatching = s.spellMatching || 'layered';
         var dynamicExpansion = s.dynamicGridExpansion !== false;
+        var fillLayout = s.fillLayout === true;
         var H = TreePreviewUtils.settingHTML;
 
         // Toggle button styles
@@ -118,6 +119,19 @@ var ClassicSettings = {
             '</div>' +
             '<div class="tree-preview-hint">' +
                 t('preview.classic.dynamicExpansionHint') +
+            '</div>' +
+
+            // --- Slot-first fill (experimental, ClassicFillLayout) ---
+            '<div class="tree-preview-option">' +
+                '<label>' +
+                    '<input type="checkbox" id="tgClassicFillLayout"' + (fillLayout ? ' checked' : '') + '>' +
+                    tOr('preview.classic.fillLayout', null, 'Fill slots inside out (experimental)') +
+                '</label>' +
+            '</div>' +
+            '<div class="tree-preview-hint">' +
+                tOr('preview.classic.fillLayoutHint', null,
+                    'Fills the free grid points next to placed spells, nearest the centre first, each with the spell ' +
+                    'that fits it best: every line one step long.') +
             '</div>' +
 
             // --- Tier zone bar chart ---
@@ -259,6 +273,13 @@ var ClassicSettings = {
         if (dynExpandCheck) {
             dynExpandCheck.addEventListener('change', function () {
                 onChanged('dynamicGridExpansion', this.checked);
+            });
+        }
+
+        var fillCheck = document.getElementById('tgClassicFillLayout');
+        if (fillCheck) {
+            fillCheck.addEventListener('change', function () {
+                onChanged('fillLayout', this.checked);
             });
         }
 

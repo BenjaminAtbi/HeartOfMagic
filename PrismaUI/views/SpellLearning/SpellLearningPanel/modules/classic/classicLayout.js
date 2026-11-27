@@ -73,6 +73,9 @@ var ClassicLayout = {
         // Dynamic grid expansion: expand grid when a school runs out of placement space
         this._dynamicGridExpansion = ls.dynamicGridExpansion !== false;
 
+        // Slot-first fill (ClassicFillLayout) instead of the tree walk
+        this._fillLayout = ls.fillLayout === true;
+
         var mode = baseData.mode || 'sun';
         var grid = baseData.grid;
         var baseSchools = baseData.schools || [];
@@ -354,6 +357,15 @@ var ClassicLayout = {
         }
         this._spellMap = this._treeLevels ? ClassicRadialOrder.withLevels(spellMap, this._treeLevels) : spellMap;
         var deferredNodes = []; // shared across phases 1-3
+
+        // Slot-first fill instead of phases 1-4 (experimental, settings.fillLayout)
+        if (this._fillLayout && typeof ClassicFillLayout !== 'undefined') {
+            return ClassicFillLayout.run(this, {
+                gridGraph: gridGraph, nodeLookup: nodeLookup, rootFormId: rootFormId, groups: groups,
+                spellMap: this._spellMap, tierSpacing: tierSpacing, ringRadius: ringRadius, isFlat: isFlat,
+                centerMaskR2: centerMaskR2
+            });
+        }
 
         // ==== Phase 1: Seed ALL physical roots before any BFS ====
         // Pre-queue seeds across all groups so no group steals another's seeds.
