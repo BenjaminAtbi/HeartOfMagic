@@ -41,6 +41,7 @@ var AutoBuildTest = {
         ['autoBuildCpp.js', 'onTreeGrafted'],
         ['colorUtils.js', 'hexToRgba'],
         ['treePreviewUtils.js', 'TreePreviewUtils'],
+        ['sunGridPoints.js', 'SunGridPoints'],
         ['sunGridLinear.js', 'SunGridLinear'],
         ['sunGridEqualArea.js', 'SunGridEqualArea'],
         ['sunGridFibonacci.js', 'SunGridFibonacci'],

@@ -10,10 +10,12 @@
  * applyAsync(output, onDone) runs just before the tree is saved (each mode's
  * applyTree saves in onDone): in game by the plugin (the same pass in C++,
  * LayoutDeclutter.cpp, on a worker thread; the C++ also takes a node's `fixed`
- * and the request's `spread: false`, which only its tree graft sends - this
- * script has neither, and the panel never sends them), otherwise here a piece at a time
+ * and the request's `spread: false`, which its tree graft sends and the panel sends for a
+ * tree with a grid of its own, below; this script has no `fixed`), otherwise here a piece at a time
  * so the panel keeps drawing; apply(output) does it here at once:
- *   1. the whole tree is spaced out by SPREAD, to make room between lines;
+ *   1. the whole tree is spaced out by SPREAD, to make room between lines - not a tree with
+ *      a grid of its own (output.grid, TreeGrid: applied at the grid's scale, which is that
+ *      room; TreeGrid.snap then puts the spells moved here back on free grid points);
  *   2. spells are moved off the tree's lines - every parent-to-child line keeps
  *      LINE_CLEAR from the centre of every spell it does not end at, as far as
  *      a search round each spell can manage (LayoutLineClear). The lines stay
@@ -163,7 +165,8 @@ var LayoutDeclutter = {
         }
         window.callCpp('DeclutterTree', JSON.stringify({
             id: token.id, schools: schools, globe: output.globe || {},
-            layoutMode: output.layoutMode, noRotate: output.noRotate === true
+            layoutMode: output.layoutMode, noRotate: output.noRotate === true,
+            spread: !output.grid
         }));
         return true;
     },
@@ -269,11 +272,13 @@ var LayoutDeclutter = {
             r: this._globeValue(globe.radius, 45) + this.HEART_CLEARANCE
         };
 
-        // Room first: every spell (roots too) out from the centre by SPREAD
-        if (this.SPREAD !== 1) {
+        // Room first: every spell (roots too) out from the centre by SPREAD (a tree with a
+        // grid of its own is at the grid's scale already)
+        job.spread = output.grid ? 1 : this.SPREAD;
+        if (job.spread !== 1) {
             for (var i = 0; i < items.list.length; i++) {
-                items.list[i].x *= this.SPREAD;
-                items.list[i].y *= this.SPREAD;
+                items.list[i].x *= job.spread;
+                items.list[i].y *= job.spread;
             }
         }
         // Then off the lines (a search, LayoutLineClear), then apart and off the heart
@@ -325,7 +330,7 @@ var LayoutDeclutter = {
         var left = this._countOverlaps(list);
         // On the lines the search kept (not those past LayoutLineClear.MAX_LINE)
         var linesLeft = lines ? LayoutLineClear.countLinesThrough(list, job.lines.edges) : -1;
-        console.log('[LayoutDeclutter] spread x' + this.SPREAD + ', ' + moved + ' of ' + list.length +
+        console.log('[LayoutDeclutter] spread x' + job.spread + ', ' + moved + ' of ' + list.length +
             ' spells moved' + (lines ? ' (' + lines.moved + ' off lines in ' + lines.passes + ' passes' +
             (lines.capped ? ', stopped at its work cap' : '') + ')' : '') +
             ', ' + left + ' pairs still touching' + (lines ? ', ' + linesLeft + ' spells still on a line' : '') +

@@ -212,6 +212,9 @@ var ClassicLayout = {
             // Set per-school simulated max radius for tier zone scoring
             this._simulatedMaxRadius = schoolHeights[sd2.name] || 0;
             this._seed = this._hashString(sd2.name);
+            // The points _densifyGrid adds: not the grid's, so the preview draws them and an
+            // applied tree saves them with its grid (ClassicTreeOutput)
+            this._addedPoints = [];
             var positioned = this._layoutOnGrid(
                 sd2.tree, sd2.info, sd2.roots, grid, sd2.gridPts, mode
             );
@@ -225,8 +228,10 @@ var ClassicLayout = {
             result.schools[sd2.name] = {
                 nodes: positioned,
                 color: sd2.info.color || '#888888',
-                treeMaxRadius: schoolHeights[sd2.name] || this._maxGridRadius
+                treeMaxRadius: schoolHeights[sd2.name] || this._maxGridRadius,
+                addedPoints: this._addedPoints.map(function (ap) { return { x: ap.x, y: ap.y }; })
             };
+            this._addedPoints = null;
             if (this._maxGridRadius > globalMaxGridR) globalMaxGridR = this._maxGridRadius;
             console.log('[ClassicLayout] ' + sd2.name + ': ' + positioned.length +
                 ' nodes on ' + sd2.gridPts.length + ' grid points');
@@ -1490,6 +1495,7 @@ var ClassicLayout = {
                     if (!hasRoom(cx, cy)) continue;
                     var cp = { x: cx, y: cy, school: school };
                     result.push(cp);
+                    if (this._addedPoints) this._addedPoints.push(cp);
                     spAdd(cp);
                     nextFrontier.push(cp);
                     added++;
@@ -1531,6 +1537,7 @@ var ClassicLayout = {
                 if (nx * nx + ny * ny < maskR2 || !hasRoom(nx, ny)) continue;
                 var np = { x: nx, y: ny, school: school };
                 result.push(np);
+                if (this._addedPoints) this._addedPoints.push(np);
                 spAdd(np);
                 added++;
                 addedThisRound++;

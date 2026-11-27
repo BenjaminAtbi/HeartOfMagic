@@ -7,7 +7,7 @@
  * limit; the methods are added to CanvasRenderer, so callers still write
  * CanvasRenderer.toggleDebugGrid() and so on. Load after canvasRendererV2.js.
  *
- * Depends on: CanvasRenderer, settings, state (globe position), TreeStyle
+ * Depends on: CanvasRenderer, settings, state (globe position), TreeStyle, TreeGrid (the debug grid)
  */
 
 (function() {
@@ -143,24 +143,21 @@
         },
 
         /**
-         * Render debug grid showing all candidate positions
+         * Render the grid edit mode snaps to (EditMode.gridPositions: the tree's own grid, or
+         * the fallback square grid, TreeGrid), in world units
          * Called within the rotated context
-         * Uses ACTUAL school data for alignment
          */
         renderDebugGrid: function(ctx) {
             if (!this.showDebugGrid) return;
+            var pts = (typeof EditMode !== 'undefined' && EditMode.isActive && EditMode.gridPositions.length)
+                ? EditMode.gridPositions
+                : TreeGrid.positions(typeof state !== 'undefined' && state.treeData ? state.treeData.rawData : null).points;
 
-            var spacing = 50;
-            var extent = 1300;
-
+            // One path: a point a frame each (up to about 20,000) was too slow as separate arcs
             ctx.fillStyle = 'rgba(184, 168, 120, 0.35)';
-            for (var gx = -extent; gx <= extent; gx += spacing) {
-                for (var gy = -extent; gy <= extent; gy += spacing) {
-                    ctx.beginPath();
-                    ctx.arc(gx, gy, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
+            ctx.beginPath();
+            for (var i = 0; i < pts.length; i++) ctx.rect(pts[i].x - 2.5, pts[i].y - 2.5, 5, 5);
+            ctx.fill();
         },
 
         /**

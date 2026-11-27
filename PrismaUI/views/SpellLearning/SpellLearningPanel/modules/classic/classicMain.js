@@ -186,6 +186,13 @@ var TreeGrowthClassic = {
             if (!schools.hasOwnProperty(schoolName)) continue;
             var school = schools[schoolName];
 
+            // The points the layout added to the grid (ClassicLayout._densifyGrid), drawn as the
+            // grid's own dots: an applied tree saves them with its grid
+            if (school.addedPoints && school.addedPoints.length && typeof SunGridPoints !== 'undefined') {
+                var addedColor = typeof hexToRgba === 'function' ? hexToRgba(school.color, 0.25) : null;
+                SunGridPoints.drawDots(ctx, cx, cy, school.addedPoints, addedColor ? function() { return addedColor; } : null);
+            }
+
             // Edges first (underneath)
             ClassicRenderer.renderEdges(ctx, cx, cy, school.nodes, school.color, opacity);
 
@@ -444,13 +451,16 @@ var TreeGrowthClassic = {
         if (typeof SchoolBridges !== 'undefined') SchoolBridges.applyToOutput(output, this._treeData);
 
         // No spell under another or under a line (LayoutDeclutter): a piece at a
-        // time between frames, then saved and shown
+        // time between frames, then saved and shown. A tree with the preview's grid
+        // (TreeGrid) is already at the grid's scale: no spread, and the spells the
+        // declutter moved go back onto free grid points
         LayoutDeclutter.applyAsync(output, function() {
             // The build at game start ended (timed out) while this decluttered: not saved (AutoBuild)
             if (auto && options.isCurrent && !options.isCurrent()) {
                 console.log('[ClassicGrowth] Apply: the build at game start had ended - not saved');
                 return;
             }
+            if (output.grid && typeof TreeGrid !== 'undefined') TreeGrid.snap(output);
             if (!SpellTreeSave.send(output, auto ? 'auto build' : 'apply', undefined, seen)) return;
 
             // Load into the spell tree viewer so it displays immediately. The build at

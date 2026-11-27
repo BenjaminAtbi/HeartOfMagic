@@ -10,7 +10,7 @@
  *   roots and their arrows (no name over a root), and the extent the fit reads
  *   holds every name
  *
- * Depends on: colorUtils.js, treePreviewUtils.js, treePreviewSun.js - run in a sandbox of their
+ * Depends on: colorUtils.js, treePreviewUtils.js, sunGridPoints.js, treePreviewSun.js - run in a sandbox of their
  * own with a stand-in 2d context that records what is drawn.
  */
 
@@ -30,7 +30,7 @@ var PreviewFitTest = {
         var quiet = function() {};
         var box = { console: { log: quiet, warn: quiet, error: quiet }, document: { getElementById: function() { return null; } } };
         box.window = box;
-        ['colorUtils.js', 'treePreviewUtils.js', 'treePreviewSun.js'].forEach(function(f) {
+        ['colorUtils.js', 'treePreviewUtils.js', 'sunGridPoints.js', 'treePreviewSun.js'].forEach(function(f) {
             vm.runInNewContext(fs.readFileSync(path.join(__dirname, f), 'utf8'), box, { filename: f });
         });
         return box;

@@ -6,7 +6,10 @@
  * count on ring 1. Produces evenly spaced concentric rings with
  * increasing point density outward.
  *
- * Self-contained module, no imports required.
+ * Draws the rings and spokes; the dots are the grid's points (SunGridPoints, opts.points),
+ * which also generates them.
+ *
+ * Depends on: sunGridPoints.js
  */
 
 var SunGridLinear = {
@@ -17,18 +20,14 @@ var SunGridLinear = {
      * @param {CanvasRenderingContext2D} ctx
      * @param {number} cx - Center X
      * @param {number} cy - Center Y
-     * @param {object} opts - tierSpacing, ringTier, ringRadius, spokes, tiers, maxExtent
+     * @param {object} opts - tierSpacing, ringTier, ringRadius, spokes, tiers, maxExtent, points
      */
     renderGrid: function(ctx, cx, cy, opts) {
         var tierSpacing = opts.tierSpacing;
         var ringTier = opts.ringTier;
-        var ringRadius = opts.ringRadius;
         var spokes = opts.spokes;
         var maxExtent = opts.maxExtent;
         var totalTiers = Math.ceil(maxExtent / tierSpacing);
-
-        // Base spacing: circumference of ring 1 divided by spoke count
-        var baseSpacing = (2 * Math.PI * tierSpacing) / spokes;
 
         // --- Concentric tier rings — batch by style ---
         var linInner = [], linOuter = [], linRootR = -1;
@@ -60,35 +59,8 @@ var SunGridLinear = {
             ctx.stroke();
         }
 
-        // --- Grid dots per ring — batch by color for single path per color ---
-        var maxDots = opts.maxDots || 20000;
-        var dotCount = 0;
-        var linBuckets = {};
-        for (var r2 = 1; r2 <= totalTiers; r2++) {
-            if (dotCount >= maxDots) break;
-            var ringR = r2 * tierSpacing;
-            var circumference = 2 * Math.PI * ringR;
-            var pointCount = Math.max(spokes, Math.round(circumference / baseSpacing));
-            var angleStep = (Math.PI * 2) / pointCount;
-
-            for (var p = 0; p < pointCount; p++) {
-                if (dotCount >= maxDots) break;
-                var angle = p * angleStep;
-                var color = opts.pointColorFn ? opts.pointColorFn(angle) : 'rgba(184, 168, 120, 0.15)';
-                if (!linBuckets[color]) linBuckets[color] = [];
-                linBuckets[color].push(cx + Math.cos(angle) * ringR, cy + Math.sin(angle) * ringR);
-                dotCount++;
-            }
-        }
-        for (var lbColor in linBuckets) {
-            var lbPts = linBuckets[lbColor];
-            ctx.fillStyle = lbColor;
-            ctx.beginPath();
-            for (var lbi = 0; lbi < lbPts.length; lbi += 2) {
-                ctx.rect(lbPts[lbi] - 1, lbPts[lbi + 1] - 1, 3, 3);
-            }
-            ctx.fill();
-        }
+        // --- Grid dots: the grid's own points (SunGridPoints, opts.points) ---
+        SunGridPoints.drawDots(ctx, cx, cy, opts.points, opts.pointColorFn);
 
         // --- Base spokes — single batched path ---
         var baseAngleStep = (Math.PI * 2) / spokes;

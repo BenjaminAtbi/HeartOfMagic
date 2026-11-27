@@ -6,7 +6,11 @@
  * together toward the outer edge. Point count per ring scales with
  * circumference for consistent density.
  *
- * Self-contained module, no imports required.
+ * Draws the ring circles and spokes; the dots are the grid's points (SunGridPoints, opts.points),
+ * which also generates them, on the rings equalAreaRings() gives (the drawing used 6x the
+ * linear ring count, the layout's points 4x, until 2026-11-26: they did not meet).
+ *
+ * Depends on: sunGridPoints.js
  */
 
 var SunGridEqualArea = {
@@ -17,68 +21,35 @@ var SunGridEqualArea = {
      * @param {CanvasRenderingContext2D} ctx
      * @param {number} cx - Center X
      * @param {number} cy - Center Y
-     * @param {object} opts - tierSpacing, ringTier, ringRadius, spokes, tiers, maxExtent
+     * @param {object} opts - tierSpacing, ringTier, ringRadius, spokes, tiers, maxExtent, params, points
      */
     renderGrid: function(ctx, cx, cy, opts) {
         var ringRadius = opts.ringRadius;
         var spokes = opts.spokes;
-        var tiers = opts.tiers;
         var maxExtent = opts.maxExtent;
 
-        // Equal Area: ring radii follow sqrt(k/N). Use 6× linear ring count
-        // for reasonable inner ring visibility without excessive outer banding.
-        // Circle strokes drawn every Nth ring to match other grid types.
-        var maxRadius = maxExtent;
-        var linearDensity = Math.ceil(maxExtent / opts.tierSpacing);
-        var totalRings = Math.min(1500, linearDensity * 6);
-        var circleSkip = Math.max(1, Math.round(totalRings / linearDensity));
+        // Equal Area: ring radii follow sqrt(k/N) (SunGridPoints.equalAreaRings); a circle every
+        // Nth ring to match other grid types, out to the last ring that has points
+        var rings = SunGridPoints.equalAreaRings(opts.params);
+        var pts = opts.points || [];
+        var lastR = 0;
+        for (var pi = 0; pi < pts.length; pi++) lastR = Math.max(lastR, pts[pi].x * pts[pi].x + pts[pi].y * pts[pi].y);
+        lastR = Math.sqrt(lastR) + 0.5;
 
-        // Dots per ring scale with circumference. Golden angle offset per ring
-        // breaks radial alignment at tight outer rings.
-        var ring1Radius = Math.sqrt(1 / totalRings) * maxRadius;
-        var baseSpacing = (2 * Math.PI * ring1Radius) / Math.max(spokes, 4);
-        var goldenAngle = Math.PI * (3 - Math.sqrt(5));
-
-        // --- Concentric rings with sqrt distribution ---
-        var maxDots = opts.maxDots || 20000;
-        var dotCount = 0;
+        // The root ring: the one nearest the roots' radius
         var rootRingK = -1;
         var bestRootDist = Infinity;
-
-        // Pre-find the root ring index
-        for (var rk = 1; rk <= totalRings; rk++) {
-            var dist = Math.abs(Math.sqrt(rk / totalRings) * maxRadius - ringRadius);
+        for (var rk = 1; rk <= rings.total; rk++) {
+            var dist = Math.abs(rings.radius(rk) - ringRadius);
             if (dist < bestRootDist) { bestRootDist = dist; rootRingK = rk; }
         }
 
-        // Collect ring radii by style + dots by color in single pass
-        var eqBuckets = {};
         var eqInnerRings = [], eqOuterRings = [], eqRootRingR = -1;
-        for (var k = 1; k <= totalRings; k++) {
-            if (dotCount >= maxDots) break;
-            var radius = Math.sqrt(k / totalRings) * maxRadius;
-            var isRootRing = (k === rootRingK);
-
-            if (isRootRing || k % circleSkip === 0) {
-                if (isRootRing) { eqRootRingR = radius; }
-                else if (radius < ringRadius) { eqInnerRings.push(radius); }
-                else { eqOuterRings.push(radius); }
-            }
-
-            // Collect dots into color buckets
-            var circumference = 2 * Math.PI * radius;
-            var pointCount = Math.max(spokes, Math.round(circumference / baseSpacing));
-            var angleStep = (Math.PI * 2) / pointCount;
-            var ringOffset = k * goldenAngle;
-
-            for (var p = 0; p < pointCount; p++) {
-                if (dotCount >= maxDots) break;
-                var angle = p * angleStep + ringOffset;
-                var color = opts.pointColorFn ? opts.pointColorFn(angle) : 'rgba(184, 168, 120, 0.15)';
-                if (!eqBuckets[color]) eqBuckets[color] = [];
-                eqBuckets[color].push(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
-                dotCount++;
-            }
+        for (var k = 1; k <= rings.total; k++) {
+            var radius = rings.radius(k);
+            if (radius > lastR) break;
+            if (k === rootRingK) eqRootRingR = radius;
+            else if (k % rings.every === 0) (radius < ringRadius ? eqInnerRings : eqOuterRings).push(radius);
         }
         // Draw batched rings
         if (eqOuterRings.length > 0) {
@@ -103,16 +74,8 @@ var SunGridEqualArea = {
             ctx.stroke();
         }
 
-        // Draw batched dots
-        for (var eqColor in eqBuckets) {
-            var eqPts = eqBuckets[eqColor];
-            ctx.fillStyle = eqColor;
-            ctx.beginPath();
-            for (var eqi = 0; eqi < eqPts.length; eqi += 2) {
-                ctx.rect(eqPts[eqi] - 1, eqPts[eqi + 1] - 1, 3, 3);
-            }
-            ctx.fill();
-        }
+        // Dots: the grid's own points
+        SunGridPoints.drawDots(ctx, cx, cy, pts, opts.pointColorFn);
 
         // --- Radial spokes — single batched path ---
         var spokeStep = (Math.PI * 2) / spokes;

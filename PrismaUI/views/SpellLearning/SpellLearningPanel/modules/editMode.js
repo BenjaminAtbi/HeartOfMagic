@@ -8,6 +8,7 @@
  * Depends on:
  * - modules/canvasRendererV2.js (CanvasRenderer)
  * - modules/config.js (GRID_CONFIG)
+ * - modules/treeGrid.js (TreeGrid: the grid positions)
  * - modules/state.js (state)
  *
  * Exports (global):
@@ -262,21 +263,16 @@ var EditMode = {
     },
 
     /**
-     * Build array of all valid grid positions for snapping
+     * The positions spells snap to: the grid the shown tree was applied with (TreeGrid: the
+     * Tree Growth preview's grid at the tree's scale), or the fallback square grid for a tree
+     * without one. CanvasRenderer.renderDebugGrid draws the same positions.
      */
     buildGridPositions: function() {
-        this.gridPositions = [];
-
-        var spacing = 50;
-        var extent = 1300;
-
-        for (var gx = -extent; gx <= extent; gx += spacing) {
-            for (var gy = -extent; gy <= extent; gy += spacing) {
-                this.gridPositions.push({ x: gx, y: gy });
-            }
-        }
-
-        console.log('[EditMode] Built ' + this.gridPositions.length + ' square grid positions');
+        var tree = (typeof state !== 'undefined' && state.treeData) ? state.treeData.rawData : null;
+        var grid = TreeGrid.positions(tree);
+        this.gridPositions = grid.points;
+        console.log('[EditMode] ' + this.gridPositions.length + (grid.baked ? ' positions of the tree grid'
+            : ' positions of the fallback square grid (the tree has no grid of its own)'));
     },
 
     /**

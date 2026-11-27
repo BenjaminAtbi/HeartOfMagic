@@ -4,7 +4,9 @@
  * Turns the C++ Classic result and the layout ClassicLayout placed into the
  * spell tree JSON Apply saves: only placed nodes, their edges and prerequisites
  * from the layout's parents (the C++ builder's are dropped), PreReq Master's
- * locks as hard prerequisites, baked positions, and each school's angles from
+ * locks as hard prerequisites, baked positions, the preview's grid (`grid`,
+ * TreeGrid.forApply: a SUN preview's; the positions then at its scale,
+ * TreeGrid.APPLY_SCALE, so the spells sit on its points), and each school's angles from
  * TreePreview's arc for it (its root direction where the base has no arcs:
  * flat mode). Cross-school bridges and the declutter
  * pass are applied afterwards by TreeGrowthClassic.applyTree().
@@ -13,7 +15,7 @@
  *   var built = ClassicTreeOutput.build(treeData, layoutData, baseData);
  *   // built.output (tree JSON), built.posCount (nodes with a layout position)
  *
- * Depends on: treeCore.js (TreeCore.getOutput, optional)
+ * Depends on: treeCore.js (TreeCore.getOutput, optional), treeGrid.js (TreeGrid, optional)
  */
 
 var ClassicTreeOutput = {
@@ -77,6 +79,11 @@ var ClassicTreeOutput = {
 
         var layoutMode = baseData ? baseData.mode : 'sun';
 
+        // The preview's grid at the applied scale (TreeGrid): the positions take its scale. A
+        // flat preview has none: its positions stay as laid out, and LayoutDeclutter spreads them
+        var grid = (typeof TreeGrid !== 'undefined') ? TreeGrid.forApply(baseData, layoutData) : null;
+        var gridScale = grid ? TreeGrid.APPLY_SCALE : 1;
+
         // Build output JSON with layout-derived edges and positions
         var output = {
             version: treeData.version || '1.0',
@@ -95,6 +102,7 @@ var ClassicTreeOutput = {
                 : { x: this.DEFAULT_GLOBE.x, y: this.DEFAULT_GLOBE.y, radius: this.DEFAULT_GLOBE.radius },
             schools: {}
         };
+        if (grid) output.grid = grid;
 
         // Copy school_configs and seed if present
         if (treeData.seed) output.seed = treeData.seed;
@@ -181,8 +189,8 @@ var ClassicTreeOutput = {
                 // Bake layout position
                 var pos = posLookup[sn.formId];
                 if (pos) {
-                    outNode.x = this._round(pos.x);
-                    outNode.y = this._round(pos.y);
+                    outNode.x = this._round(pos.x * gridScale);
+                    outNode.y = this._round(pos.y * gridScale);
                     nodesWithPos++;
                 }
                 outNodes.push(outNode);

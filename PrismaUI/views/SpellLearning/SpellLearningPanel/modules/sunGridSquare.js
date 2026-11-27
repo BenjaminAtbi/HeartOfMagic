@@ -6,7 +6,10 @@
  * circle marks the root ring position. Points near the root ring
  * are highlighted. School coloring uses angle from center.
  *
- * Self-contained module, no imports required.
+ * Draws its own lines; the dots are the grid's points (SunGridPoints, opts.points), which also
+ * generates them.
+ *
+ * Depends on: sunGridPoints.js
  */
 
 var SunGridSquare = {
@@ -23,7 +26,6 @@ var SunGridSquare = {
         var ringRadius = opts.ringRadius;
         var maxExtent = opts.maxExtent;
         var tierSpacing = opts.tierSpacing;
-        var maxDots = opts.maxDots || 20000;
         var halfCount = Math.ceil(maxExtent / tierSpacing);
 
         // --- Vertical grid lines (batched) ---
@@ -69,45 +71,8 @@ var SunGridSquare = {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // --- Grid dots at intersections — batch by color for single path per color ---
-        var dotCount = 0;
-        var ringTol = tierSpacing * 0.6;
-        var sqBuckets = {};
-
-        for (var gx = -halfCount; gx <= halfCount; gx++) {
-            var dx = gx * tierSpacing;
-            for (var gy = -halfCount; gy <= halfCount; gy++) {
-                if (dotCount >= maxDots) break;
-                if (gx === 0 && gy === 0) continue;
-                var dy = gy * tierSpacing;
-
-                var angle = Math.atan2(dy, dx);
-                if (angle < 0) angle += Math.PI * 2;
-
-                var color;
-                if (opts.pointColorFn) {
-                    color = opts.pointColorFn(angle);
-                } else {
-                    var dist = Math.sqrt(dx * dx + dy * dy);
-                    color = Math.abs(dist - ringRadius) < ringTol
-                        ? 'rgba(184, 168, 120, 0.35)'
-                        : 'rgba(184, 168, 120, 0.15)';
-                }
-                if (!sqBuckets[color]) sqBuckets[color] = [];
-                sqBuckets[color].push(cx + dx, cy + dy);
-                dotCount++;
-            }
-            if (dotCount >= maxDots) break;
-        }
-        for (var sqColor in sqBuckets) {
-            var sqPts = sqBuckets[sqColor];
-            ctx.fillStyle = sqColor;
-            ctx.beginPath();
-            for (var sqi = 0; sqi < sqPts.length; sqi += 2) {
-                ctx.rect(sqPts[sqi] - 1, sqPts[sqi + 1] - 1, 3, 3);
-            }
-            ctx.fill();
-        }
+        // --- Grid dots at intersections: the grid's own points ---
+        SunGridPoints.drawDots(ctx, cx, cy, opts.points || [], opts.pointColorFn);
 
         // --- Center dot ---
         ctx.beginPath();
