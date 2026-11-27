@@ -120,24 +120,6 @@ function mockTreeFromSpells(spells) {
 }
 
 // ============================================================================
-// SPELL INFO - what C++'s GetSpellInfo / GetSpellInfoBatch send, from the test spells
-// ============================================================================
-
-function mockSpellInfo(formId) {
-    var spell = (window._mockSpellData || []).find(function(s) { return s.formId === formId; });
-    if (!spell) return { formId: formId, notFound: true };
-    var level = spell.skillLevel || 'Novice';
-    return {
-        formId: spell.formId, name: spell.name, school: spell.school,
-        level: level, skillLevel: level,
-        cost: spell.magickaCost || 0, magickaCost: spell.magickaCost || 0,
-        type: 'Fire and Forget', castingType: 'Fire and Forget',
-        persistentId: spell.persistentId, plugin: (spell.persistentId || '').split('|')[0],
-        editorId: spell.editorId || '', description: '', effects: []
-    };
-}
-
-// ============================================================================
 // MOCK callCpp
 // ============================================================================
 
