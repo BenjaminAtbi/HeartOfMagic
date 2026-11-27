@@ -125,7 +125,17 @@ var GridAlignTest = {
             'snap: a spell pushed off a taken point goes to a free one');
         this.check(root.x === 3.3 && root.y === 7.7 && a.x === on.x && c.x === near.x + 0.4,
             'snap: roots and spells on their points stay where they are');
-        var noGrid = { schools: { X: { nodes: [{ formId: 'z', x: 1.234, y: 5.678 }] } } };
+        // A spell pushed just past its school's edge, next to a point outside the school, goes to
+        // a point inside it
+        var angleOf = function(p) { return Math.atan2(p.y, p.x) * 180 / Math.PI; };
+        var q = grid.filter(function(p) { var r = Math.hypot(p.x, p.y); return r > 200 && r < 500; })[0];
+        var stray = { formId: 's', x: q.x + 1, y: q.y };
+        var edge = { startAngle: angleOf(q) + 0.5, endAngle: angleOf(q) + 90.5, nodes: [stray] };
+        T.snap({ grid: json, globe: { x: 0, y: 0 }, schools: { Y: edge } });
+        var into = ((angleOf(stray) - edge.startAngle) % 360 + 360) % 360;
+        this.check(onPoint(stray) && into <= 90, 'snap: a spell goes to a point inside its school\'s segment, not the ' +
+            'nearer one outside');
+        var noGrid = { schools:{ X: { nodes: [{ formId: 'z', x: 1.234, y: 5.678 }] } } };
         this.check(T.snap(noGrid) === 0 && noGrid.schools.X.nodes[0].x === 1.234, 'snap: a tree without a grid is left alone');
 
         return { passed: this.passed, failed: this.failed };

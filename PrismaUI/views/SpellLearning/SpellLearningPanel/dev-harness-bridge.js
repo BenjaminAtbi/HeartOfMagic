@@ -541,10 +541,13 @@ function mockGetProgress() {
     }
 }
 
+// The spells the mock player knows: none, or every spell after the toolbar's Learn All
+// (dev-harness-toolbar.js sets window._harnessKnownSpells)
 function mockGetKnownSpells() {
-    logCppCall('in', 'onPlayerKnownSpells', '{"knownSpells":[],"weakenedSpells":[],"count":0}');
+    var known = window._harnessKnownSpells || [];
+    logCppCall('in', 'onPlayerKnownSpells', '{"knownSpells":[' + known.length + ' spells],"weakenedSpells":[],"count":' + known.length + '}');
     if (typeof window.onPlayerKnownSpells === 'function') {
-        window.onPlayerKnownSpells(JSON.stringify({ knownSpells: [], weakenedSpells: [], count: 0 }));
+        window.onPlayerKnownSpells(JSON.stringify({ knownSpells: known, weakenedSpells: [], count: known.length }));
     }
 }
 

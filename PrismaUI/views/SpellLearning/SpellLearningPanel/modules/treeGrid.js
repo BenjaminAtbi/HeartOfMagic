@@ -104,8 +104,9 @@ var TreeGrid = {
 
     /**
      * Put every spell of `output` that is off its grid (moved by LayoutDeclutter) on the
-     * nearest free point, one well clear of the other spells where there is one in reach.
-     * Roots stay where they are; nothing happens for a tree without a grid of its own.
+     * nearest free point inside its school's segment (startAngle..endAngle round the globe),
+     * one well clear of the other spells where there is one in reach. Roots stay where they
+     * are; nothing happens for a tree without a grid of its own.
      * Deterministic: schools by name, spells in their order.
      * @returns {number} spells moved onto a point
      */
@@ -118,30 +119,35 @@ var TreeGrid = {
         var key = function(x, y) { return Math.floor(x / cell) + ',' + Math.floor(y / cell); };
         for (var i = 0; i < pts.length; i++) (hash[key(pts[i].x, pts[i].y)] || (hash[key(pts[i].x, pts[i].y)] = [])).push(i);
 
-        var taken = {}, nodes = [], self = this;
+        var taken = {}, nodes = [], arcs = [], self = this;
+        var globe = output.globe || {};
         Object.keys(output.schools).sort().forEach(function(name) {
+            var arc = self._arc(output.schools[name], globe);
             (output.schools[name].nodes || []).forEach(function(n) {
-                if (typeof n.x === 'number' && typeof n.y === 'number' && isFinite(n.x) && isFinite(n.y)) nodes.push(n);
+                if (typeof n.x === 'number' && typeof n.y === 'number' && isFinite(n.x) && isFinite(n.y)) {
+                    nodes.push(n);
+                    arcs.push(arc);
+                }
             });
         });
         // Placed spells: a hash of their positions, for the clearance check
         var placed = {};
         var place = function(n) { (placed[key(n.x, n.y)] || (placed[key(n.x, n.y)] = [])).push(n); };
-        var off = [];
-        nodes.forEach(function(n) {
-            var at = self._nearest(pts, hash, cell, n.x, n.y, 0, taken, null, null);
-            if (at >= 0 && self._dist(pts[at], n) <= self.ON_POINT) taken[at] = true;
-            else if (!n.isRoot) { off.push(n); return; }
+        var off = [], offArcs = [];
+        nodes.forEach(function(n, i) {
+            var at = self._nearest(pts, hash, cell, n.x, n.y, 0, taken, null, null, null);
+            if (at >= 0 && self._dist(pts[at], n) <= self.ON_POINT && self._inArc(arcs[i], n)) taken[at] = true;
+            else if (!n.isRoot) { off.push(n); offArcs.push(arcs[i]); return; }
             place(n);
         });
 
         var reach = this.SEARCH_SPACINGS;
         var moved = 0;
         for (var k = 0; k < off.length; k++) {
-            var n = off[k];
-            var best = this._nearest(pts, hash, cell, n.x, n.y, reach, taken, placed, this.CLEAR);
-            if (best < 0) best = this._nearest(pts, hash, cell, n.x, n.y, reach, taken, null, null);
-            if (best < 0) best = this._nearest(pts, hash, cell, n.x, n.y, reach * this.FAR_FACTOR, taken, null, null);
+            var n = off[k], arc = offArcs[k];
+            var best = this._nearest(pts, hash, cell, n.x, n.y, reach, taken, placed, this.CLEAR, arc);
+            if (best < 0) best = this._nearest(pts, hash, cell, n.x, n.y, reach, taken, null, null, arc);
+            if (best < 0) best = this._nearest(pts, hash, cell, n.x, n.y, reach * this.FAR_FACTOR, taken, null, null, arc);
             if (best >= 0) {
                 taken[best] = true;
                 n.x = Math.round(pts[best].x * 100) / 100;
@@ -160,11 +166,25 @@ var TreeGrid = {
         return Math.sqrt(dx * dx + dy * dy);
     },
 
+    /** A school's segment round the globe (degrees, as ClassicTreeOutput saves it), or null */
+    _arc: function(school, globe) {
+        var a = school.startAngle, b = school.endAngle;
+        if (typeof a !== 'number' || typeof b !== 'number' || !isFinite(a) || !isFinite(b) || b <= a) return null;
+        return { x: +globe.x || 0, y: +globe.y || 0, start: a, size: b - a };
+    },
+
+    _inArc: function(arc, p) {
+        if (!arc || arc.size >= 360) return true;
+        var deg = Math.atan2(p.y - arc.y, p.x - arc.x) * 180 / Math.PI;
+        return ((deg - arc.start) % 360 + 360) % 360 <= arc.size;
+    },
+
     /**
      * The nearest point to (x, y) within `reach` cells round it (0: its cell and the ones next
-     * to it), not taken and, with `placed`, at least `clear` from every placed spell; -1 if none.
+     * to it), not taken, inside `arc` when given and, with `placed`, at least `clear` from
+     * every placed spell; -1 if none.
      */
-    _nearest: function(pts, hash, cell, x, y, reach, taken, placed, clear) {
+    _nearest: function(pts, hash, cell, x, y, reach, taken, placed, clear, arc) {
         var cx = Math.floor(x / cell), cy = Math.floor(y / cell), r = Math.max(1, reach);
         var best = -1, bestD = Infinity;
         for (var dx = -r; dx <= r; dx++) {
@@ -176,6 +196,7 @@ var TreeGrid = {
                     if (taken[idx]) continue;
                     var p = pts[idx], ddx = p.x - x, ddy = p.y - y, d = ddx * ddx + ddy * ddy;
                     if (d >= bestD) continue;
+                    if (arc && !this._inArc(arc, p)) continue;
                     if (placed && !this._clearOf(placed, cell, p, clear)) continue;
                     best = idx;
                     bestD = d;

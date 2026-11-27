@@ -15,6 +15,7 @@
     var btnScanMock = document.getElementById('btn-scan-mock');
     var btnLoadTestData = document.getElementById('btn-load-test-data');
     var btnBuildTree = document.getElementById('btn-build-tree');
+    var btnLearnAll = document.getElementById('btn-learn-all');
     var btnToggleLog = document.getElementById('btn-toggle-log');
     var btnClearLog = document.getElementById('btn-clear-log');
     var btnClearLogInner = document.getElementById('btn-clear-log-inner');
@@ -114,6 +115,31 @@
                 return;
             }
             panelBuild.click();
+        });
+    }
+
+    // Learn All: the mock player knows every spell (the tree's and the scan's), as if learned
+    // in game; the panel takes it through onPlayerKnownSpells like the game's reply, so every
+    // spell shows unlocked. Click again to forget them all. Later GetPlayerKnownSpells replies
+    // (dev-harness-bridge.js) keep the choice.
+    if (btnLearnAll) {
+        btnLearnAll.addEventListener('click', function() {
+            if (window._harnessKnownSpells) {
+                window._harnessKnownSpells = null;
+            } else {
+                var ids = {};
+                var nodes = (typeof state !== 'undefined' && state.treeData && state.treeData.nodes) || [];
+                var spells = (typeof state !== 'undefined' && state.lastSpellData && state.lastSpellData.spells) || [];
+                nodes.forEach(function(n) { if (n.formId) ids[n.formId] = true; });
+                spells.forEach(function(s) { if (s.formId) ids[s.formId] = true; });
+                if (!Object.keys(ids).length) {
+                    alert('Load a tree or scan first!');
+                    return;
+                }
+                window._harnessKnownSpells = Object.keys(ids);
+            }
+            btnLearnAll.classList.toggle('active', !!window._harnessKnownSpells);
+            mockGetKnownSpells();
         });
     }
 
